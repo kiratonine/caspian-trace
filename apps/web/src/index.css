@@ -117,6 +117,30 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Печатное досье (роадмап §21). На бумаге тёмной темы не существует: браузер
+   по умолчанию не печатает фоны, и светлый текст лёг бы белым по белому.
+   Поэтому в печати переменные принудительно светлые для обеих тем, а серый
+   текст темнеет — на бумаге контраст ниже, чем на экране. */
+@media print {
+  :root,
+  .dark {
+    color-scheme: light;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0 0);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0 0);
+    --muted: oklch(0.97 0 0);
+    --muted-foreground: oklch(0.36 0 0);
+    --border: oklch(0.78 0 0);
+    --primary: oklch(0.145 0 0);
+  }
+
+  @page {
+    size: A4;
+    margin: 16mm;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

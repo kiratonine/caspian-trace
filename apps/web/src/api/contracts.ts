@@ -59,6 +59,15 @@ export type IncidentDetail = {
     upstreamStationId: string | null
     downstreamStationId: string
   } | null
+  // ПРОВИЗОРНО (вопрос 14): воспроизводимость вывода. Таблица `investigations`
+  // (роадмап §6.2) хранит `ruleset_version` и `input_hash`, и досье §21.1 п.12
+  // обязано их напечатать, но перечень полей ответа §9.2 их не называет.
+  // null — бэк блок не прислал; null внутри полей — прислал, но без значения.
+  // Досье в обоих случаях пишет «не передана», а не подставляет правдоподобное.
+  provenance: {
+    rulesetVersion: string | null
+    inputHash: string | null
+  } | null
 }
 
 // ПРОВИЗОРНО (вопрос 3): payload шагов реплея до примера JSON от команды.
@@ -97,6 +106,17 @@ export type EvidenceGraph = {
   statements: EvidenceStatement[]
   measurements: Measurement[]
   sourceDocuments: SourceDocument[]
+}
+
+// GET /api/investigations/:id/export?format=json — машиночитаемое досье.
+// ПРОВИЗОРНО (вопрос 5): состав `DossierModel` бэк ещё не зафиксировал
+// (роадмап §21.2 называет только методы). До тех пор экспорт — ровно те данные,
+// которые печатает страница, плюс дата выгрузки и юридическая оговорка:
+// файл рядом с бумагой должен объясняться сам, без нашего интерфейса.
+export type DossierExport = {
+  generatedAt: string
+  disclaimer: string
+  incident: IncidentDetail
 }
 
 // GET /api/live/status — время последнего обновления источников и наличие кэша.

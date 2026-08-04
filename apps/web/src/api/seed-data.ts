@@ -494,6 +494,9 @@ export const incidentDetails: Record<string, IncidentDetail> = {
       upstreamStationId: null, // интервал открыт вверх: «выше створа 1 км выше Атырау»
       downstreamStationId: stZhaiyk1kmAboveAtyrau.id,
     },
+    // Данные собраны вручную по ТЗ §5/§14 (verified_seed), а не расчётным ядром:
+    // приписывать им версию правил и хэш входа было бы выдумкой (запрет 1).
+    provenance: null,
   },
   [invMay.id]: {
     investigation: invMay,
@@ -507,6 +510,7 @@ export const incidentDetails: Record<string, IncidentDetail> = {
       upstreamStationId: stAsa05kmAbove.id,
       downstreamStationId: stAsa05kmBelow.id,
     },
+    provenance: null,
   },
   [invAktau.id]: {
     investigation: invAktau,
@@ -517,6 +521,7 @@ export const incidentDetails: Record<string, IncidentDetail> = {
     candidateObjects: [],
     sourceDocuments: [],
     corridorBounds: null,
+    provenance: null,
   },
 }
 

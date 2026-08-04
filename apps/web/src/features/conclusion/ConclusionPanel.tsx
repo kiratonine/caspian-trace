@@ -1,9 +1,16 @@
 import { useMemo, type ReactNode } from "react"
+import { FileText } from "lucide-react"
+import { Link } from "react-router-dom"
 
 import type { IncidentDetail } from "@/api/contracts"
 import { EvidenceLevelBadge } from "@/components/common"
+import { buttonVariants } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  DOSSIER_LINK_LABEL,
+  DOSSIER_OPEN_ACTION,
+} from "@/constants/dossier"
 import { EVIDENCE_LEVEL_META } from "@/constants/evidence"
 import {
   CONCLUSION_SECTIONS,
@@ -13,6 +20,7 @@ import {
   type ConclusionSectionId,
 } from "@/constants/panel"
 import { REPLAY_PENDING } from "@/constants/replay"
+import { dossierPath } from "@/constants/routing"
 import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { VerdictChange } from "@/features/comparison/VerdictChange"
 import {
@@ -46,10 +54,25 @@ export function ConclusionPanel() {
       aria-label="Вывод и доказательства"
       className="flex min-h-0 flex-col"
     >
-      <header className="border-b px-4 py-3">
+      <header className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
         <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
           Вывод и доказательства
         </h2>
+        {/* Печатное досье — бумажная версия этой самой панели, поэтому кнопка
+            стоит в её шапке (роадмап §21.3). */}
+        {selectedIncidentId !== null && (
+          // Это ссылка, а не кнопка: компонент Button из Base UI навесил бы
+          // role="button" на <a> и сломал бы семантику (и «открыть в новой
+          // вкладке»), поэтому берём только его классы.
+          <Link
+            to={dossierPath(selectedIncidentId)}
+            title={DOSSIER_OPEN_ACTION}
+            className={buttonVariants({ variant: "outline", size: "xs" })}
+          >
+            <FileText />
+            {DOSSIER_LINK_LABEL}
+          </Link>
+        )}
       </header>
       {verdictChange && !frame && (
         <VerdictChange

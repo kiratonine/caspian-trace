@@ -11,13 +11,16 @@ import type { EvidenceLevel } from "@/types"
 // Палитра ТЗ §6 (серый/синий/янтарный/зелёный) живёт только здесь — см.
 // комментарий в constants/evidence.ts. Это цвета уровней доказательности,
 // а не шкала «опасности» (запрет 4).
+// print-пара обязательна: досье, распечатанное из тёмной темы, иначе получило
+// бы светлый текст бейджа на белой бумаге. `!` — чтобы правило било `dark:`
+// независимо от порядка утилит в бандле.
 const TONE_CLASSES: Record<EvidenceTone, string> = {
   gray: "bg-muted text-muted-foreground",
-  blue: "bg-blue-500/15 text-blue-700 dark:bg-blue-400/20 dark:text-blue-300",
+  blue: "bg-blue-500/15 text-blue-700 dark:bg-blue-400/20 dark:text-blue-300 print:bg-blue-500/15! print:text-blue-700!",
   amber:
-    "bg-amber-500/15 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300",
+    "bg-amber-500/15 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300 print:bg-amber-500/15! print:text-amber-700!",
   green:
-    "bg-green-600/15 text-green-700 dark:bg-green-400/20 dark:text-green-300",
+    "bg-green-600/15 text-green-700 dark:bg-green-400/20 dark:text-green-300 print:bg-green-600/15! print:text-green-700!",
 }
 
 type EvidenceLevelBadgeProps = {

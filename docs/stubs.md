@@ -8,8 +8,9 @@
 - проверять этот файл в начале каждой сессии.
 
 Пути — от `apps/web/`. Данные всех заглушек лежат в `src/api/seed-data.ts`,
-формы ответов — в `src/api/contracts.ts` (утверждены роадмапом §9.2; провизорным
-остаётся только `IncidentSummary.period`, вопрос 4).
+формы ответов — в `src/api/contracts.ts` (утверждены роадмапом §9.2; провизорны
+`IncidentSummary.period` — вопрос 4, `IncidentDetail.provenance` — вопрос 14
+и `DossierExport` — вопрос 5).
 
 | Файл | Функция | Заменяет эндпоинт | Кто отдаёт | Статус |
 |---|---|---|---|---|
@@ -18,10 +19,14 @@
 | `src/api/replays.ts` | `startReplay` | `POST /api/replays/:id/start` | full-stack 2 | активна (только сентябрьский сценарий §14; с сессии 9 на ней работает плеер) |
 | `src/api/investigations.ts` | `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | full-stack 2 | активна |
 | `src/api/live-status.ts` | `fetchLiveStatus` | `GET /api/live/status` | full-stack 1 | активна |
+| `src/api/export.ts` | `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | full-stack 2 | активна (эндпоинт ещё не заведён; форма ответа `DossierExport` провизорна — вопрос 5) |
 
 Известные условности внутри seed-данных (не выдумки, а явные сентинелы):
 
 - `riverOrder` везде `null` — порядок створов не подтверждён (вопрос 1);
+- `provenance: null` у всех трёх событий — `rulesetVersion`/`inputHash` считает
+  расчётное ядро, а seed собран вручную (verified_seed); пункт 12 досье печатает
+  «не передана расчётным ядром», хэш не выдумывается (вопрос 14);
 - `IncidentSummary.period` — провизорное поле контракта (вопрос 4): период события
   ISO до месяца, `'2025-09'` / `'2025-05'`, у Актау `null`. Значения реальные,
   но само поле команда ещё не подтвердила;

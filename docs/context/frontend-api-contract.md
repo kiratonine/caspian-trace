@@ -12,7 +12,7 @@
 | `fetchLiveStatus` | `GET /api/live/status` | Full-stack 1 | заглушка |
 | `startReplay` | `POST /api/replays/:id/start` | Full-stack 2 | заглушка |
 | `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | Full-stack 2 | заглушка |
-| `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | Full-stack 2 | ещё не заведена |
+| `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | Full-stack 2 | заглушка (`src/api/export.ts`); эндпоинт ещё не заведён |
 
 Служебные, которые может понадобиться знать фронту:
 `GET /api/health/ready` (готовность API),
@@ -54,7 +54,18 @@
 | `corridorBounds` целиком | участок не выделен |
 | `publishedAt` | дата публикации источника неизвестна |
 | `sha256: ''` | хэш ещё не вычислен бэком — в досье пишем «не вычислен», не прячем |
+| `provenance` | бэк не прислал `rulesetVersion`/`inputHash` — досье пишет «не передана расчётным ядром» |
 | `lastSuccessAt` | источник ни разу не обновлялся успешно |
+
+## Что просим у бэка сверх утверждённого §9.2
+
+- `IncidentSummary.period` (вопрос 4) — период события ISO до месяца, иначе
+  сравнение май/сентябрь остаётся без данных в API-режиме;
+- `IncidentDetail.provenance: { rulesetVersion, inputHash } | null` (вопрос 14) —
+  пункт 12 досье (роадмап §21.1); поля есть в таблице `investigations` и в
+  `InvestigationResult`, но не в перечне полей ответа §9.2;
+- форма `DossierModel` для `?format=json` (вопрос 5) — провизорно
+  `DossierExport = { generatedAt, disclaimer, incident }`.
 
 ## Ошибки
 

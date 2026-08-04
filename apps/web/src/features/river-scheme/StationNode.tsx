@@ -49,19 +49,9 @@ export function StationNode({
         className="size-2.5 shrink-0 rounded-full border-2 border-muted-foreground bg-background"
       />
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        {/* Длинные подписи створов усечены, полное имя — в тултипе. */}
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <span className="max-w-full truncate text-sm">
-                {station.name}
-              </span>
-            }
-          />
-          <TooltipContent>
-            <p className="max-w-64 text-pretty">{station.name}</p>
-          </TooltipContent>
-        </Tooltip>
+        {/* Без тултипа: он повторял бы видимую подпись. Длинные названия
+            створов усечены, полностью они читаются в правой панели и в досье. */}
+        <span className="max-w-full truncate text-sm">{station.name}</span>
         {corridorBound && (
           <Tooltip>
             <TooltipTrigger

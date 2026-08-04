@@ -54,7 +54,9 @@ export function ConclusionPanel() {
       aria-label="Вывод и доказательства"
       className="flex min-h-0 flex-col"
     >
-      <header className="flex items-center justify-between gap-2 border-b px-4 py-2.5">
+      {/* py-3 и -my-1 у ссылки: линия под шапкой обязана совпасть с соседними
+          колонками, а кнопка выше строки заголовка её бы опустила. */}
+      <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
         <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
           Вывод и доказательства
         </h2>
@@ -67,7 +69,11 @@ export function ConclusionPanel() {
           <Link
             to={dossierPath(selectedIncidentId)}
             title={DOSSIER_OPEN_ACTION}
-            className={buttonVariants({ variant: "outline", size: "xs" })}
+            className={buttonVariants({
+              variant: "outline",
+              size: "xs",
+              className: "-my-1",
+            })}
           >
             <FileText />
             {DOSSIER_LINK_LABEL}

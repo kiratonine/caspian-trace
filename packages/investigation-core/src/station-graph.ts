@@ -34,6 +34,7 @@ export function hasVerifiedRelationProvenance(
       relation.sourceDocumentId.trim() &&
       relation.basis.trim() &&
       provenance.fixturePath.trim() &&
+      typeof provenance.sourcePage === 'number' &&
       Number.isInteger(provenance.sourcePage) &&
       provenance.sourcePage > 0 &&
       provenance.sourceExcerpt.trim(),

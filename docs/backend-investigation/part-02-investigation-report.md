@@ -5,9 +5,9 @@
 - `@caspian-trace/investigation-core`: точная decimal-арифметика, сравнимость,
   граф створов, corridor, evidence levels, unknowns и безопасный conclusion.
 - Golden cases: сентябрь `L2/open upstream`, май `+0,079/L3`, Актау `L0`.
-- Versioned fixture repository с атомарной заменой current version, rollback
-  regression и дедупликацией конкурентного save. Prisma adapter подключается
-  через существующие ports после P2 Backend Platform.
+- Versioned Prisma repository с serializable `$transaction`, атомарной заменой
+  current version, rollback regression и дедупликацией конкурентного save.
+  Fixture repository сохранён для автономных demo/unit tests.
 - Evidence, replay и JSON/HTML dossier endpoints подключены к основному
   `AppModule`.
 - Replay возвращает immutable snapshot; сентябрьский сценарий длится 25 секунд.
@@ -66,14 +66,14 @@ LLM не повышает evidence level и не создаёт rule-engine stat
 - Unknown geometry остаётся `null`; координаты не реконструируются.
 - Replay payload — discriminated union из `@caspian-trace/contracts`.
 
-## Prisma schema requests для Backend Platform P2
+## Prisma persistence после Backend Platform P2
 
-Полный schema request и transaction boundary вынесены в
+Реализованный schema request и transaction boundary описаны в
 [`prisma-schema-request.md`](./prisma-schema-request.md).
 
-Prisma в текущем platform bootstrap отсутствует. После появления единственного
-`PrismaService` adapter должен сохранить существующие ports и обеспечить одной
-`$transaction`:
+Интегрированы единый `PrismaService`, generated client и platform migrations.
+`PrismaInvestigationRepository` сохраняет существующие ports и обеспечивает
+одной `$transaction`:
 
 - current/versioned Investigation с `inputHash`, `rulesetVersion`, level,
   conclusion и corridor bounds;
@@ -83,8 +83,8 @@ Prisma в текущем platform bootstrap отсутствует. После �
 - переключение предыдущего `isCurrent=false` и создание нового current;
 - unique/idempotency boundary по investigation/inputHash/rulesetVersion.
 
-Feature-код не создаёт второй PrismaClient и не предполагает имена generated
-models до появления утверждённой migration Backend Platform.
+Feature-код не создаёт второй PrismaClient. Недостающие unique/provenance
+ограничения добавлены отдельной migration поверх утверждённой platform schema.
 
 ## Проверки
 
@@ -123,12 +123,10 @@ node scripts/verify-investigation-data.mjs --require-human
   `73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce`;
 - значения сентября подтверждены на PDF-странице 22, значения мая — на PDF-странице 24.
 
-Три внешних шага нельзя корректно подделать внутри этой ветки:
+Два внешних шага нельзя корректно подделать внутри этой ветки:
 
 1. два человека должны независимо заполнить `checkedBy` для каждого measurement/relation;
-2. live Gemini smoke-test требует выданный команде `GEMINI_API_KEY` (adapter покрыт mock-тестом);
-3. Prisma adapter требует schema, migration и общий `PrismaService` этапа Backend Platform P2;
-   до этого используется полностью тестируемый versioned fixture adapter и готовые ports/schema requests.
+2. live Gemini smoke-test требует выданный команде `GEMINI_API_KEY` (adapter покрыт mock-тестом).
 
 ## Ограничения и ответы для демо
 
@@ -139,6 +137,5 @@ node scripts/verify-investigation-data.mjs --require-human
 - Фраза «объект не объясняет данный максимум» не означает «объект непричастен».
 - Направление волн, отсутствие объекта в OSM и LLM-текст не используются как
   причинное доказательство.
-- Prisma persistence, source cache и raw-page ingestion остаются handoff от
-  незавершённых этапов Backend Platform P2+; fixture mode полностью покрывает
-  автономное демо Backend Investigation.
+- Source cache и raw-page ingestion остаются handoff следующих этапов Backend
+  Platform; Prisma persistence расследований реализован в этой ветке.

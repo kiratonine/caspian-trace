@@ -9,18 +9,20 @@ import {
 } from './investigation.ports'
 import { InvestigationsController } from './investigations.controller'
 import { InvestigationsService } from './investigations.service'
+import { PrismaInvestigationRepository } from './prisma-investigation.repository'
 
 @Module({
   controllers: [InvestigationsController, AdminInvestigationsController],
   providers: [
     FileInvestigationRepository,
+    PrismaInvestigationRepository,
     {
       provide: INVESTIGATION_INPUT_READER,
-      useExisting: FileInvestigationRepository,
+      useExisting: PrismaInvestigationRepository,
     },
     {
       provide: INVESTIGATION_RESULT_WRITER,
-      useExisting: FileInvestigationRepository,
+      useExisting: PrismaInvestigationRepository,
     },
     InvestigationsService,
     IngestionTokenGuard,

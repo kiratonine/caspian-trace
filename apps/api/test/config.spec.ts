@@ -168,18 +168,21 @@ describe('platform environment validation', () => {
     expect(() =>
       validateApplicationEnvironment({
         WEB_ORIGIN: 'http://localhost:5173',
+        DATABASE_URL: 'postgresql://api:secret@localhost:5432/caspian',
         INGESTION_TOKEN: 'too-short',
       }),
     ).toThrow()
     expect(() =>
       validateApplicationEnvironment({
         WEB_ORIGIN: 'http://localhost:5173',
+        DATABASE_URL: 'postgresql://api:secret@localhost:5432/caspian',
         LLM_PROVIDER: 'gemini',
       }),
     ).toThrow()
     expect(
       validateApplicationEnvironment({
         WEB_ORIGIN: 'http://localhost:5173',
+        DATABASE_URL: 'postgresql://api:secret@localhost:5432/caspian',
         LLM_PROVIDER: 'disabled',
         GEMINI_API_KEY: '',
       }),

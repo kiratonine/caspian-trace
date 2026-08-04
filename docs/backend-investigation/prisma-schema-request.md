@@ -1,8 +1,8 @@
 # Prisma schema request — Backend Investigation
 
-Статус: ожидает общий `PrismaService`, generated client и migration от Backend
-Platform P2. Этот документ фиксирует минимальный контракт; отдельный
-`PrismaClient` и локальная migration в investigation-ветке не создаются.
+Статус: реализовано после интеграции Backend Platform P2. Используется общий
+`PrismaService`, generated client и migration
+`20260805120000_investigation_persistence`.
 
 ## InvestigationResultVersion
 
@@ -70,4 +70,21 @@ Unique constraint должен превращать конкурентные о�
 Adapter реализует существующие порты
 `InvestigationInputReader`/`InvestigationResultWriter` из
 `apps/api/src/investigations/investigation.ports.ts` и регистрируется через
-`useExisting`. Fixture adapter остаётся только для автономного demo/test mode.
+`useExisting`. Fixture adapter остаётся источником проверенных demo-inputs и
+явно подменяет порты в автономных API-тестах. Runtime writer по умолчанию —
+`PrismaInvestigationRepository`.
+
+## Реализация
+
+- `Investigation` является immutable result version и имеет unique
+  `(incidentId, inputHash, rulesetVersion)`;
+- partial unique index platform-миграции гарантирует один current result на
+  incident;
+- statements, measurement/source provenance, unknowns, dispositions и связь
+  disposition → evidence сохраняются нормализованно;
+- input/result дополнительно сохраняются JSON snapshot для точного возврата
+  версии без повторного причинного вычисления;
+- `Incident.metadata` фиксирует ID входных фактов и не допускает смешивания
+  расследований одного региона при повторном чтении;
+- serializable `$transaction` и повторное чтение после `P2002/P2034`
+  дедуплицируют конкурентные recompute.

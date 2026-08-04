@@ -14,6 +14,11 @@ import {
 
 import { AppModule } from '../src/app.module'
 import { configureApplication } from '../src/config/application.setup'
+import { FileInvestigationRepository } from '../src/investigations/file-investigation.repository'
+import {
+  INVESTIGATION_INPUT_READER,
+  INVESTIGATION_RESULT_WRITER,
+} from '../src/investigations/investigation.ports'
 
 describe('investigation features (e2e)', () => {
   let app: INestApplication
@@ -21,9 +26,13 @@ describe('investigation features (e2e)', () => {
 
   beforeAll(async () => {
     process.env.INGESTION_TOKEN = 'test-ingestion-token-at-least-32-chars'
-    const module = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile()
+    const fixtures = new FileInvestigationRepository()
+    const module = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(INVESTIGATION_INPUT_READER)
+      .useValue(fixtures)
+      .overrideProvider(INVESTIGATION_RESULT_WRITER)
+      .useValue(fixtures)
+      .compile()
     app = module.createNestApplication({ bodyParser: false })
     configureApplication(app)
     await app.init()

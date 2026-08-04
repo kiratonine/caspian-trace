@@ -61,7 +61,7 @@ export type StationRelationFact = {
   comparisonPair: boolean
   provenance: {
     fixturePath: string
-    sourcePage: number
+    sourcePage: number | null
     sourceExcerpt: string
   }
 }

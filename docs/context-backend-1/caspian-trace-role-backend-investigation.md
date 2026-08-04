@@ -844,7 +844,7 @@ test(api): cover provenance replay export and LLM guards
 - [x] Актау даёт L0/insufficient data.
 - [x] Conclusion не содержит обвинений.
 - [x] Same input/ruleset даёт same hash/result.
-- [ ] Recompute versioned и transactional.
+- [x] Recompute versioned и transactional.
 - [x] Evidence statement имеет provenance.
 - [x] Replay immutable и contract-valid.
 - [x] Export JSON/HTML работает и безопасен.
@@ -853,15 +853,14 @@ test(api): cover provenance replay export and LLM guards
 - [x] Feature modules подключаются одним import.
 - [x] Unit/integration/golden tests зелёные.
 
-Оставшиеся два пункта являются внешними gates, а не задачами, которые можно
-честно закрыть внутри fixture-ветки:
+Оставшийся пункт является внешним gate, который нельзя честно закрыть кодом:
 
 - human review остаётся `0/2`; финальная команда
-  `npm run verify:investigation-data:human` намеренно завершается ошибкой;
-- общий `PrismaService`, generated client и утверждённая schema Backend Platform
-  P2 отсутствуют. До их появления fixture repository обеспечивает атомарную
-  замену current version, rollback при ошибке и дедупликацию конкурентных save,
-  но не выдаётся за реализацию `prisma.$transaction`.
+  `npm run verify:investigation-data:human` намеренно завершается ошибкой.
+
+Prisma gate закрыт интеграцией Backend Platform P2: runtime использует общий
+`PrismaService`, generated client и `PrismaInvestigationRepository` с
+serializable `$transaction`, version uniqueness, rollback и provenance links.
 
 ---
 

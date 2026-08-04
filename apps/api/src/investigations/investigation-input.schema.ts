@@ -80,7 +80,7 @@ const investigationInputSchema = z.object({
     comparisonPair: z.boolean(),
     provenance: z.object({
       fixturePath: text,
-      sourcePage: z.number().int().positive(),
+      sourcePage: z.number().int().positive().nullable(),
       sourceExcerpt: text,
     }).strict(),
   }).strict()),

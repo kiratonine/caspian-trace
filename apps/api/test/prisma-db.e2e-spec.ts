@@ -5,6 +5,10 @@ import { Test } from '@nestjs/testing'
 import request from 'supertest'
 
 import { HealthReadySchema } from '@caspian-trace/contracts'
+import type {
+  InvestigationInput,
+  InvestigationResult,
+} from '@caspian-trace/investigation-core'
 
 import { AppModule } from '../src/app.module'
 import { configureApplication } from '../src/config/application.setup'
@@ -14,6 +18,7 @@ import {
   VerificationStatus,
 } from '../src/generated/prisma/enums'
 import { PrismaService } from '../src/prisma/prisma.service'
+import { PrismaInvestigationRepository } from '../src/investigations/prisma-investigation.repository'
 
 const databaseUrl = process.env.DATABASE_E2E_URL
 const directUrl = process.env.DIRECT_E2E_URL
@@ -31,6 +36,7 @@ describe('Prisma PostgreSQL foundation (DB e2e)', () => {
   const prefix = `part02-${process.pid}-${Date.now()}`
   let app: INestApplication
   let prisma: PrismaService
+  let investigationRepository: PrismaInvestigationRepository
   let httpServer: Server
 
   beforeAll(async () => {
@@ -39,10 +45,12 @@ describe('Prisma PostgreSQL foundation (DB e2e)', () => {
     configureApplication(app)
     await app.init()
     prisma = app.get(PrismaService)
+    investigationRepository = app.get(PrismaInvestigationRepository)
     httpServer = app.getHttpServer() as Server
   })
 
   afterAll(async () => {
+    await prisma.incident.deleteMany({ where: { id: { startsWith: prefix } } })
     await prisma.candidateObjectSource.deleteMany({
       where: { candidateObjectId: { startsWith: prefix } },
     })
@@ -99,6 +107,80 @@ describe('Prisma PostgreSQL foundation (DB e2e)', () => {
     })
   })
 
+  it('stores investigation versions atomically and idempotently', async () => {
+    const input = createInvestigationInput(prefix)
+    const firstResult = createInvestigationResult(prefix, 'a'.repeat(64))
+    const [first, duplicate] = await Promise.all([
+      investigationRepository.saveVersioned(
+        input.incident.id,
+        input,
+        firstResult,
+      ),
+      investigationRepository.saveVersioned(
+        input.incident.id,
+        input,
+        firstResult,
+      ),
+    ])
+    expect(duplicate.id).toBe(first.id)
+
+    const secondResult = createInvestigationResult(prefix, 'b'.repeat(64))
+    const second = await investigationRepository.saveVersioned(
+      input.incident.id,
+      input,
+      secondResult,
+    )
+    expect(second.id).not.toBe(first.id)
+    await expect(
+      investigationRepository.findCurrent(input.incident.id),
+    ).resolves.toEqual(second)
+    await expect(
+      prisma.investigation.count({ where: { incidentId: input.incident.id } }),
+    ).resolves.toBe(2)
+    await expect(
+      prisma.investigationCandidateObjectEvidence.count({
+        where: { investigationId: second.id },
+      }),
+    ).resolves.toBe(1)
+    const loaded = await investigationRepository.loadInput(input.incident.id)
+    expect(loaded?.stations.map(({ id }) => id)).toEqual(
+      input.stations.map(({ id }) => id),
+    )
+    expect(loaded?.measurements.map(({ id }) => id)).toEqual(
+      input.measurements.map(({ id }) => id),
+    )
+    expect(loaded?.candidateObjects.map(({ id }) => id)).toEqual(
+      input.candidateObjects.map(({ id }) => id),
+    )
+
+    const invalidResult: InvestigationResult = {
+      ...secondResult,
+      inputHash: 'c'.repeat(64),
+      supportedFacts: [
+        {
+          id: `${prefix}-invalid-evidence`,
+          code: 'NO_LOCAL_INCREASE_IN_PAIR',
+          kind: 'supports',
+          text: 'Rollback probe',
+          measurementIds: [`${prefix}-missing-measurement`],
+          sourceDocumentIds: [`${prefix}-source`],
+          generatedBy: 'rule_engine',
+          sortOrder: 0,
+        },
+      ],
+    }
+    await expect(
+      investigationRepository.saveVersioned(
+        input.incident.id,
+        input,
+        invalidResult,
+      ),
+    ).rejects.toThrow()
+    await expect(
+      investigationRepository.findCurrent(input.incident.id),
+    ).resolves.toEqual(second)
+  })
+
   it('enables RLS on every application table without public policies', async () => {
     const rls = await prisma.$queryRaw<
       Array<{ enabled_count: bigint; table_count: bigint }>
@@ -114,6 +196,7 @@ describe('Prisma PostgreSQL foundation (DB e2e)', () => {
           'measurements', 'incident_signals', 'incidents', 'incident_signal_links',
           'candidate_objects', 'candidate_object_sources', 'investigations',
           'investigation_measurements', 'investigation_candidate_objects',
+          'investigation_candidate_object_evidence',
           'evidence_statements', 'evidence_statement_measurements',
           'evidence_statement_sources', 'investigation_unknowns', 'replay_scenarios',
           'replay_steps', 'ingestion_runs', 'source_health'
@@ -124,7 +207,7 @@ describe('Prisma PostgreSQL foundation (DB e2e)', () => {
       WHERE schemaname = 'public'
     `
 
-    expect(rls).toEqual([{ enabled_count: 21n, table_count: 21n }])
+    expect(rls).toEqual([{ enabled_count: 22n, table_count: 22n }])
     expect(policies).toEqual([{ policy_count: 0n }])
   })
 
@@ -377,3 +460,106 @@ describe('Prisma PostgreSQL foundation (DB e2e)', () => {
     ).rejects.toThrow()
   })
 })
+
+function createInvestigationInput(prefix: string): InvestigationInput {
+  return {
+    incident: {
+      id: `${prefix}-investigation-incident`,
+      title: 'Disposable investigation',
+      region: 'atyrau',
+      indicator: 'oil_products',
+    },
+    signals: [],
+    stations: [
+      {
+        id: `${prefix}-investigation-station`,
+        name: 'Disposable investigation station',
+        waterBody: 'Zhaiyk',
+      },
+    ],
+    stationRelations: [],
+    measurements: [
+      {
+        id: `${prefix}-investigation-measurement`,
+        stationId: `${prefix}-investigation-station`,
+        indicator: 'oil_products',
+        matrix: 'water',
+        value: '0.100',
+        rawValueText: '0.100',
+        unit: 'mg/dm3',
+        sampledAt: null,
+        sampledPeriod: '2025-09',
+        sourceDocumentId: `${prefix}-source`,
+        sourcePage: null,
+        sourceExcerpt: 'Disposable verified measurement',
+        verified: true,
+      },
+    ],
+    candidateObjects: [
+      {
+        id: `${prefix}-investigation-candidate`,
+        name: 'Disposable candidate',
+        category: 'outfall',
+        stationId: `${prefix}-investigation-station`,
+        waterBody: 'Zhaiyk',
+        evidenceDocumentIds: [`${prefix}-source`],
+        completeness: 'confirmed',
+      },
+    ],
+    sourceDocuments: [
+      {
+        id: `${prefix}-source`,
+        title: 'Disposable investigation source',
+        publisher: 'DB e2e',
+        url: `https://example.com/${prefix}-source`,
+        official: true,
+        verified: true,
+        publishedAt: null,
+        fetchedAt: null,
+        contentType: 'pdf',
+        sha256: 'd'.repeat(64),
+        cachePath: null,
+        status: 'verified',
+      },
+    ],
+  }
+}
+
+function createInvestigationResult(
+  prefix: string,
+  inputHash: string,
+): InvestigationResult {
+  return {
+    evidenceLevel: 'L0',
+    corridorBounds: null,
+    supportedFacts: [
+      {
+        id: `${prefix}-evidence`,
+        code: 'NO_LOCAL_INCREASE_IN_PAIR',
+        kind: 'supports',
+        text: 'Disposable evidence statement.',
+        measurementIds: [`${prefix}-investigation-measurement`],
+        sourceDocumentIds: [`${prefix}-source`],
+        generatedBy: 'rule_engine',
+        sortOrder: 0,
+      },
+    ],
+    contradictedHypotheses: [],
+    objectDispositions: [
+      {
+        objectId: `${prefix}-investigation-candidate`,
+        disposition: 'unknown',
+        evidenceStatementIds: [`${prefix}-evidence`],
+      },
+    ],
+    unknowns: [
+      {
+        code: 'STATION_ORDER_UNVERIFIED',
+        text: 'Station order is unavailable.',
+      },
+    ],
+    conclusion: 'Insufficient verified data for a causal conclusion.',
+    inputHash,
+    rulesetVersion: 'investigation-rules-v1',
+  }
+}

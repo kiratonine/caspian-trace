@@ -57,7 +57,7 @@ export function SignalTimeline({ entries }: SignalTimelineProps) {
                 достаточно названия, чтобы строку хронологии можно было
                 сверить с полным списком. */}
             {sourceDocument && (
-              <p className="text-xs text-muted-foreground text-pretty">
+              <p className="text-xs text-pretty text-muted-foreground">
                 {sourceDocument.title} · {sourceDocument.publisher}
               </p>
             )}

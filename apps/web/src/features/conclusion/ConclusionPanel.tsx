@@ -7,10 +7,7 @@ import { EvidenceLevelBadge } from "@/components/common"
 import { buttonVariants } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  DOSSIER_LINK_LABEL,
-  DOSSIER_OPEN_ACTION,
-} from "@/constants/dossier"
+import { DOSSIER_LINK_LABEL, DOSSIER_OPEN_ACTION } from "@/constants/dossier"
 import { EVIDENCE_LEVEL_META } from "@/constants/evidence"
 import {
   CONCLUSION_SECTIONS,

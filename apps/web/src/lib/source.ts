@@ -6,10 +6,7 @@ import type { SourceDocument } from "@/types"
  * и страницу). `page = null` — страница не подтверждена (сентинел `0`
  * отменён обновлённым контрактом): открываем документ целиком.
  */
-export function sourceHref(
-  doc: SourceDocument,
-  page?: number | null
-): string {
+export function sourceHref(doc: SourceDocument, page?: number | null): string {
   if (hasConfirmedPage(doc, page)) {
     return `${doc.url}#page=${page}`
   }

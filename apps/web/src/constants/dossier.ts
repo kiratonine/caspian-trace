@@ -125,8 +125,7 @@ export const DOSSIER_COMPLETENESS_LABELS = {
 
 export const DOSSIER_OBJECT_BASIS_LABEL = "Основания"
 
-export const DOSSIER_OBJECT_NO_BASIS =
-  "Документы-основания не приложены."
+export const DOSSIER_OBJECT_NO_BASIS = "Документы-основания не приложены."
 
 // --- Источники ---------------------------------------------------------------
 

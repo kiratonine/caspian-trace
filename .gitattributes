@@ -1,0 +1,10 @@
+# Репозиторий в три руки на разных ОС: в git всё хранится с LF, чекаут —
+# по настройке разработчика. Без этого core.autocrlf у каждого свой, и
+# prettier (endOfLine: lf) конфликтует с рабочей копией на Windows.
+* text=auto eol=lf
+
+# Бинарники не трогаем.
+*.png binary
+*.jpg binary
+*.woff2 binary
+*.pdf binary

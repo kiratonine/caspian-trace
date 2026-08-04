@@ -218,29 +218,29 @@ const MAY_2025 = "2025-05"
 function measurement(
   id: string,
   station: Station,
-  sampledAt: string,
+  sampledPeriod: string,
   value: number,
   sourceDocumentId: string,
-  sourcePage: number
+  sourcePage: number | null
 ): Measurement {
   return {
     id,
     stationId: station.id,
-    sampledAt,
+    // Точной даты отбора в бюллетенях нет — известен только месяц.
+    sampledAt: null,
+    sampledPeriod,
     indicator: "нефтепродукты",
     value,
     unit: "mg/dm3",
     matrix: "water",
-    qualityClass: null,
     sourceDocumentId,
     sourcePage,
     sourceExcerpt: `Нефтепродукты, ${station.name}: ${value.toLocaleString("ru-RU")} мг/дм³`,
-    verified: true,
   }
 }
 
 const SEPTEMBER_PAGE = 22 // ТЗ §5: приложение 2, страница PDF 22
-const MAY_PAGE = 0 // страница не перепроверена (вопрос 8 плана) — 0 до подтверждения
+const MAY_PAGE = null // страница бюллетеня не перепроверена (вопрос 8 плана)
 
 const mSep1kmAbove = measurement(
   "m-2025-09-1km-above-atyrau",
@@ -334,7 +334,11 @@ const mayMeasurements: Measurement[] = [mMayAsaAbove, mMayAsaBelow]
 const sigZakonGreenWater: IncidentSignal = {
   id: "sig-zakon-green-water",
   title: "Необычная зелёная окраска воды в Жайыке",
+  // ТЗ §10: дата наблюдения известна, неточным помечено только время
+  // (`uncertainFields: ['observedAtTime']`) — поэтому период не нужен,
+  // а на экране показывается день без часов.
   observedAt: "2025-09-01T00:00:00+05:00",
+  observedPeriod: null,
   reportedAt: "2025-09-09T15:16:00+05:00",
   location: null,
   locationText: "река Жайык, Атырау",

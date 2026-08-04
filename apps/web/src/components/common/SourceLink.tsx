@@ -7,8 +7,8 @@ import type { SourceDocument } from "@/types"
 
 type SourceLinkProps = {
   sourceDocument: SourceDocument
-  /** Страница PDF; 0 — сентинел «не подтверждена» (вопрос 8 плана), не показывается. */
-  page?: number
+  /** Страница PDF; null — страница не подтверждена, в подписи не показывается. */
+  page?: number | null
   className?: string
 }
 

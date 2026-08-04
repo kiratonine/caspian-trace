@@ -31,7 +31,13 @@
 - фронт показывает `conclusion` и evidence statements **дословно**;
 - фронт **не пересчитывает** `delta`, коридор и L0–L3;
 - `payload` шага реплея — discriminated union по `type`;
-- неполная дата не превращается в выдуманный день: месяц едет отдельным полем;
+- неполная дата не превращается в выдуманный день: месяц едет отдельным полем
+  (`sampledPeriod` у измерений, `observedPeriod` у сигналов);
+- закрытые списки значений: `verificationStatus` (`unverified | corroborated |
+  official | conflicting`), `extractionMode` (`verified_seed | rule |
+  llm_verified`) — у них check-ограничение в SQL и `z.enum` в контракте;
+- свободные строки: `unit`, `matrix`, `phenomenon` — фронт переводит известные
+  значения справочником и показывает незнакомое как есть;
 - любой ответ проверяется Zod на границе сети, `as T` запрещён.
 
 ## Null-правила (что означает пустое значение)
@@ -41,6 +47,8 @@
 | `sourcePage` | страница не подтверждена — якорь `#page=` не ставим, страницу не подписываем |
 | `sampledAt` | точной даты отбора нет; смотреть `sampledPeriod` |
 | `sampledPeriod` | период не определён |
+| `observedAt` | точной даты наблюдения нет; смотреть `observedPeriod` |
+| `observedPeriod` | период наблюдения не определён |
 | `location`, `corridor` | координаты не подтверждены — рисуем линейную схему |
 | `corridorBounds.upstreamStationId` | коридор открыт вверх по течению |
 | `corridorBounds` целиком | участок не выделен |

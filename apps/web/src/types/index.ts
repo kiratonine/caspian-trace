@@ -1,5 +1,9 @@
 export type { SourceDocument } from "./source-document"
-export type { IncidentSignal, Phenomenon } from "./incident-signal"
+export type {
+  IncidentSignal,
+  Phenomenon,
+  VerificationStatus,
+} from "./incident-signal"
 export type { Station } from "./station"
 export type { Measurement } from "./measurement"
 export type { CandidateObject } from "./candidate-object"

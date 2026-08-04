@@ -38,6 +38,13 @@
 
 ## 3. Изменения контракта, которые правят уже написанный код
 
+**Статус: применено в сессии 11 (04.08.2026)**, кроме нормализованной ошибки
+API — она едет вместе с остальным F2 (`VITE_DATA_MODE`, Zod, `AbortSignal`).
+Сверх таблицы поправлено: `observedPeriod` у сигналов (та же пара «точная
+дата / период»), `extractionMode: 'llm_verified'` вместо `'llm'` по
+check-ограничению таблицы, `phenomenon` как свободная строка с фолбэком
+подписи, удалены `qualityClass`/`verified` — их нет в `MeasurementSchema`.
+
 | Что | Было у нас | Стало по ТЗ | Что чинить |
 |---|---|---|---|
 | `Measurement.sourcePage` | `number`, `0` = «не подтверждена» | `number \| null` | `types/measurement.ts`, `contracts.ts`, `seed-data.ts`, `lib/source.ts` (`hasConfirmedPage`, `sourceHref`), `MeasurementValue`, `SourceLink`, `panel-model.ts`, дев-галереи |

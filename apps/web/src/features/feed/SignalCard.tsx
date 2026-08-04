@@ -4,10 +4,10 @@ import {
   FEED_SIGNAL_REPORTED_PREFIX,
 } from "@/constants/feed"
 import {
-  PHENOMENON_LABELS,
+  phenomenonLabel,
   VERIFICATION_STATUS_META,
 } from "@/constants/phenomena"
-import { formatDate, formatDateTime } from "@/lib/format"
+import { formatDateTime, formatObservedDate } from "@/lib/format"
 import type { IncidentSignal, SourceDocument } from "@/types"
 
 type SignalCardProps = {
@@ -21,17 +21,19 @@ type SignalCardProps = {
  * и ссылка на первоисточник — сигнал тоже должен вести к документу (§16 п.5).
  */
 export function SignalCard({ signal, sourceDocument }: SignalCardProps) {
+  // Дата наблюдения может быть известна с точностью до месяца или неизвестна
+  // совсем — тогда строки «Наблюдалось …» в хронологии просто нет.
+  const observedDate = formatObservedDate(signal)
   const chronology = [
     signal.locationText,
-    signal.observedAt !== null &&
-      `${FEED_SIGNAL_OBSERVED_PREFIX} ${formatDate(signal.observedAt)}`,
+    observedDate !== null && `${FEED_SIGNAL_OBSERVED_PREFIX} ${observedDate}`,
     `${FEED_SIGNAL_REPORTED_PREFIX} ${formatDateTime(signal.reportedAt)}`,
   ].filter((part): part is string => typeof part === "string")
 
   return (
     <article className="flex flex-col gap-1.5">
       <p className="text-xs text-muted-foreground">
-        {PHENOMENON_LABELS[signal.phenomenon]} ·{" "}
+        {phenomenonLabel(signal.phenomenon)} ·{" "}
         {VERIFICATION_STATUS_META[signal.verificationStatus].label}
       </p>
       <h4 className="text-sm font-medium text-pretty">{signal.title}</h4>

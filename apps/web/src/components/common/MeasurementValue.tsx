@@ -3,7 +3,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { formatMeasurement, formatSampledAt } from "@/lib/format"
+import { formatMeasurement, formatSampledDate } from "@/lib/format"
 import { hasConfirmedPage, sourceHref } from "@/lib/source"
 import { cn } from "@/lib/utils"
 import type { Measurement, SourceDocument } from "@/types"
@@ -25,6 +25,8 @@ export function MeasurementValue({
   className,
 }: MeasurementValueProps) {
   const pageConfirmed = hasConfirmedPage(sourceDocument, measurement.sourcePage)
+  // Даты может не быть вовсе — тогда в подписи её просто нет, а не пустое место.
+  const sampledDate = formatSampledDate(measurement)
 
   return (
     <Tooltip>
@@ -45,8 +47,8 @@ export function MeasurementValue({
       />
       <TooltipContent>
         <p className="max-w-64 text-pretty">
-          {measurement.indicator}, {formatSampledAt(measurement.sampledAt)} ·{" "}
-          {sourceDocument.title}
+          {measurement.indicator}
+          {sampledDate && `, ${sampledDate}`} · {sourceDocument.title}
           {pageConfirmed
             ? `, стр. ${measurement.sourcePage}`
             : " (страница уточняется)"}

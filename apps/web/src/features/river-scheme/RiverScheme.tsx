@@ -19,7 +19,7 @@ import {
   useReplayFrame,
 } from "@/features/replay/replay-frame"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
-import { formatSampledAt } from "@/lib/format"
+import { formatSampledDate } from "@/lib/format"
 import { OrderedStations } from "./OrderedStations"
 import { UnorderedStations } from "./UnorderedStations"
 import { buildSchemeModel } from "./scheme-model"
@@ -106,6 +106,8 @@ export function RiverSchemeContent({
     : SCHEME_UPSTREAM_HINT
   const subtitle = [waterBody, orderHint].filter(Boolean).join(" · ") || null
   const firstMeasurement = detail.measurements[0] ?? null
+  // Дата отбора известна не всегда — тогда в подзаголовке остаётся показатель.
+  const sampledDate = firstMeasurement && formatSampledDate(firstMeasurement)
 
   return (
     <>
@@ -115,8 +117,7 @@ export function RiverSchemeContent({
           {periodSwitcher}
           <p className="text-xs text-muted-foreground">
             {detail.investigation.indicator}
-            {firstMeasurement &&
-              ` · ${formatSampledAt(firstMeasurement.sampledAt)}`}
+            {sampledDate && ` · ${sampledDate}`}
           </p>
           {model.ordered.length > 0 && (
             <OrderedStations

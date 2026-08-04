@@ -1,5 +1,5 @@
-import { UNIT_LABELS } from "@/constants/units"
-import type { Measurement } from "@/types"
+import { unitLabel } from "@/constants/units"
+import type { IncidentSignal, Measurement } from "@/types"
 
 // Казахстан с марта 2024 живёт в едином UTC+5 без сезонных переводов.
 // Фиксированная зона вместо зоны браузера — чтобы демо показывало одни и те же
@@ -36,7 +36,8 @@ const monthFormat = new Intl.DateTimeFormat(LOCALE, {
   year: "numeric",
 })
 
-// В ТЗ у отборов проб известен только месяц — `sampledAt` бывает 'ГГГГ-ММ'.
+// Период в контракте — строка ISO с точностью до месяца ('2025-09'). Что-то
+// другое (квартал, диапазон, свободный текст) не разбираем, а показываем как есть.
 const MONTH_PRECISION = /^\d{4}-\d{2}$/
 
 // Неразрывный пробел: число не отрывается от единицы при переносе строки.
@@ -47,11 +48,8 @@ export function formatNumber(value: number): string {
 }
 
 /** «0,234 мг/дм³» — число с единицей измерения через неразрывный пробел. */
-export function formatMeasurement(
-  value: number,
-  unit: Measurement["unit"]
-): string {
-  return `${numberFormat.format(value)}${NBSP}${UNIT_LABELS[unit]}`
+export function formatMeasurement(value: number, unit: string): string {
+  return `${numberFormat.format(value)}${NBSP}${unitLabel(unit)}`
 }
 
 /** «9 сентября 2025 г.» */
@@ -71,12 +69,29 @@ export function formatMonth(isoMonth: string): string {
 }
 
 /**
- * Дата отбора пробы с честной точностью: месячную ('2025-09') не превращаем
- * в выдуманный день — показываем «сентябрь 2025 г.».
+ * Дата с честной точностью: известная точная — днём, иначе период месяцем
+ * («сентябрь 2025 г.»). `null` — датировать нечем; выдумывать день или
+ * подставлять пустую строку нельзя, решение принимает вызывающий код.
  */
-export function formatSampledAt(sampledAt: string): string {
-  if (MONTH_PRECISION.test(sampledAt)) {
-    return formatMonth(sampledAt)
-  }
-  return formatDate(sampledAt)
+function formatExactOrPeriod(
+  exact: string | null,
+  period: string | null
+): string | null {
+  if (exact !== null) return formatDate(exact)
+  if (period === null) return null
+  return MONTH_PRECISION.test(period) ? formatMonth(period) : period
+}
+
+/** Дата отбора пробы: точная `sampledAt` либо период `sampledPeriod`. */
+export function formatSampledDate(
+  measurement: Pick<Measurement, "sampledAt" | "sampledPeriod">
+): string | null {
+  return formatExactOrPeriod(measurement.sampledAt, measurement.sampledPeriod)
+}
+
+/** Дата наблюдения из сообщения: точная `observedAt` либо период `observedPeriod`. */
+export function formatObservedDate(
+  signal: Pick<IncidentSignal, "observedAt" | "observedPeriod">
+): string | null {
+  return formatExactOrPeriod(signal.observedAt, signal.observedPeriod)
 }

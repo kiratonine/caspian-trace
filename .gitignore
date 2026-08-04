@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+apps/api/src/generated/prisma/
 *.local
 
 # Environment: секреты не коммитим; шаблоны — можно

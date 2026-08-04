@@ -17,6 +17,7 @@ function createFixtureRepository() {
   const root = mkdtempSync(join(tmpdir(), 'caspian-trace-archive-test-'))
   temporaryRoots.push(root)
   writeFixture(root, 'package.json', '{}')
+  writeFixture(root, '.gitignore', 'apps/api/src/generated/prisma/\n')
   writeFixture(root, '.nvmrc', '20\n')
   writeFixture(root, '.node-version', '20\n')
   writeFixture(root, 'AGENTS.md', '# Instructions')
@@ -25,6 +26,19 @@ function createFixtureRepository() {
   writeFixture(root, 'apps/api/.env', 'SECRET=value')
   writeFixture(root, 'apps/api/src/main.ts', 'export {}')
   writeFixture(root, 'apps/api/src/health/health.module.ts', 'export {}')
+  writeFixture(root, 'apps/api/prisma.config.ts', 'export default {}')
+  writeFixture(root, 'apps/api/prisma/schema.prisma', 'datasource db {}')
+  writeFixture(
+    root,
+    'apps/api/prisma/migrations/20260804000000_initial_schema/migration.sql',
+    'CREATE TABLE example();',
+  )
+  writeFixture(
+    root,
+    'apps/api/prisma/migrations/20260804160000_harden_provenance/migration.sql',
+    'ALTER TABLE example ADD CONSTRAINT example_fk;',
+  )
+  writeFixture(root, 'apps/api/src/prisma/prisma.module.ts', 'export {}')
   writeFixture(root, 'apps/api/src/generated/prisma/client.ts', 'secret generated')
   writeFixture(root, 'apps/api/dist/main.js', 'generated')
   writeFixture(root, 'apps/api/coverage/result.json', '{}')
@@ -34,6 +48,17 @@ function createFixtureRepository() {
   writeFixture(root, 'packages/investigation-core/src/index.ts', 'backend 2')
   writeFixture(root, 'data/verified/manifest.json', '{}')
   writeFixture(root, 'scripts/verify-api-clean-start.mjs', 'export {}')
+  writeFixture(root, 'scripts/verify-prisma-clean-db.mjs', 'export {}')
+  writeFixture(
+    root,
+    'TODO/backend-platform-part-02-prisma-supabase-readiness.md',
+    '# Part 02',
+  )
+  writeFixture(
+    root,
+    'docs/backend-platform/part-02-prisma-supabase-readiness-report.md',
+    '# Report',
+  )
   return root
 }
 
@@ -61,15 +86,38 @@ test('collects only Backend 1 allowlisted files', () => {
   const entries = collectArchiveEntries(root)
 
   assert.ok(entries.includes('AGENTS.md'))
+  assert.ok(entries.includes('.gitignore'))
   assert.ok(entries.includes('.nvmrc'))
   assert.ok(entries.includes('.node-version'))
   assert.ok(entries.includes('apps/api/src/main.ts'))
   assert.ok(entries.includes('apps/api/src/health/health.module.ts'))
   assert.ok(entries.includes('packages/contracts/src/index.ts'))
   assert.ok(entries.includes('scripts/verify-api-clean-start.mjs'))
+  assert.ok(entries.includes('scripts/verify-prisma-clean-db.mjs'))
+  assert.ok(entries.includes('apps/api/prisma/schema.prisma'))
+  assert.ok(
+    entries.includes(
+      'apps/api/prisma/migrations/20260804000000_initial_schema/migration.sql',
+    ),
+  )
+  assert.ok(
+    entries.includes(
+      'apps/api/prisma/migrations/20260804160000_harden_provenance/migration.sql',
+    ),
+  )
+  assert.ok(entries.includes('apps/api/src/prisma/prisma.module.ts'))
+  assert.ok(
+    entries.includes('TODO/backend-platform-part-02-prisma-supabase-readiness.md'),
+  )
+  assert.ok(
+    entries.includes(
+      'docs/backend-platform/part-02-prisma-supabase-readiness-report.md',
+    ),
+  )
   assert.ok(!entries.some((entry) => entry.startsWith('apps/web/')))
   assert.ok(!entries.some((entry) => entry.startsWith('packages/investigation-core/')))
   assert.ok(!entries.some((entry) => entry.startsWith('data/verified/')))
+  assert.ok(!entries.some((entry) => entry.startsWith('apps/api/src/generated/')))
 })
 
 test('allows .env.example while excluding secrets and generated output', () => {

@@ -1,5 +1,10 @@
 import { z } from 'zod'
 
+const postgresUrlSchema = z
+  .string()
+  .regex(/^postgres(?:ql)?:\/\/\S+$/)
+  .pipe(z.url({ protocol: /^postgres(?:ql)?$/ }))
+
 export const PlatformEnvironmentSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -15,13 +20,19 @@ export const PlatformEnvironmentSchema = z
       .trim()
       .regex(/^\d+(?:kb|mb)$/i)
       .default('1mb'),
+    DATABASE_URL: postgresUrlSchema,
+    DB_READINESS_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(250)
+      .max(10_000)
+      .default(3_000),
   })
-  .passthrough()
 
 export const FutureIntegrationEnvironmentSchema = z
   .object({
-    DATABASE_URL: z.url({ protocol: /^postgres(?:ql)?$/ }).optional(),
-    DIRECT_URL: z.url({ protocol: /^postgres(?:ql)?$/ }).optional(),
+    DATABASE_URL: postgresUrlSchema.optional(),
+    DIRECT_URL: postgresUrlSchema.optional(),
     SUPABASE_URL: z.url({ protocol: /^https$/ }).optional(),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
     SUPABASE_SOURCE_BUCKET: z.string().trim().min(1).optional(),
@@ -54,7 +65,14 @@ export type FutureIntegrationEnvironment = z.infer<
 export function validatePlatformEnvironment(
   environment: Record<string, unknown>,
 ): PlatformEnvironment {
-  return PlatformEnvironmentSchema.parse(environment)
+  const result = PlatformEnvironmentSchema.safeParse(environment)
+  if (!result.success) {
+    const keys = [...new Set(result.error.issues.map((issue) => issue.path[0]))]
+      .filter((key): key is string => typeof key === 'string')
+      .sort()
+    throw new Error(`Invalid platform environment: ${keys.join(', ')}`)
+  }
+  return result.data
 }
 
 export function validateFutureIntegrationEnvironment(

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config'
 
 import { validatePlatformEnvironment } from './config/environment'
 import { HealthModule } from './health/health.module'
+import { PrismaModule } from './prisma/prisma.module'
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { HealthModule } from './health/health.module'
       cache: true,
       validate: validatePlatformEnvironment,
     }),
+    PrismaModule,
     HealthModule,
   ],
 })

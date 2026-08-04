@@ -8,6 +8,7 @@ import {
   EvidenceGraphSchema,
   EvidenceStatementSchema,
   ExtractionModeSchema,
+  HealthReadySchema,
   IncidentDetailSchema,
   IncidentSummaryListSchema,
   LiveStatusSchema,
@@ -382,6 +383,20 @@ describe('strict API boundaries', () => {
       code: 'VALIDATION_ERROR',
       message: 'Validation failed',
       requestId: 'forwarded-request-id',
+    })
+  })
+
+  it('validates the additive database readiness contract', () => {
+    expect(
+      HealthReadySchema.parse({
+        status: 'ok',
+        service: 'caspian-trace-api',
+        database: 'ready',
+      }),
+    ).toEqual({
+      status: 'ok',
+      service: 'caspian-trace-api',
+      database: 'ready',
     })
   })
 })

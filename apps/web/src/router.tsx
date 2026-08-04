@@ -8,11 +8,13 @@ import App from '@/App';
 // в сессии печатного досье.
 const routes: RouteObject[] = [{ path: '/', element: <App /> }];
 
-// Дев-галерея common-примитивов. import.meta.env.DEV статически заменяется
-// при сборке, поэтому в прод-бандл ни маршрут, ни чанк галереи не попадают.
+// Дев-галереи. import.meta.env.DEV статически заменяется при сборке,
+// поэтому в прод-бандл ни маршруты, ни чанки галерей не попадают.
 if (import.meta.env.DEV) {
   const PrimitivesGallery = lazy(() => import('@/dev/PrimitivesGallery'));
+  const RiverSchemeGallery = lazy(() => import('@/dev/RiverSchemeGallery'));
   routes.push({ path: '/dev/primitives', element: <PrimitivesGallery /> });
+  routes.push({ path: '/dev/river-scheme', element: <RiverSchemeGallery /> });
 }
 
 export const router = createBrowserRouter(routes);

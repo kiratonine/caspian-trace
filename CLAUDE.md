@@ -52,8 +52,12 @@ MapLibre — только после подтверждённых координ
 обновить `docs/frontend-plan.md`, `docs/decisions.md`, `docs/stubs.md`, сделать
 осмысленный коммит. Перед началом — `git pull`.
 
-## Команды
-`npm run dev` / `build` / `typecheck` / `lint` / `format`
+## Структура репозитория (монорепа по ТЗ §11, npm workspaces)
+- `apps/web` — фронтенд (моя зона). `apps/api`, `packages/*` — зона бэкендеров.
+- `CLAUDE.md` и `docs/` — в корне. Установка зависимостей: `npm install` из корня.
+
+## Команды (из корня репо)
+`npm run dev` / `build` / `typecheck` / `lint` / `format` — проксируются в workspace `web`
 
 ## Критерий приёмки
 Демо работает полностью без бэкенда, без LLM и без интернета: все ассеты локально

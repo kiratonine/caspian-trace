@@ -20,6 +20,15 @@ function npmArgs(args) {
   return npmCli === undefined ? args : [npmCli, ...args]
 }
 
+if (process.env.PRISMA_CLEAN_START_ALLOWED !== 'true') {
+  throw new Error(
+    'API clean-start must be launched by the disposable PostgreSQL verifier',
+  )
+}
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is required for API clean-start')
+}
+
 function removeGeneratedOutput() {
   for (const directory of generatedDirectories) {
     rmSync(directory, { recursive: true, force: true })
@@ -123,12 +132,20 @@ async function startAndProbe(args, label) {
         throw new Error(`${label} exited before health check:\n${output}`)
       }
       try {
-        const response = await fetch(
+        const liveResponse = await fetch(
           `http://127.0.0.1:${port}/api/health/live`,
         )
-        if (response.ok) {
-          const body = await response.json()
-          if (body.status !== 'ok' || body.service !== 'caspian-trace-api') {
+        const readyResponse = await fetch(
+          `http://127.0.0.1:${port}/api/health/ready`,
+        )
+        if (liveResponse.ok && readyResponse.ok) {
+          const body = await liveResponse.json()
+          const readyBody = await readyResponse.json()
+          if (
+            body.status !== 'ok' ||
+            body.service !== 'caspian-trace-api' ||
+            readyBody.database !== 'ready'
+          ) {
             throw new Error(`${label} returned an invalid health response`)
           }
           await probeInvestigationEndpoints(port, label)

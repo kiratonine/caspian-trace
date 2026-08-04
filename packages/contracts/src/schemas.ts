@@ -401,6 +401,14 @@ export const HealthLiveSchema = z
   })
   .strict()
 
+export const HealthReadySchema = z
+  .object({
+    status: z.literal('ok'),
+    service: z.literal('caspian-trace-api'),
+    database: z.literal('ready'),
+  })
+  .strict()
+
 export const PrismaRegionSchema = z.enum(['ATYRAU', 'MANGYSTAU'])
 
 export function mapRegionToApi(value: z.input<typeof PrismaRegionSchema>): Region {
@@ -432,3 +440,4 @@ export type LiveStatus = z.infer<typeof LiveStatusSchema>
 export type Dossier = z.infer<typeof DossierSchema>
 export type ApiError = z.infer<typeof ApiErrorSchema>
 export type HealthLive = z.infer<typeof HealthLiveSchema>
+export type HealthReady = z.infer<typeof HealthReadySchema>

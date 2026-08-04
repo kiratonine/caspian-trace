@@ -7,6 +7,7 @@ import { HealthModule } from './health/health.module'
 import { InvestigationsModule } from './investigations/investigations.module'
 import { LlmModule } from './llm/llm.module'
 import { ReplaysModule } from './replays/replays.module'
+import { PrismaModule } from './prisma/prisma.module'
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ReplaysModule } from './replays/replays.module'
       cache: true,
       validate: validateApplicationEnvironment,
     }),
+    PrismaModule,
     HealthModule,
     InvestigationsModule,
     ReplaysModule,

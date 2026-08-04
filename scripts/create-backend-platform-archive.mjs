@@ -13,6 +13,7 @@ import { pathToFileURL } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
 const ALLOWED_FILES = [
+  '.gitignore',
   '.node-version',
   '.nvmrc',
   'AGENTS.md',
@@ -29,6 +30,7 @@ const ALLOWED_FILES = [
   'scripts/create-backend-platform-archive.mjs',
   'scripts/create-backend-platform-archive.test.mjs',
   'scripts/verify-api-clean-start.mjs',
+  'scripts/verify-prisma-clean-db.mjs',
   '.github/workflows/ci.yml',
   'supabase/config.toml',
 ]

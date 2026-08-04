@@ -2,7 +2,36 @@
 
 ## Состояние на конец последней сессии
 
-**Сессия 2 (04.08.2026) — типы + константы + api-слой с заглушками. Завершена.**
+**Сессия 3 (04.08.2026) — каркас трёх колонок + шкала реплея + роутер/провайдеры. Завершена.**
+
+- `src/router.tsx` — createBrowserRouter, пока один маршрут `/` → `App`;
+  `/dossier/:id` и search-параметры deep-link добавятся в своих сессиях.
+- `src/main.tsx` — ThemeProvider → QueryClientProvider → RouterProvider.
+  QueryClient: `staleTime: Infinity`, `retry: false`, `refetchOnWindowFocus: false`
+  (офлайн-демо, данные бюллетеней во время показа не меняются).
+- `src/App.tsx` — грид `header / три колонки / шкала` на `h-svh`; на `<lg`
+  колонки складываются в столбец. Колонки: `SignalFeed` (features/feed),
+  `RiverScheme` (features/river-scheme, заготовка узлов + подпись
+  «вверху — выше по течению»), `ConclusionPanel` (features/conclusion —
+  6 нумерованных блоков строго из `CONCLUSION_SECTIONS`), `ReplayTimeline`
+  (features/replay — маркеры на реальных `REPLAY_STEP_OFFSETS_MS`, play отключён),
+  `AppHeader` (components/layout). Наполнение — скелетоны, данные не подключались.
+- Константы: `panel.ts` (CONCLUSION_SECTIONS §13 — порядок массива = контракт),
+  `strings.ts` + APP_NAME/APP_TAGLINE, `replay.ts` + REPLAY_STEP_TYPE_ORDER (§14).
+- shadcn добавлены: `skeleton`, `scroll-area`, `separator` (separator пока не
+  используется — блоки панели разделены border-t). В сгенерированном
+  `scroll-area.tsx` удалён неиспользуемый импорт React — валил `tsc -b`.
+- `index.html`: `lang="ru"`, title «Каспийский след».
+- Проверено: `typecheck`, `lint`, `build` — зелёные; визуально через Playwright
+  на 1280×720 (свет и тьма): все 6 блоков §13 видны без прокрутки, консоль чистая.
+- **Следующая задача (сессия 4): common-примитивы** — `MeasurementValue`,
+  `SourceLink`, `EvidenceLevelBadge`, `InsufficientData` + `lib/format.ts`
+  (ru-RU числа, даты +05:00) — они нужны до любых экранов.
+- **Блокеры прежние:** вопросы 1 (порядок створов) и 2 (incident vs investigation).
+  Каркас от них не зависит; контракт заглушек — провизорный.
+
+<details>
+<summary>Сессия 2 (04.08.2026) — типы + константы + api-слой с заглушками. Завершена.</summary>
 
 - Установлены: @tanstack/react-query, zustand, react-router-dom, @types/geojson (dev).
 - `src/types/` — 1:1 из ТЗ §8 + `ReplayStep` из §12 (payload = unknown), barrel `index.ts`.
@@ -16,13 +45,9 @@
   `investigations`, `live-status` — реестр в `docs/stubs.md`.
 - `.env.example` (VITE_API_BASE_URL, необязателен), `vite-env.d.ts`;
   в eslint отключён react-refresh/only-export-components для `src/components/ui`.
-- Проверено: `typecheck`, `lint`, `build` — зелёные. ВАЖНО: eslint запускать из
-  `apps/web` (конфиг там), корневой `npm run lint` через обёртку может искать конфиг в корне.
-- **Следующая задача (сессия 3): каркас трёх колонок + шкала снизу** (порядок
-  блоков панели строго по ТЗ §13); затем common-примитивы.
-- **Блокеры прежние:** вопросы 1 (порядок створов) и 2 (incident vs investigation).
-  Контракт заглушек — провизорный (`src/api/contracts.ts`); при ответах команды
-  правятся только `contracts.ts` + `seed-data.ts`.
+- ВАЖНО: eslint запускать из `apps/web` (конфиг там), корневой `npm run lint`
+  через обёртку может искать конфиг в корне.
+</details>
 
 <details>
 <summary>Сессия 1 (04.08.2026) — аудит ТЗ, монорепа. Завершена.</summary>
@@ -79,8 +104,8 @@
   - [x] `src/constants/` (api, evidence, phenomena, replay, strings — юр. оговорка);
   - [x] `src/api/` с заглушками (только реальные данные ТЗ §5 + кейс Актау);
   - [x] `.env.example` с `VITE_API_BASE_URL`; чтение с фолбэком — сборка работает без `.env`.
-- [ ] Каркас трёх колонок + шкала снизу (порядок блоков панели строго по ТЗ §13). ← СЛЕДУЮЩАЯ (сессия 3)
-- [ ] Common-примитивы: `MeasurementValue`, `SourceLink`, `EvidenceLevelBadge`, `InsufficientData`.
+- [x] Каркас трёх колонок + шкала снизу (порядок блоков панели строго по ТЗ §13) — сессия 3, 04.08.2026
+- [ ] Common-примитивы: `MeasurementValue`, `SourceLink`, `EvidenceLevelBadge`, `InsufficientData` + `lib/format.ts`. ← СЛЕДУЮЩАЯ (сессия 4)
 - [ ] Линейная схема реки v1 на сентябрьских данных, числа кликабельны.
 - **Контрольная точка 12 ч:** сентябрьский кейс виден на схеме, каждое число открывает источник.
 

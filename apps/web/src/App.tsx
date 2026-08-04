@@ -1,21 +1,24 @@
-import { Button } from "@/components/ui/button"
+import { AppHeader } from '@/components/layout/AppHeader';
+import { ConclusionPanel } from '@/features/conclusion/ConclusionPanel';
+import { SignalFeed } from '@/features/feed/SignalFeed';
+import { ReplayTimeline } from '@/features/replay/ReplayTimeline';
+import { RiverScheme } from '@/features/river-scheme/RiverScheme';
 
+// Главный экран по ТЗ §13: слева лента, в центре схема реки, справа вывод,
+// внизу шкала реплея. На узких экранах колонки складываются в столбец —
+// мобильная вёрстка по остаточному принципу (план, блок 45–52 ч).
 export function App() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
+    <div className="grid h-svh grid-rows-[auto_minmax(0,1fr)_auto]">
+      <AppHeader />
+      <main className="grid min-h-0 divide-y overflow-y-auto lg:grid-cols-[minmax(260px,320px)_minmax(0,1fr)_minmax(340px,400px)] lg:divide-x lg:divide-y-0 lg:overflow-y-hidden">
+        <SignalFeed />
+        <RiverScheme />
+        <ConclusionPanel />
+      </main>
+      <ReplayTimeline />
     </div>
-  )
+  );
 }
 
 export default App

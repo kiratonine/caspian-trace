@@ -1,4 +1,8 @@
-import { buildStationGraph, detectCycle } from './station-graph'
+import {
+  buildStationGraph,
+  detectCycle,
+  hasVerifiedRelationProvenance,
+} from './station-graph'
 import type { CorridorBounds, InvestigationInput, InvestigationUnknown } from './types'
 
 export function buildUnknowns(
@@ -7,7 +11,7 @@ export function buildUnknowns(
 ): InvestigationUnknown[] {
   const unknowns = [...(input.incident.unknowns ?? [])]
   const graph = buildStationGraph(input.stationRelations)
-  if (input.stationRelations.filter(({ verified }) => verified).length === 0) {
+  if (!input.stationRelations.some(hasVerifiedRelationProvenance)) {
     unknowns.push({
       code: 'STATION_ORDER_UNVERIFIED',
       text: 'Подтверждённый порядок створов отсутствует.',

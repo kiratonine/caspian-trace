@@ -8,11 +8,13 @@ import septemberGolden from '../../../data/fixtures/investigation/september-gold
 import {
   ExactDecimal,
   areMeasurementsComparable,
+  assertConclusionIsAllowed,
   buildStationGraph,
   calculateInputHash,
   computePairedDelta,
   detectCycle,
   evaluatePairedIntervals,
+  isUpstreamOf,
   runInvestigation,
   type InvestigationInput,
   type MeasurementFact,
@@ -83,9 +85,95 @@ describe('station graph', () => {
         basis: 'test cycle',
         verified: true,
         comparisonPair: false,
+        provenance: {
+          fixturePath: 'test-cycle',
+          sourcePage: 1,
+          sourceExcerpt: 'test cycle',
+        },
       },
     ])
     expect(detectCycle(cycle)).toBe(true)
+  })
+
+  it('ignores a relation whose verified flag has no usable provenance', () => {
+    const graph = buildStationGraph([
+      {
+        id: 'relation-without-provenance',
+        upstreamStationId: 'station-a',
+        downstreamStationId: 'station-b',
+        sourceDocumentId: 'source-1',
+        basis: 'test-only relation',
+        verified: true,
+        comparisonPair: true,
+        provenance: undefined,
+      } as unknown as Parameters<typeof buildStationGraph>[0][number],
+    ])
+
+    expect(graph.nodes.size).toBe(0)
+  })
+
+  it('keeps a partial graph partial instead of inventing an order', () => {
+    const graph = buildStationGraph([may.stationRelations[0]!])
+
+    expect(isUpstreamOf('st-asa-0-5km-above', 'st-asa-0-5km-below', graph)).toBe(true)
+    expect(isUpstreamOf('unknown-station', 'st-asa-0-5km-below', graph)).toBeNull()
+  })
+})
+
+describe('safety boundaries', () => {
+  it.each([
+    'Объект виновен.',
+    'Нарушитель установлен.',
+    'Источник установлен.',
+    'Доказано, что предприятие допустило сброс.',
+    'Объект не причастен.',
+  ])('rejects a forbidden conclusion: %s', (conclusion) => {
+    expect(() => assertConclusionIsAllowed(conclusion)).toThrow('Forbidden conclusion wording')
+  })
+
+  it('does not turn an absent OSM location into an exclusion', () => {
+    const result = runInvestigation({
+      ...september,
+      candidateObjects: september.candidateObjects.map((candidate) => ({
+        ...candidate,
+        stationId: null,
+      })),
+    })
+
+    expect(result.objectDispositions.every(({ disposition }) => disposition === 'unknown')).toBe(
+      true,
+    )
+  })
+
+  it('does not raise the level for unverified wave evidence', () => {
+    const result = runInvestigation({
+      ...aktau,
+      signals: aktau.signals.map((signal) => ({
+        ...signal,
+        phenomenon: 'other',
+        excerpt: 'Наблюдалось волнение моря.',
+        verificationStatus: 'unverified',
+      })),
+    })
+
+    expect(result.evidenceLevel).toBe('L0')
+    expect(result.corridorBounds).toBeNull()
+  })
+
+  it('does not treat a conflicting signal as corroboration', () => {
+    const sourceDocumentId = aktau.signals[0]?.sourceDocumentId
+    const result = runInvestigation({
+      ...aktau,
+      sourceDocuments: aktau.sourceDocuments.map((source) =>
+        source.id === sourceDocumentId ? { ...source, official: false, verified: false } : source,
+      ),
+      signals: aktau.signals.map((signal) => ({
+        ...signal,
+        verificationStatus: 'conflicting',
+      })),
+    })
+
+    expect(result.evidenceLevel).toBe('L0')
   })
 })
 

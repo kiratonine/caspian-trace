@@ -1,8 +1,8 @@
 import type { InvestigationInput, InvestigationResult } from './types'
 
 const FORBIDDEN_PATTERNS = [
-  /\bвинов(?:ен|на|ны|ато)\b/iu,
-  /\bнарушител/iu,
+  /(?:^|[^\p{L}])винов(?:ен|на|ны|ато)(?=$|[^\p{L}])/iu,
+  /(?:^|[^\p{L}])нарушител/iu,
   /(?<!не\s)источник установлен/iu,
   /доказано,? что предприятие/iu,
   /объект не причастен/iu,

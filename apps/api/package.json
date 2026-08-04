@@ -8,18 +8,18 @@
   "scripts": {
     "prestart": "npm run build",
     "start": "node dist/main.js",
-    "prestart:dev": "npm run build -w @caspian-trace/contracts",
+    "prestart:dev": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core",
     "start:dev": "nest start --watch",
-    "prebuild": "npm run build -w @caspian-trace/contracts",
+    "prebuild": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core",
     "build": "nest build",
-    "pretypecheck": "npm run build -w @caspian-trace/contracts",
+    "pretypecheck": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"{src,test}/**/*.ts\"",
-    "pretest": "npm run build -w @caspian-trace/contracts",
+    "pretest": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core",
     "test": "jest --runInBand --testPathIgnorePatterns=\\.e2e-spec\\.ts$",
-    "pretest:watch": "npm run build -w @caspian-trace/contracts",
+    "pretest:watch": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core",
     "test:watch": "jest --watch --testPathIgnorePatterns=\\.e2e-spec\\.ts$",
-    "pretest:e2e": "npm run build -w @caspian-trace/contracts",
+    "pretest:e2e": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core",
     "test:e2e": "jest --runInBand --testMatch=\"**/*.e2e-spec.ts\""
   },
   "jest": {
@@ -68,6 +68,7 @@
   },
   "dependencies": {
     "@caspian-trace/contracts": "0.0.1",
+    "@caspian-trace/investigation-core": "0.0.1",
     "@nestjs/common": "^11.1.28",
     "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.1.28",

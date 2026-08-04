@@ -350,29 +350,35 @@ const sigZakonGreenWater: IncidentSignal = {
 // Формулировки утверждений — по «разрешённым выводам» ТЗ §5.
 const esSepFactMax: EvidenceStatement = {
   id: "es-2025-09-fact-max",
+  code: "MAXIMUM_RECORDED_UPSTREAM",
   kind: "supports",
   text: "Максимум нефтепродуктов за сентябрь — 0,234 мг/дм³ — зафиксирован на створе «1 км выше Атырау».",
   measurementIds: [mSep1kmAbove.id],
   sourceDocumentIds: [docKazhydromet202509.id],
   generatedBy: "human_verified",
+  sortOrder: 0,
 }
 
 const esSepFactPair: EvidenceStatement = {
   id: "es-2025-09-fact-pair",
+  code: "NO_LOCAL_INCREASE_IN_PAIR",
   kind: "supports",
   text: "В паре створов у сброса КГП «Атырау су арнасы» значение ниже сброса не увеличилось относительно точки выше: 0,054 против 0,058 мг/дм³.",
   measurementIds: [mSepAsaAbove.id, mSepAsaBelow.id],
   sourceDocumentIds: [docKazhydromet202509.id],
   generatedBy: "human_verified",
+  sortOrder: 1,
 }
 
 const esSepHypAsa: EvidenceStatement = {
   id: "es-2025-09-hyp-asa",
+  code: "MAXIMUM_UPSTREAM_OF_OBJECT",
   kind: "contradicts",
   text: "Локальный интервал возле сброса КГП «Атырау су арнасы» не объясняет максимум 0,234 мг/дм³: максимум расположен выше, а в паре возле сброса рост не зафиксирован. Это не оправдывает объект вообще — он остаётся объектом для проверки ниже себя.",
   measurementIds: [mSep1kmAbove.id, mSepAsaAbove.id, mSepAsaBelow.id],
   sourceDocumentIds: [docKazhydromet202509.id],
   generatedBy: "human_verified",
+  sortOrder: 2,
 }
 
 const invSeptember: Investigation = {
@@ -395,11 +401,13 @@ const invSeptember: Investigation = {
 
 const esMayDelta: EvidenceStatement = {
   id: "es-2025-05-delta",
+  code: "LOCAL_INCREASE_IN_PAIR",
   kind: "supports",
   text: "Внутри парного интервала у сброса КГП «Атырау су арнасы» в мае зарегистрирован рост концентрации на 0,079 мг/дм³: 0,114 мг/дм³ выше сброса и 0,193 мг/дм³ ниже.",
   measurementIds: [mMayAsaAbove.id, mMayAsaBelow.id],
   sourceDocumentIds: [docKazhydromet202505.id],
   generatedBy: "human_verified",
+  sortOrder: 0,
 }
 
 const invMay: Investigation = {

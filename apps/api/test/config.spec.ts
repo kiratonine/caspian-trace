@@ -63,4 +63,24 @@ describe('platform environment validation', () => {
       validateFutureIntegrationEnvironment({ [key]: value }),
     ).toThrow()
   })
+
+  it('requires a Gemini key only when the Gemini provider is enabled', () => {
+    expect(() =>
+      validateFutureIntegrationEnvironment({ LLM_PROVIDER: 'gemini' }),
+    ).toThrow()
+    expect(
+      validateFutureIntegrationEnvironment({ LLM_PROVIDER: 'disabled' }),
+    ).toEqual({ LLM_PROVIDER: 'disabled' })
+    expect(
+      validateFutureIntegrationEnvironment({
+        LLM_PROVIDER: 'gemini',
+        GEMINI_API_KEY: 'test-key',
+        GEMINI_MODEL: 'gemini-test-model',
+      }),
+    ).toEqual({
+      LLM_PROVIDER: 'gemini',
+      GEMINI_API_KEY: 'test-key',
+      GEMINI_MODEL: 'gemini-test-model',
+    })
+  })
 })

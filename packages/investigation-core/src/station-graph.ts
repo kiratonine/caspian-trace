@@ -5,7 +5,7 @@ export function buildStationGraph(relations: readonly StationRelationFact[]): St
   const incoming = new Map<string, Set<string>>()
   const nodes = new Set<string>()
   for (const relation of relations) {
-    if (!relation.verified) continue
+    if (!hasVerifiedRelationProvenance(relation)) continue
     nodes.add(relation.upstreamStationId)
     nodes.add(relation.downstreamStationId)
     addEdge(outgoing, relation.upstreamStationId, relation.downstreamStationId)
@@ -14,6 +14,18 @@ export function buildStationGraph(relations: readonly StationRelationFact[]): St
     ensureNode(incoming, relation.upstreamStationId)
   }
   return { nodes, outgoing, incoming }
+}
+
+export function hasVerifiedRelationProvenance(relation: StationRelationFact): boolean {
+  const provenance = relation.provenance
+  return Boolean(
+    relation.verified &&
+      provenance &&
+      provenance.fixturePath.trim() &&
+      Number.isInteger(provenance.sourcePage) &&
+      provenance.sourcePage > 0 &&
+      provenance.sourceExcerpt.trim(),
+  )
 }
 
 export function detectCycle(graph: StationGraph): boolean {

@@ -29,9 +29,20 @@ export const FutureIntegrationEnvironmentSchema = z
     HTTP_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
     HTTP_MAX_BYTES: z.coerce.number().int().positive().optional(),
     GDELT_CACHE_TTL_SECONDS: z.coerce.number().int().nonnegative().optional(),
-    LLM_PROVIDER: z.string().trim().min(1).optional(),
+    LLM_PROVIDER: z.enum(['disabled', 'gemini']).optional(),
+    GEMINI_API_KEY: z.string().trim().min(1).optional(),
+    GEMINI_MODEL: z.string().trim().min(1).optional(),
   })
   .strict()
+  .superRefine(({ LLM_PROVIDER, GEMINI_API_KEY }, context) => {
+    if (LLM_PROVIDER === 'gemini' && GEMINI_API_KEY === undefined) {
+      context.addIssue({
+        code: 'custom',
+        message: 'GEMINI_API_KEY is required when LLM_PROVIDER=gemini',
+        path: ['GEMINI_API_KEY'],
+      })
+    }
+  })
 
 const futureIntegrationEnvironmentKeys = [
   'DATABASE_URL',
@@ -44,6 +55,8 @@ const futureIntegrationEnvironmentKeys = [
   'HTTP_MAX_BYTES',
   'GDELT_CACHE_TTL_SECONDS',
   'LLM_PROVIDER',
+  'GEMINI_API_KEY',
+  'GEMINI_MODEL',
 ] as const
 
 export type PlatformEnvironment = z.infer<typeof PlatformEnvironmentSchema>

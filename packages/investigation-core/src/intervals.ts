@@ -1,6 +1,7 @@
 import { ExactDecimal } from './decimal'
 import { areMeasurementsComparable, computePairedDelta } from './comparison'
 import { normalizeIndicatorName } from './normalize'
+import { hasVerifiedRelationProvenance } from './station-graph'
 import type { InvestigationInput, IntervalEvaluation, MeasurementFact } from './types'
 
 export function findEventMaximum(input: InvestigationInput): MeasurementFact | null {
@@ -33,7 +34,7 @@ export function evaluatePairedIntervals(input: InvestigationInput): IntervalEval
     for (const upstream of upstreamMeasurements) {
       for (const downstream of downstreamMeasurements) {
         const comparison = areMeasurementsComparable(upstream, downstream, {
-          relationVerified: relation.verified,
+          relationVerified: hasVerifiedRelationProvenance(relation),
           sourceDocuments: input.sourceDocuments,
         })
         if (!comparison.comparable) continue

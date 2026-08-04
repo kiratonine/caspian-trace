@@ -62,11 +62,13 @@ export function toCandidateObject(candidate: CandidateObjectFact): CandidateObje
 export function toEvidenceStatement(statement: CoreEvidenceStatement): EvidenceStatement {
   return {
     id: statement.id,
+    code: statement.code,
     kind: statement.kind,
     text: statement.text,
     measurementIds: statement.measurementIds,
     sourceDocumentIds: statement.sourceDocumentIds,
     generatedBy: 'rule_engine',
+    sortOrder: statement.sortOrder,
   }
 }
 

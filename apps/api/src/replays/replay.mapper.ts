@@ -3,6 +3,8 @@ import { ReplayScenarioSchema, type ReplayScenario } from '@caspian-trace/contra
 import { toIncidentSignal, toMeasurement } from '../investigations/evidence.mapper'
 import type { StoredInvestigation } from '../investigations/investigation.ports'
 
+const REPLAY_STEP_INTERVAL_MS = 5_000
+
 export function toReplayScenario(stored: StoredInvestigation): ReplayScenario {
   const signal = stored.input.signals[0]
   const primarySource = stored.input.sourceDocuments.find(
@@ -16,9 +18,9 @@ export function toReplayScenario(stored: StoredInvestigation): ReplayScenario {
       id: `${stored.investigationId}-signal`,
       offsetMs,
       type: 'signal',
-      payload: { signal: toIncidentSignal(signal), evidenceLevel: 'L1' },
+      payload: { signal: toIncidentSignal(signal), evidenceLevel: 'L0' },
     })
-    offsetMs += 1200
+    offsetMs += REPLAY_STEP_INTERVAL_MS
   }
   if (primarySource !== undefined) {
     steps.push({
@@ -28,10 +30,10 @@ export function toReplayScenario(stored: StoredInvestigation): ReplayScenario {
       payload: {
         text: `Источник «${primarySource.title}» включён в доказательную базу.`,
         sourceDocumentId: primarySource.id,
-        evidenceLevel: signal === undefined ? 'L1' : 'L2',
+        evidenceLevel: 'L1',
       },
     })
-    offsetMs += 1200
+    offsetMs += REPLAY_STEP_INTERVAL_MS
   }
   if (stored.input.measurements.length > 0) {
     steps.push({
@@ -40,10 +42,10 @@ export function toReplayScenario(stored: StoredInvestigation): ReplayScenario {
       type: 'measurement',
       payload: {
         measurements: stored.input.measurements.map(toMeasurement),
-        evidenceLevel: 'L2',
+        evidenceLevel: 'L1',
       },
     })
-    offsetMs += 1200
+    offsetMs += REPLAY_STEP_INTERVAL_MS
   }
   for (const statement of [
     ...stored.result.supportedFacts,
@@ -55,7 +57,7 @@ export function toReplayScenario(stored: StoredInvestigation): ReplayScenario {
       type: 'inference',
       payload: { text: statement.text, evidenceLevel: stored.result.evidenceLevel },
     })
-    offsetMs += 1200
+    offsetMs += REPLAY_STEP_INTERVAL_MS
   }
   steps.push({
     id: `${stored.investigationId}-conclusion`,

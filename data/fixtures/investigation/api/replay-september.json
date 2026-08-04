@@ -1,0 +1,139 @@
+{
+  "id": "inv-atyrau-2025-09",
+  "incidentId": "inv-atyrau-2025-09",
+  "steps": [
+    {
+      "id": "inv-atyrau-2025-09-signal",
+      "offsetMs": 0,
+      "type": "signal",
+      "payload": {
+        "signal": {
+          "id": "sig-zakon-green-water",
+          "title": "Необычная зелёная окраска воды в Жайыке",
+          "observedAt": null,
+          "observedPeriod": "2025-09",
+          "reportedAt": "2025-09-09T15:16:00+05:00",
+          "location": null,
+          "locationText": "река Жайык, Атырау",
+          "phenomenon": "color_change",
+          "excerpt": "Жителей Атырау встревожила необычная зеленая окраска воды",
+          "sourceDocumentId": "doc-zakon-green-water",
+          "extractionMode": "verified_seed",
+          "verificationStatus": "corroborated"
+        },
+        "evidenceLevel": "L0"
+      }
+    },
+    {
+      "id": "inv-atyrau-2025-09-corroboration",
+      "offsetMs": 5000,
+      "type": "corroboration",
+      "payload": {
+        "text": "Источник «Необычная зелёная вода в Жайыке» включён в доказательную базу.",
+        "sourceDocumentId": "doc-zakon-green-water",
+        "evidenceLevel": "L1"
+      }
+    },
+    {
+      "id": "inv-atyrau-2025-09-measurements",
+      "offsetMs": 10000,
+      "type": "measurement",
+      "payload": {
+        "measurements": [
+          {
+            "id": "m-2025-09-1km-above-atyrau",
+            "stationId": "st-zhaiyk-1km-above-atyrau",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.234,
+            "rawValueText": "0,234",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": "1 км выше г.Атырау 5 класс Нефтепродукты – 0,234 мг/дм3",
+            "verified": true
+          },
+          {
+            "id": "m-2025-09-asa-above",
+            "stationId": "st-asa-0-5km-above",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.058,
+            "rawValueText": "0,058",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": "Нефтепродукты – 0,058 мг/дм3",
+            "verified": true
+          },
+          {
+            "id": "m-2025-09-asa-below",
+            "stationId": "st-asa-0-5km-below",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.054,
+            "rawValueText": "0,054",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": "Нефтепродукты – 0,054 мг/дм3",
+            "verified": true
+          },
+          {
+            "id": "m-2025-09-1km-below-atyrau",
+            "stationId": "st-zhaiyk-1km-below-atyrau",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.167,
+            "rawValueText": "0,167",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": "1 км ниже г.Атырау 4 класс Нефтепродукты – 0,167 мг/дм3",
+            "verified": true
+          }
+        ],
+        "evidenceLevel": "L1"
+      }
+    },
+    {
+      "id": "inv-atyrau-2025-09-inference-evidence-no-increase-rel-sep-asa-pair",
+      "offsetMs": 15000,
+      "type": "inference",
+      "payload": {
+        "text": "В сопоставимой паре изменение составляет -0,004 мг/дм³; эта пара не подтверждает дополнительное поступление внутри интервала в данном временном срезе.",
+        "evidenceLevel": "L2"
+      }
+    },
+    {
+      "id": "inv-atyrau-2025-09-inference-evidence-maximum-upstream-obj-atyrau-su-arnasy",
+      "offsetMs": 20000,
+      "type": "inference",
+      "payload": {
+        "text": "Объект для проверки «КГП «Атырау су арнасы»» расположен ниже максимального вышележащего измерения и не объясняет этот максимум обычным переносом вниз по течению. Это не оценивает другие события или участки ниже объекта.",
+        "evidenceLevel": "L2"
+      }
+    },
+    {
+      "id": "inv-atyrau-2025-09-conclusion",
+      "offsetMs": 25000,
+      "type": "conclusion",
+      "payload": {
+        "text": "Источник не установлен. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
+        "evidenceLevel": "L2"
+      }
+    }
+  ]
+}

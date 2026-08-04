@@ -56,6 +56,34 @@ describe('InvestigationsService', () => {
     const service = new InvestigationsService(repository, repository)
     await expect(service.recompute('missing')).rejects.toMatchObject({ status: 404 })
   })
+
+  it('keeps the current version unchanged when an atomic save fails', async () => {
+    const repository = new FileInvestigationRepository()
+    const initial = await repository.loadInput('inv-atyrau-2025-05')
+    expect(initial).not.toBeNull()
+    const firstResult = await new InvestigationsService(
+      repository,
+      repository,
+    ).recompute(initial!.incident.id)
+    const invalidChangedInput = {
+      ...initial!,
+      incident: { ...initial!.incident, title: `${initial!.incident.title} changed` },
+      uncloneable: (): void => undefined,
+    } as unknown as InvestigationInput
+
+    await expect(
+      Promise.resolve().then(() =>
+        repository.saveVersioned(
+          initial!.incident.id,
+          invalidChangedInput,
+          { ...firstResult.result, inputHash: 'a'.repeat(64) },
+        ),
+      ),
+    ).rejects.toThrow()
+    await expect(repository.findCurrent(initial!.incident.id)).resolves.toEqual(
+      firstResult,
+    )
+  })
 })
 
 class MutableReader implements InvestigationInputReader {

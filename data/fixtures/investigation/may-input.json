@@ -6,7 +6,20 @@
     { "id": "st-asa-0-5km-below", "name": "0,5 км ниже сброса КГП «Атырау су арнасы»", "waterBody": "Жайык" }
   ],
   "stationRelations": [
-    { "id": "rel-may-asa-pair", "upstreamStationId": "st-asa-0-5km-above", "downstreamStationId": "st-asa-0-5km-below", "sourceDocumentId": "doc-kazhydromet-2025-05", "basis": "Официальная парная маркировка выше/ниже одного сброса", "verified": true, "comparisonPair": true }
+    {
+      "id": "rel-may-asa-pair",
+      "upstreamStationId": "st-asa-0-5km-above",
+      "downstreamStationId": "st-asa-0-5km-below",
+      "sourceDocumentId": "doc-kazhydromet-2025-05",
+      "basis": "Официальная парная маркировка выше/ниже одного сброса",
+      "verified": true,
+      "comparisonPair": true,
+      "provenance": {
+        "fixturePath": "data/verified/atyrau-2025-05-station-relations.json",
+        "sourcePage": 24,
+        "sourceExcerpt": "Официальная парная маркировка: 0,5 км выше и 0,5 км ниже одного сброса КГП «Атырау су арнасы»."
+      }
+    }
   ],
   "measurements": [
     { "id": "m-2025-05-asa-above", "stationId": "st-asa-0-5km-above", "indicator": "нефтепродукты", "matrix": "water", "value": "0.114", "rawValueText": "0,114", "unit": "mg/dm3", "sampledAt": null, "sampledPeriod": "2025-05", "sourceDocumentId": "doc-kazhydromet-2025-05", "sourcePage": 24, "sourceExcerpt": "Нефтепродукты – 0,114 мг/дм3", "verified": true },

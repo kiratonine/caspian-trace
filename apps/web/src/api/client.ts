@@ -5,7 +5,7 @@ import { API_BASE_URL } from "@/constants/api"
 
 type QueryParams = Record<string, string | number | undefined>
 
-function buildUrl(path: string, params?: QueryParams): URL {
+export function buildApiUrl(path: string, params?: QueryParams): URL {
   const url = new URL(`${API_BASE_URL}${path}`, window.location.origin)
   if (params) {
     for (const [key, value] of Object.entries(params)) {
@@ -19,13 +19,13 @@ export async function apiGet<T>(
   path: string,
   params?: QueryParams
 ): Promise<T> {
-  const response = await fetch(buildUrl(path, params))
+  const response = await fetch(buildApiUrl(path, params))
   if (!response.ok) throw new Error(`GET ${path}: HTTP ${response.status}`)
   return (await response.json()) as T
 }
 
 export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  const response = await fetch(buildUrl(path), {
+  const response = await fetch(buildApiUrl(path), {
     method: "POST",
     headers:
       body === undefined ? undefined : { "Content-Type": "application/json" },
@@ -33,6 +33,17 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   })
   if (!response.ok) throw new Error(`POST ${path}: HTTP ${response.status}`)
   return (await response.json()) as T
+}
+
+export async function apiDownload(
+  path: string,
+  params?: QueryParams
+): Promise<{ blob: Blob; filename: string }> {
+  const response = await fetch(buildApiUrl(path, params))
+  if (!response.ok) throw new Error(`GET ${path}: HTTP ${response.status}`)
+  const disposition = response.headers.get("content-disposition") ?? ""
+  const filename = /filename="([^"]+)"/i.exec(disposition)?.[1] ?? "dossier"
+  return { blob: await response.blob(), filename }
 }
 
 // Разовый warn на заглушку — на интеграции забытые заглушки видны в консоли

@@ -34,7 +34,12 @@
       "sourceDocumentId": "doc-kazhydromet-2025-09",
       "basis": "Названия створов в приложении 2: 1 км выше города и 0,5 км выше городского сброса",
       "verified": true,
-      "comparisonPair": false
+      "comparisonPair": false,
+      "provenance": {
+        "fixturePath": "data/verified/atyrau-2025-09-station-relations.json",
+        "sourcePage": 22,
+        "sourceExcerpt": "Реконструкция последовательности строк официальной таблицы: 1 км выше г. Атырау; г. Атырау, 0,5 км выше сброса КГП «Атырау су арнасы»."
+      }
     },
     {
       "id": "rel-sep-asa-pair",
@@ -43,7 +48,12 @@
       "sourceDocumentId": "doc-kazhydromet-2025-09",
       "basis": "Официальная парная маркировка выше/ниже одного сброса",
       "verified": true,
-      "comparisonPair": true
+      "comparisonPair": true,
+      "provenance": {
+        "fixturePath": "data/verified/atyrau-2025-09-station-relations.json",
+        "sourcePage": 22,
+        "sourceExcerpt": "Официальная парная маркировка: 0,5 км выше и 0,5 км ниже одного сброса КГП «Атырау су арнасы»."
+      }
     },
     {
       "id": "rel-sep-asa-below-to-city-below",
@@ -52,7 +62,12 @@
       "sourceDocumentId": "doc-kazhydromet-2025-09",
       "basis": "Названия створов в приложении 2",
       "verified": true,
-      "comparisonPair": false
+      "comparisonPair": false,
+      "provenance": {
+        "fixturePath": "data/verified/atyrau-2025-09-station-relations.json",
+        "sourcePage": 22,
+        "sourceExcerpt": "Реконструкция последовательности строк официальной таблицы: 0,5 км ниже сброса КГП «Атырау су арнасы»; 1 км ниже г. Атырау."
+      }
     }
   ],
   "measurements": [

@@ -23,5 +23,15 @@ describe('ReplaysService', () => {
       [...second.steps].map(({ offsetMs }) => offsetMs).sort((a, b) => a - b),
     )
     expect(second.steps.at(-1)?.type).toBe('conclusion')
+    expect(second.steps.at(-1)?.offsetMs).toBeGreaterThanOrEqual(25_000)
+    expect(second.steps.at(-1)?.offsetMs).toBeLessThanOrEqual(30_000)
+    expect(
+      second.steps.slice(0, 3).map(({ payload }) => payload.evidenceLevel),
+    ).toEqual(['L0', 'L1', 'L1'])
+    expect(
+      second.steps
+        .filter(({ type }) => type === 'inference')
+        .every(({ payload }) => payload.evidenceLevel === 'L2'),
+    ).toBe(true)
   })
 })

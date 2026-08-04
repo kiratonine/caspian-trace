@@ -59,6 +59,11 @@ export type StationRelationFact = {
   basis: string
   verified: boolean
   comparisonPair: boolean
+  provenance: {
+    fixturePath: string
+    sourcePage: number
+    sourceExcerpt: string
+  }
 }
 
 export type MeasurementFact = {

@@ -16,17 +16,31 @@ import type {
 import { REPLAY_STEP_OFFSETS_MS } from "@/constants/replay"
 
 // Данные заглушек src/api/*. Все числа, даты, URL и формулировки — из ТЗ
-// (§5 значения, §7.4 публикации, §10 даты сентябрьского сигнала, §14 сценарий).
-// Ничего не выдумано: неизвестная дата — null, неподтверждённая страница — 0,
-// невычисленный sha256 — ''. riverOrder везде null — порядок створов не
-// подтверждён командой (вопрос 1 плана); sourceExcerpt измерений — реконструкция
-// строки таблицы из значений ТЗ §5, дословную цитату бюллетеня отдаст бэк.
-
-// Дата внесения verified_seed (не дата наблюдений).
+// (§5 значения, §7.4 публикации, §10 сентябрьский сигнал) и из фикстур
+// `packages/contracts/fixtures/*` — последние приоритетнее там, где расходятся:
+// контракт и оценки уровней принадлежат бэку (запрет 6 CLAUDE.md).
+//
+// Сессия 13 привела сид к утверждённым схемам пакета. Что изменилось по
+// сравнению с нашим прежним сидом и почему:
+//   • документы: `fetchedAt: null`, `sha256: null`, `status: 'unverified'` —
+//     схема запрещает `verified` без обоих полей provenance, а файлы бюллетеней
+//     мы не скачивали и не хэшировали;
+//   • измерения: `sourceExcerpt: null` + `verified: false` — прежняя «цитата»
+//     была нашей реконструкцией строки таблицы, а схема требует под `verified`
+//     настоящую выдержку из документа;
+//   • створы: `relationType: 'neutral'`, `relatedObjectId: null`,
+//     `locationSourceDocumentId: null` — связи створов с объектами не
+//     подтверждены provenance (это работа Backend 2), а схема требует документ
+//     местоположения ровно тогда, когда есть координаты;
+//   • сентябрь: L1 вместо L2, без коридора и без опровергнутой версии —
+//     пространственный вывод держится на порядке створов, который не
+//     верифицирован (вопрос 1). Вернётся, когда придёт `riverOrder`.
 const SEEDED_AT = "2026-08-04T00:00:00+05:00"
 
 // --- Документы-источники -----------------------------------------------------
 
+// `fetchedAt`/`sha256` заполнит бэк, когда скачает и захэширует файл; до тех пор
+// документ по схеме `unverified` — «мы знаем адрес», а не «мы проверили файл».
 const docKazhydromet202509: SourceDocument = {
   id: "doc-kazhydromet-2025-09",
   title:
@@ -34,11 +48,11 @@ const docKazhydromet202509: SourceDocument = {
   publisher: "РГП «Казгидромет»",
   url: "https://www.kazhydromet.kz/uploads/files_calendar/9344/file/68f0e81dcc3caatyrau-russ-byulleten-za-sentyabr-2025g.pdf",
   publishedAt: null,
-  fetchedAt: SEEDED_AT,
+  fetchedAt: null,
   contentType: "pdf",
-  sha256: "", // вычислит бэк при скачивании файла
+  sha256: null,
   cachePath: null,
-  status: "verified",
+  status: "unverified",
 }
 
 const docKazhydromet202505: SourceDocument = {
@@ -48,11 +62,11 @@ const docKazhydromet202505: SourceDocument = {
   publisher: "РГП «Казгидромет»",
   url: "https://www.kazhydromet.kz/uploads/files_calendar/8606/file/6850158c0099catyrau-russ-byulleten-za-may-2025g.pdf",
   publishedAt: null,
-  fetchedAt: SEEDED_AT,
+  fetchedAt: null,
   contentType: "pdf",
-  sha256: "",
+  sha256: null,
   cachePath: null,
-  status: "verified",
+  status: "unverified",
 }
 
 const docZakonGreenWater: SourceDocument = {
@@ -61,11 +75,11 @@ const docZakonGreenWater: SourceDocument = {
   publisher: "Zakon.kz",
   url: "https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html",
   publishedAt: "2025-09-09T15:16:00+05:00", // ТЗ §10, reportedAt примера
-  fetchedAt: SEEDED_AT,
+  fetchedAt: null,
   contentType: "html",
-  sha256: "",
+  sha256: null,
   cachePath: null,
-  status: "verified",
+  status: "unverified",
 }
 
 const docKazinformWastewater: SourceDocument = {
@@ -74,11 +88,11 @@ const docKazinformWastewater: SourceDocument = {
   publisher: "Kazinform",
   url: "https://www.inform.kz/ru/v-stochnih-vodah-atirau-obnaruzheni-ostatki-nefteproduktov-adef40",
   publishedAt: null,
-  fetchedAt: SEEDED_AT,
+  fetchedAt: null,
   contentType: "html",
-  sha256: "",
+  sha256: null,
   cachePath: null,
-  status: "verified",
+  status: "unverified",
 }
 
 const docAkZhaiykOilFilm: SourceDocument = {
@@ -87,11 +101,11 @@ const docAkZhaiykOilFilm: SourceDocument = {
   publisher: "Газета «Ак Жайык»",
   url: "https://azh.kz/ru/news/view/120575",
   publishedAt: null,
-  fetchedAt: SEEDED_AT,
+  fetchedAt: null,
   contentType: "html",
-  sha256: "",
+  sha256: null,
   cachePath: null,
-  status: "verified",
+  status: "unverified",
 }
 
 // --- Объекты для проверки (никогда не «виновники») ---------------------------
@@ -120,82 +134,49 @@ const objSturgeonPlant: CandidateObject = {
 
 // --- Створы ------------------------------------------------------------------
 
-const stZhaiyk1kmAboveAtyrau: Station = {
-  id: "st-zhaiyk-1km-above-atyrau",
-  name: "1 км выше Атырау",
-  waterBody: "Жайык",
-  location: null,
-  riverOrder: null,
-  relationType: "neutral", // положение задано относительно города, а не объекта проверки
-  relatedObjectId: null,
-  locationSourceDocumentId: docKazhydromet202509.id,
+// Связи створов с объектами (`relationType`, `relatedObjectId`) читаются из
+// подписей бюллетеня, но provenance под них ещё не собран, поэтому в сиде они
+// нейтральны: фикстуры пакета задают ровно такую планку, а «выше/ниже сброса»
+// в названии створа остаётся видимым текстом, а не машинным утверждением.
+function station(id: string, name: string): Station {
+  return {
+    id,
+    name,
+    waterBody: "Жайык",
+    location: null, // координаты не подтверждены (ТЗ §17)
+    riverOrder: null, // порядок створов не подтверждён (вопрос 1)
+    relationType: "neutral",
+    relatedObjectId: null,
+    // Схема требует документ местоположения ровно тогда, когда есть координаты.
+    locationSourceDocumentId: null,
+  }
 }
 
-const stAsa05kmAbove: Station = {
-  id: "st-asa-0-5km-above",
-  name: "0,5 км выше сброса КГП «Атырау су арнасы»",
-  waterBody: "Жайык",
-  location: null,
-  riverOrder: null,
-  relationType: "upstream",
-  relatedObjectId: objAtyrauSuArnasy.id,
-  locationSourceDocumentId: docKazhydromet202509.id,
-}
-
-const stAsa05kmBelow: Station = {
-  id: "st-asa-0-5km-below",
-  name: "0,5 км ниже сброса КГП «Атырау су арнасы»",
-  waterBody: "Жайык",
-  location: null,
-  riverOrder: null,
-  relationType: "downstream",
-  relatedObjectId: objAtyrauSuArnasy.id,
-  locationSourceDocumentId: docKazhydromet202509.id,
-}
-
-const stZhaiyk1kmBelowAtyrau: Station = {
-  id: "st-zhaiyk-1km-below-atyrau",
-  name: "1 км ниже Атырау",
-  waterBody: "Жайык",
-  location: null,
-  riverOrder: null,
-  relationType: "neutral",
-  relatedObjectId: null,
-  locationSourceDocumentId: docKazhydromet202509.id,
-}
-
-const stSturgeon05kmAbove: Station = {
-  id: "st-sturgeon-0-5km-above",
-  name: "0,5 км выше осетрового завода",
-  waterBody: "Жайык",
-  location: null,
-  riverOrder: null,
-  relationType: "upstream",
-  relatedObjectId: objSturgeonPlant.id,
-  locationSourceDocumentId: docKazhydromet202509.id,
-}
-
-const stSturgeon3kmBelow: Station = {
-  id: "st-sturgeon-3km-below",
-  name: "3 км ниже осетрового завода",
-  waterBody: "Жайык",
-  location: null,
-  riverOrder: null,
-  relationType: "downstream",
-  relatedObjectId: objSturgeonPlant.id,
-  locationSourceDocumentId: docKazhydromet202509.id,
-}
-
-const stDamba: Station = {
-  id: "st-damba",
-  name: "посёлок Дамба",
-  waterBody: "Жайык",
-  location: null,
-  riverOrder: null,
-  relationType: "neutral",
-  relatedObjectId: null,
-  locationSourceDocumentId: docKazhydromet202509.id,
-}
+const stZhaiyk1kmAboveAtyrau = station(
+  "st-zhaiyk-1km-above-atyrau",
+  "1 км выше Атырау"
+)
+const stAsa05kmAbove = station(
+  "st-asa-0-5km-above",
+  "0,5 км выше сброса КГП «Атырау су арнасы»"
+)
+const stAsa05kmBelow = station(
+  "st-asa-0-5km-below",
+  "0,5 км ниже сброса КГП «Атырау су арнасы»"
+)
+const stZhaiyk1kmBelowAtyrau = station(
+  "st-zhaiyk-1km-below-atyrau",
+  "1 км ниже Атырау"
+)
+const stSturgeon05kmAbove = station(
+  "st-sturgeon-0-5km-above",
+  "0,5 км выше осетрового завода"
+)
+const stSturgeon3kmBelow = station(
+  "st-sturgeon-3km-below",
+  "3 км ниже осетрового завода"
+)
+const stDamba = station("st-damba", "посёлок Дамба")
 
 const septemberStations: Station[] = [
   stZhaiyk1kmAboveAtyrau,
@@ -217,7 +198,7 @@ const MAY_2025 = "2025-05"
 
 function measurement(
   id: string,
-  station: Station,
+  stationId: string,
   sampledPeriod: string,
   value: number,
   sourceDocumentId: string,
@@ -225,17 +206,23 @@ function measurement(
 ): Measurement {
   return {
     id,
-    stationId: station.id,
+    stationId,
     // Точной даты отбора в бюллетенях нет — известен только месяц.
     sampledAt: null,
     sampledPeriod,
     indicator: "нефтепродукты",
     value,
+    // Как число напечатано в таблице бюллетеня — с десятичной запятой.
+    rawValueText: value.toLocaleString("ru-RU"),
     unit: "mg/dm3",
     matrix: "water",
+    qualityClass: null, // класс качества в таблице §5 не приведён
     sourceDocumentId,
     sourcePage,
-    sourceExcerpt: `Нефтепродукты, ${station.name}: ${value.toLocaleString("ru-RU")} мг/дм³`,
+    // Дословную выдержку из PDF отдаст бэк при разборе документа; до тех пор
+    // измерение по схеме не «verified» — наша реконструкция строки цитатой не была.
+    sourceExcerpt: null,
+    verified: false,
   }
 }
 
@@ -244,7 +231,7 @@ const MAY_PAGE = null // страница бюллетеня не перепро
 
 const mSep1kmAbove = measurement(
   "m-2025-09-1km-above-atyrau",
-  stZhaiyk1kmAboveAtyrau,
+  stZhaiyk1kmAboveAtyrau.id,
   SEPTEMBER_2025,
   0.234,
   docKazhydromet202509.id,
@@ -252,7 +239,7 @@ const mSep1kmAbove = measurement(
 )
 const mSepAsaAbove = measurement(
   "m-2025-09-asa-above",
-  stAsa05kmAbove,
+  stAsa05kmAbove.id,
   SEPTEMBER_2025,
   0.058,
   docKazhydromet202509.id,
@@ -260,7 +247,7 @@ const mSepAsaAbove = measurement(
 )
 const mSepAsaBelow = measurement(
   "m-2025-09-asa-below",
-  stAsa05kmBelow,
+  stAsa05kmBelow.id,
   SEPTEMBER_2025,
   0.054,
   docKazhydromet202509.id,
@@ -268,7 +255,7 @@ const mSepAsaBelow = measurement(
 )
 const mSep1kmBelow = measurement(
   "m-2025-09-1km-below-atyrau",
-  stZhaiyk1kmBelowAtyrau,
+  stZhaiyk1kmBelowAtyrau.id,
   SEPTEMBER_2025,
   0.167,
   docKazhydromet202509.id,
@@ -276,7 +263,7 @@ const mSep1kmBelow = measurement(
 )
 const mSepSturgeonAbove = measurement(
   "m-2025-09-sturgeon-above",
-  stSturgeon05kmAbove,
+  stSturgeon05kmAbove.id,
   SEPTEMBER_2025,
   0.066,
   docKazhydromet202509.id,
@@ -284,7 +271,7 @@ const mSepSturgeonAbove = measurement(
 )
 const mSepSturgeonBelow = measurement(
   "m-2025-09-sturgeon-below",
-  stSturgeon3kmBelow,
+  stSturgeon3kmBelow.id,
   SEPTEMBER_2025,
   0.063,
   docKazhydromet202509.id,
@@ -292,7 +279,7 @@ const mSepSturgeonBelow = measurement(
 )
 const mSepDamba = measurement(
   "m-2025-09-damba",
-  stDamba,
+  stDamba.id,
   SEPTEMBER_2025,
   0.067,
   docKazhydromet202509.id,
@@ -301,7 +288,7 @@ const mSepDamba = measurement(
 
 const mMayAsaAbove = measurement(
   "m-2025-05-asa-above",
-  stAsa05kmAbove,
+  stAsa05kmAbove.id,
   MAY_2025,
   0.114,
   docKazhydromet202505.id,
@@ -309,7 +296,7 @@ const mMayAsaAbove = measurement(
 )
 const mMayAsaBelow = measurement(
   "m-2025-05-asa-below",
-  stAsa05kmBelow,
+  stAsa05kmBelow.id,
   MAY_2025,
   0.193,
   docKazhydromet202505.id,
@@ -330,15 +317,14 @@ const mayMeasurements: Measurement[] = [mMayAsaAbove, mMayAsaBelow]
 
 // --- Сигналы -----------------------------------------------------------------
 
-// Даты и цитата — из примера ТЗ §10 (verified_seed).
+// Даты, цитата и статус проверки — из фикстуры `incident-september.json`.
+// Статус `corroborated`, а не `official`: официальный первоисточник — бюллетень
+// Казгидромета, а публикация Zakon.kz его пересказывает.
 const sigZakonGreenWater: IncidentSignal = {
   id: "sig-zakon-green-water",
   title: "Необычная зелёная окраска воды в Жайыке",
-  // ТЗ §10: дата наблюдения известна, неточным помечено только время
-  // (`uncertainFields: ['observedAtTime']`) — поэтому период не нужен,
-  // а на экране показывается день без часов.
-  observedAt: "2025-09-01T00:00:00+05:00",
-  observedPeriod: null,
+  observedAt: null,
+  observedPeriod: SEPTEMBER_2025,
   reportedAt: "2025-09-09T15:16:00+05:00",
   location: null,
   locationText: "река Жайык, Атырау",
@@ -346,35 +332,19 @@ const sigZakonGreenWater: IncidentSignal = {
   excerpt: "Жителей Атырау встревожила необычная зеленая окраска воды",
   sourceDocumentId: docZakonGreenWater.id,
   extractionMode: "verified_seed",
-  verificationStatus: "official", // подтверждено официальными результатами 15 проб (§7.4)
+  verificationStatus: "corroborated",
 }
 
 // --- Расследования -----------------------------------------------------------
 
-// Формулировки утверждений — по «разрешённым выводам» ТЗ §5.
-const esSepFactMax: EvidenceStatement = {
+// Утверждение сентября — дословно из фикстуры: фиксация значения на створе,
+// без слова «максимум». Утверждение о максимуме — это уже сравнение створов
+// между собой, а сравнивать их нельзя, пока порядок не подтверждён.
+const esSepFact: EvidenceStatement = {
   id: "es-2025-09-fact-max",
   kind: "supports",
-  text: "Максимум нефтепродуктов за сентябрь — 0,234 мг/дм³ — зафиксирован на створе «1 км выше Атырау».",
+  text: "На створе «1 км выше Атырау» за сентябрь зафиксировано 0,234 мг/дм³ нефтепродуктов.",
   measurementIds: [mSep1kmAbove.id],
-  sourceDocumentIds: [docKazhydromet202509.id],
-  generatedBy: "human_verified",
-}
-
-const esSepFactPair: EvidenceStatement = {
-  id: "es-2025-09-fact-pair",
-  kind: "supports",
-  text: "В паре створов у сброса КГП «Атырау су арнасы» значение ниже сброса не увеличилось относительно точки выше: 0,054 против 0,058 мг/дм³.",
-  measurementIds: [mSepAsaAbove.id, mSepAsaBelow.id],
-  sourceDocumentIds: [docKazhydromet202509.id],
-  generatedBy: "human_verified",
-}
-
-const esSepHypAsa: EvidenceStatement = {
-  id: "es-2025-09-hyp-asa",
-  kind: "contradicts",
-  text: "Локальный интервал возле сброса КГП «Атырау су арнасы» не объясняет максимум 0,234 мг/дм³: максимум расположен выше, а в паре возле сброса рост не зафиксирован. Это не оправдывает объект вообще — он остаётся объектом для проверки ниже себя.",
-  measurementIds: [mSep1kmAbove.id, mSepAsaAbove.id, mSepAsaBelow.id],
   sourceDocumentIds: [docKazhydromet202509.id],
   generatedBy: "human_verified",
 }
@@ -384,16 +354,18 @@ const invSeptember: Investigation = {
   title: "Жайык, Атырау: нефтепродукты, сентябрь 2025",
   signalIds: [sigZakonGreenWater.id],
   indicator: "нефтепродукты",
-  evidenceLevel: "L2", // §14: L2, но не L3 — нет числа на ближайшем вышележащем створе
+  // L1, а не L2 из ТЗ §14: измерения подтверждены, но пространственный вывод
+  // держится на порядке створов, а он не верифицирован (фикстура пакета).
+  evidenceLevel: "L1",
   corridor: null, // координаты не подтверждены — GeoJSON строить нельзя (ТЗ §17)
-  supportedFacts: [esSepFactMax, esSepFactPair],
-  contradictedHypotheses: [esSepHypAsa],
+  supportedFacts: [esSepFact],
+  contradictedHypotheses: [], // версия исключается пространственно — см. уровень
   unknowns: [
     "Нет числового значения нефтепродуктов на ближайшем вышележащем створе за ту же дату — точнее локализовать источник нельзя.",
-    "Порядок створов сверху вниз не подтверждён вручную (riverOrder) — линейная схема показывает точки без ранжирования.",
+    "Порядок створов сверху вниз не подтверждён вручную — линейная схема показывает точки без ранжирования.",
   ],
   conclusion:
-    "Источник не установлен. Сентябрьский максимум 0,234 мг/дм³ зафиксирован на створе «1 км выше Атырау»; сброс КГП «Атырау су арнасы» этот максимум не объясняет. Источник следует искать выше створа «1 км выше Атырау».",
+    "Источник не установлен. Подтверждены сентябрьские лабораторные измерения нефтепродуктов, но порядок створов не верифицирован; пространственный вывод отложен.",
   updatedAt: SEEDED_AT,
 }
 
@@ -406,12 +378,15 @@ const esMayDelta: EvidenceStatement = {
   generatedBy: "human_verified",
 }
 
+// Май: фикстуры detail бэк ещё не прислал, уровень L3 взят из его же
+// `incidents.json`. Парные значения одного интервала на одну дату — тот случай,
+// где вывод не требует порядка створов (ТЗ §14).
 const invMay: Investigation = {
   id: "inv-atyrau-2025-05",
   title: "Жайык, Атырау: нефтепродукты, май 2025",
   signalIds: [],
   indicator: "нефтепродукты",
-  evidenceLevel: "L3", // §14: парные лабораторные измерения на одной дате
+  evidenceLevel: "L3",
   corridor: null,
   supportedFacts: [esMayDelta],
   contradictedHypotheses: [],
@@ -490,13 +465,9 @@ export const incidentDetails: Record<string, IncidentDetail> = {
       docKazinformWastewater,
       docAkZhaiykOilFilm,
     ],
-    corridorBounds: {
-      upstreamStationId: null, // интервал открыт вверх: «выше створа 1 км выше Атырау»
-      downstreamStationId: stZhaiyk1kmAboveAtyrau.id,
-    },
-    // Данные собраны вручную по ТЗ §5/§14 (verified_seed), а не расчётным ядром:
-    // приписывать им версию правил и хэш входа было бы выдумкой (запрет 1).
-    provenance: null,
+    // Участок не выделен: границы коридора — пространственный вывод, а он
+    // отложен до подтверждения порядка створов (фикстура пакета).
+    corridorBounds: null,
   },
   [invMay.id]: {
     investigation: invMay,
@@ -506,11 +477,12 @@ export const incidentDetails: Record<string, IncidentDetail> = {
     stations: mayStations,
     candidateObjects: [objAtyrauSuArnasy],
     sourceDocuments: [docKazhydromet202505],
+    // Интервал задан самой парой измерений, а не порядком створов, поэтому
+    // он остаётся до майской фикстуры от бэка.
     corridorBounds: {
       upstreamStationId: stAsa05kmAbove.id,
       downstreamStationId: stAsa05kmBelow.id,
     },
-    provenance: null,
   },
   [invAktau.id]: {
     investigation: invAktau,
@@ -521,11 +493,12 @@ export const incidentDetails: Record<string, IncidentDetail> = {
     candidateObjects: [],
     sourceDocuments: [],
     corridorBounds: null,
-    provenance: null,
   },
 }
 
-// Сценарий реплея — хронология ТЗ §14, интервалы §12.
+// Сценарий реплея — фикстура `replay-september.json`: интервалы §12, тексты
+// и уровни шагов от бэка. Шаг подтверждения ссылается на бюллетень Казгидромета,
+// а не на публикацию Zakon.kz: официальный первоисточник здесь бюллетень.
 export const replayScenarios: Record<string, ReplayScenario> = {
   [invSeptember.id]: {
     id: "replay-atyrau-2025-09",
@@ -542,8 +515,8 @@ export const replayScenarios: Record<string, ReplayScenario> = {
         offsetMs: REPLAY_STEP_OFFSETS_MS[1],
         type: "corroboration",
         payload: {
-          text: "Опубликована официальная информация: отобраны 15 проб воды, в них найдены следы нефтяного загрязнения.",
-          sourceDocumentId: docZakonGreenWater.id,
+          text: "Добавлен официальный бюллетень Казгидромета с лабораторными измерениями нефтепродуктов.",
+          sourceDocumentId: docKazhydromet202509.id,
           evidenceLevel: "L1",
         },
       },
@@ -552,7 +525,7 @@ export const replayScenarios: Record<string, ReplayScenario> = {
         offsetMs: REPLAY_STEP_OFFSETS_MS[2],
         type: "measurement",
         payload: {
-          // §14: в реплее загружаются четыре городских значения
+          // Четыре городских значения — как в фикстуре сценария
           measurements: [
             mSep1kmAbove,
             mSepAsaAbove,
@@ -567,16 +540,15 @@ export const replayScenarios: Record<string, ReplayScenario> = {
         offsetMs: REPLAY_STEP_OFFSETS_MS[3],
         type: "inference",
         payload: {
-          // дословно §14
-          text: "Городской выпуск не объясняет максимум, расположенный выше него. В паре возле выпуска роста не зафиксировано.",
-          evidenceLevel: "L2",
+          text: "Порядок створов не верифицирован; пространственная интерпретация измерений отложена.",
+          evidenceLevel: "L1",
         },
       },
       {
         id: "rs-2025-09-conclusion",
         offsetMs: REPLAY_STEP_OFFSETS_MS[4],
         type: "conclusion",
-        payload: { text: invSeptember.conclusion, evidenceLevel: "L2" },
+        payload: { text: invSeptember.conclusion, evidenceLevel: "L1" },
       },
     ],
   },
@@ -591,7 +563,7 @@ export const evidenceGraphs: Record<
   }
 > = {
   [invSeptember.id]: {
-    statements: [esSepFactMax, esSepFactPair, esSepHypAsa],
+    statements: [esSepFact],
     measurements: septemberMeasurements,
     sourceDocuments: [
       docKazhydromet202509,
@@ -612,33 +584,37 @@ export const evidenceGraphs: Record<
   },
 }
 
-// Статусы источников (§12 GET /api/live/status): бэк ещё не ходил в сеть,
-// в кэше — только проверенные бюллетени.
+// Статусы источников — фикстура `live-status.json`: бэк ещё ни разу не ходил
+// в сеть (`never_run`), и кэш не заявляется, пока Storage не реализован.
 export const liveStatusSeed: LiveStatus = {
   sources: [
     {
       id: "kazhydromet-bulletins",
       name: "Казгидромет: ежемесячные бюллетени",
       lastSuccessAt: null,
-      cacheAvailable: true,
+      cacheAvailable: false,
+      status: "never_run",
     },
     {
       id: "gdelt",
       name: "GDELT DOC 2.0",
       lastSuccessAt: null,
       cacheAvailable: false,
+      status: "never_run",
     },
     {
       id: "open-meteo-flood",
       name: "Open-Meteo Flood API (расход Жайыка)",
       lastSuccessAt: null,
       cacheAvailable: false,
+      status: "never_run",
     },
     {
       id: "open-meteo-marine",
       name: "Open-Meteo Marine API (волны у Актау)",
       lastSuccessAt: null,
       cacheAvailable: false,
+      status: "never_run",
     },
   ],
 }

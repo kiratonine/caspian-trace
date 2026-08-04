@@ -82,7 +82,7 @@ export function DossierDocument({
           </div>
         ) : (
           <section key={section.id} className="flex flex-col gap-2">
-            <h2 className="border-b pb-1 text-xs font-medium tracking-widest break-after-avoid text-muted-foreground uppercase">
+            <h2 className="break-after-avoid border-b pb-1 text-xs font-medium tracking-widest text-muted-foreground uppercase">
               {section.title}
             </h2>
             {body}
@@ -205,16 +205,16 @@ function SectionBody({
         <div className="flex flex-col gap-2">
           <dl className="flex flex-col gap-0.5 text-xs">
             <MetaRow label={DOSSIER_RULESET_LABEL}>
-              {detail.provenance?.rulesetVersion ?? (
+              {model.provenance.rulesetVersion ?? (
                 <span className="text-muted-foreground">
                   {DOSSIER_RULESET_MISSING}
                 </span>
               )}
             </MetaRow>
             <MetaRow label={DOSSIER_INPUT_HASH_LABEL}>
-              {detail.provenance?.inputHash ? (
+              {model.provenance.inputHash ? (
                 <span className="font-mono break-all">
-                  {detail.provenance.inputHash}
+                  {model.provenance.inputHash}
                 </span>
               ) : (
                 <span className="text-muted-foreground">

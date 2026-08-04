@@ -43,6 +43,19 @@ export type DossierCorridor =
   | { kind: "openUpstream"; downstream: Station }
   | null
 
+/**
+ * Воспроизводимость вывода (§21.1 п. 12). В ответе `GET /api/incidents/:id`
+ * этих полей нет: утверждённый контракт возит их с машиночитаемым досье
+ * (`Dossier.rulesetVersion` / `Dossier.inputHash`), а печатная страница
+ * намеренно не зависит от эндпоинта экспорта (решение сессии 1). Пока пара
+ * не приедет, оба значения `null`, и лист печатает «не передана расчётным
+ * ядром» — правдоподобную версию правил подставлять нельзя.
+ */
+export type DossierProvenance = {
+  rulesetVersion: string | null
+  inputHash: string | null
+}
+
 export type DossierModel = {
   signals: DossierSignalEntry[]
   measurements: DossierMeasurementRow[]
@@ -51,6 +64,7 @@ export type DossierModel = {
   objects: DossierObjectEntry[]
   sources: SourceEntry[]
   corridor: DossierCorridor
+  provenance: DossierProvenance
 }
 
 /**
@@ -106,5 +120,6 @@ export function buildDossierModel(detail: IncidentDetail): DossierModel {
     })),
     sources: panel.sources,
     corridor: buildCorridor(detail.corridorBounds, stationsById),
+    provenance: { rulesetVersion: null, inputHash: null },
   }
 }

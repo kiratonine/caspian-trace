@@ -18,3 +18,9 @@ export const OBJECT_FOR_REVIEW_LABEL = 'объект для проверки';
 
 // «Недостаточно данных» — полноценное состояние, не ошибка (ТЗ §6).
 export const INSUFFICIENT_DATA_TITLE = 'Недостаточно данных';
+
+// Пояснение отказа от вывода: это результат работы правил, а не сбой продукта.
+export const INSUFFICIENT_DATA_EXPLANATION =
+  'Это не ошибка: вывод не публикуется, пока его нельзя подтвердить проверяемыми фактами.';
+
+export const INSUFFICIENT_DATA_REASONS_LABEL = 'Чего не хватает';

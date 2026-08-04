@@ -5,6 +5,7 @@ import { RouterProvider } from "react-router-dom"
 
 import "./index.css"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
+import { TooltipProvider } from "@/components/ui/tooltip.tsx"
 import { router } from "@/router.tsx"
 
 // Демо идёт офлайн с проектора: данные — месячные бюллетени, во время показа
@@ -24,7 +25,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <TooltipProvider>
+          <RouterProvider router={router} />
+        </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
   </StrictMode>

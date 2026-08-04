@@ -1,22 +1,22 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react"
 
-import { incidentDetails } from '@/api/seed-data';
-import { ConclusionPanelContent } from '@/features/conclusion/ConclusionPanel';
+import { incidentDetails } from "@/api/seed-data"
+import { ConclusionPanelContent } from "@/features/conclusion/ConclusionPanel"
 
 // Дев-превью правой панели (только dev-сборка, см. router.tsx): все три события
 // заглушек в ширине реальной колонки (340–400px), включая пустые состояния
 // Актау. Данные — seed ТЗ §5/§7, ничего выдуманного.
 
-const september = incidentDetails['inv-atyrau-2025-09'];
-const may = incidentDetails['inv-atyrau-2025-05'];
-const aktau = incidentDetails['inv-aktau-insufficient'];
+const september = incidentDetails["inv-atyrau-2025-09"]
+const may = incidentDetails["inv-atyrau-2025-05"]
+const aktau = incidentDetails["inv-aktau-insufficient"]
 
 function PanelFrame({
   title,
   children,
 }: {
-  title: string;
-  children: ReactNode;
+  title: string
+  children: ReactNode
 }) {
   return (
     <section className="flex shrink-0 flex-col gap-2">
@@ -25,7 +25,7 @@ function PanelFrame({
       </h2>
       <div className="w-95 overflow-hidden border">{children}</div>
     </section>
-  );
+  )
 }
 
 export default function ConclusionGallery() {
@@ -51,5 +51,5 @@ export default function ConclusionGallery() {
         </PanelFrame>
       </div>
     </main>
-  );
+  )
 }

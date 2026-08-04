@@ -1,38 +1,38 @@
-import { MeasurementValue } from '@/components/common';
-import { Badge } from '@/components/ui/badge';
+import { MeasurementValue } from "@/components/common"
+import { Badge } from "@/components/ui/badge"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip"
 import {
   SCHEME_CORRIDOR_BOUND_LABEL,
   SCHEME_CORRIDOR_LOWER_BOUND_TOOLTIP,
   SCHEME_CORRIDOR_OPEN_UP_TOOLTIP,
   SCHEME_CORRIDOR_UPPER_BOUND_TOOLTIP,
   SCHEME_NO_VALUE_LABEL,
-} from '@/constants/scheme';
-import type { StationSchemeEntry } from './scheme-model';
+} from "@/constants/scheme"
+import type { StationSchemeEntry } from "./scheme-model"
 
 type StationNodeProps = {
-  entry: StationSchemeEntry;
+  entry: StationSchemeEntry
   /**
    * Бейдж границы коридора — для группы без подтверждённого порядка, где
    * ленту коридора нарисовать нельзя; на линии границы показывает CorridorBand.
    */
-  corridorBound?: 'upstream' | 'downstream' | null;
+  corridorBound?: "upstream" | "downstream" | null
   /** Интервал открыт вверх по течению (upstreamStationId = null). */
-  corridorOpenUp?: boolean;
-};
+  corridorOpenUp?: boolean
+}
 
 function boundTooltip(
-  bound: 'upstream' | 'downstream',
-  openUp: boolean,
+  bound: "upstream" | "downstream",
+  openUp: boolean
 ): string {
-  if (bound === 'upstream') return SCHEME_CORRIDOR_UPPER_BOUND_TOOLTIP;
+  if (bound === "upstream") return SCHEME_CORRIDOR_UPPER_BOUND_TOOLTIP
   return openUp
     ? SCHEME_CORRIDOR_OPEN_UP_TOOLTIP
-    : SCHEME_CORRIDOR_LOWER_BOUND_TOOLTIP;
+    : SCHEME_CORRIDOR_LOWER_BOUND_TOOLTIP
 }
 
 export function StationNode({
@@ -40,7 +40,7 @@ export function StationNode({
   corridorBound = null,
   corridorOpenUp = false,
 }: StationNodeProps) {
-  const { station, measurement, sourceDocument, valueShare } = entry;
+  const { station, measurement, sourceDocument, valueShare } = entry
 
   return (
     <div className="relative flex items-center gap-3 py-2.5">
@@ -108,5 +108,5 @@ export function StationNode({
         </span>
       )}
     </div>
-  );
+  )
 }

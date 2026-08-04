@@ -1,13 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo } from "react"
 
 import type {
   IncidentDetail,
   ReplayScenario,
   TypedReplayStep,
-} from '@/api/contracts';
-import { replayMeasurementSummary } from '@/constants/replay';
-import { useReplayStore } from '@/stores/replayStore';
-import type { EvidenceLevel } from '@/types';
+} from "@/api/contracts"
+import { replayMeasurementSummary } from "@/constants/replay"
+import { useReplayStore } from "@/stores/replayStore"
+import type { EvidenceLevel } from "@/types"
 
 // «Кадр» реплея — что уже показано к текущему шагу. Панели читают его
 // селектором поверх загруженных данных, без рефетча на шаг (план сессии 9):
@@ -15,54 +15,55 @@ import type { EvidenceLevel } from '@/types';
 // события ещё «не наступили» в хронологии.
 
 export type ReplayFrame = {
-  scenario: ReplayScenario;
-  stepIndex: number;
-  step: TypedReplayStep;
+  scenario: ReplayScenario
+  stepIndex: number
+  step: TypedReplayStep
   /** Уровень на текущем шаге — приходит в payload каждого шага с бэка. */
-  evidenceLevel: EvidenceLevel;
+  evidenceLevel: EvidenceLevel
   /** Измерения, «загруженные» шагами measurement к текущему моменту. */
-  visibleMeasurementIds: ReadonlySet<string>;
+  visibleMeasurementIds: ReadonlySet<string>
   /** Документы, на которые уже сослались наступившие шаги. */
-  visibleSourceDocumentIds: ReadonlySet<string>;
+  visibleSourceDocumentIds: ReadonlySet<string>
   /** Достигнут шаг «применение правила» — появляются факты, версии и пробелы. */
-  inferenceReached: boolean;
+  inferenceReached: boolean
   /** Достигнут шаг «вывод» — блок 1 панели показывает текст вывода. */
-  conclusionReached: boolean;
+  conclusionReached: boolean
   /** Дословный текст вывода из payload шага conclusion. */
-  conclusionText: string | null;
-};
+  conclusionText: string | null
+}
 
 export function buildReplayFrame(
   scenario: ReplayScenario,
-  stepIndex: number,
+  stepIndex: number
 ): ReplayFrame {
-  const step = scenario.steps[stepIndex];
-  if (!step) throw new Error(`В сценарии «${scenario.id}» нет шага ${stepIndex}`);
+  const step = scenario.steps[stepIndex]
+  if (!step)
+    throw new Error(`В сценарии «${scenario.id}» нет шага ${stepIndex}`)
 
-  const visibleMeasurementIds = new Set<string>();
-  const visibleSourceDocumentIds = new Set<string>();
-  let inferenceReached = false;
-  let conclusionText: string | null = null;
+  const visibleMeasurementIds = new Set<string>()
+  const visibleSourceDocumentIds = new Set<string>()
+  let inferenceReached = false
+  let conclusionText: string | null = null
   for (const reached of scenario.steps.slice(0, stepIndex + 1)) {
     switch (reached.type) {
-      case 'signal':
-        visibleSourceDocumentIds.add(reached.payload.signal.sourceDocumentId);
-        break;
-      case 'corroboration':
-        visibleSourceDocumentIds.add(reached.payload.sourceDocumentId);
-        break;
-      case 'measurement':
+      case "signal":
+        visibleSourceDocumentIds.add(reached.payload.signal.sourceDocumentId)
+        break
+      case "corroboration":
+        visibleSourceDocumentIds.add(reached.payload.sourceDocumentId)
+        break
+      case "measurement":
         for (const measurement of reached.payload.measurements) {
-          visibleMeasurementIds.add(measurement.id);
-          visibleSourceDocumentIds.add(measurement.sourceDocumentId);
+          visibleMeasurementIds.add(measurement.id)
+          visibleSourceDocumentIds.add(measurement.sourceDocumentId)
         }
-        break;
-      case 'inference':
-        inferenceReached = true;
-        break;
-      case 'conclusion':
-        conclusionText = reached.payload.text;
-        break;
+        break
+      case "inference":
+        inferenceReached = true
+        break
+      case "conclusion":
+        conclusionText = reached.payload.text
+        break
     }
   }
 
@@ -76,7 +77,7 @@ export function buildReplayFrame(
     inferenceReached,
     conclusionReached: conclusionText !== null,
     conclusionText,
-  };
+  }
 }
 
 /**
@@ -84,14 +85,14 @@ export function buildReplayFrame(
  * или запущен для другого события (защита от рассинхрона при смене выбора).
  */
 export function useReplayFrame(incidentId: string | null): ReplayFrame | null {
-  const scenario = useReplayStore((state) => state.scenario);
-  const stepIndex = useReplayStore((state) => state.stepIndex);
+  const scenario = useReplayStore((state) => state.scenario)
+  const stepIndex = useReplayStore((state) => state.stepIndex)
 
   return useMemo(() => {
-    if (!scenario || scenario.incidentId !== incidentId) return null;
-    if (!scenario.steps[stepIndex]) return null;
-    return buildReplayFrame(scenario, stepIndex);
-  }, [scenario, stepIndex, incidentId]);
+    if (!scenario || scenario.incidentId !== incidentId) return null
+    if (!scenario.steps[stepIndex]) return null
+    return buildReplayFrame(scenario, stepIndex)
+  }, [scenario, stepIndex, incidentId])
 }
 
 /**
@@ -102,30 +103,30 @@ export function useReplayFrame(incidentId: string | null): ReplayFrame | null {
  */
 export function projectDetailForReplay(
   detail: IncidentDetail,
-  frame: ReplayFrame,
+  frame: ReplayFrame
 ): IncidentDetail {
   return {
     ...detail,
     measurements: detail.measurements.filter((measurement) =>
-      frame.visibleMeasurementIds.has(measurement.id),
+      frame.visibleMeasurementIds.has(measurement.id)
     ),
     sourceDocuments: detail.sourceDocuments.filter((document) =>
-      frame.visibleSourceDocumentIds.has(document.id),
+      frame.visibleSourceDocumentIds.has(document.id)
     ),
     corridorBounds: frame.inferenceReached ? detail.corridorBounds : null,
-  };
+  }
 }
 
 /** Строка текущего шага для шкалы: дословные тексты payload, без пересказа. */
 export function describeReplayStep(step: TypedReplayStep): string {
   switch (step.type) {
-    case 'signal':
-      return `«${step.payload.signal.excerpt}»`;
-    case 'corroboration':
-    case 'inference':
-    case 'conclusion':
-      return step.payload.text;
-    case 'measurement':
-      return replayMeasurementSummary(step.payload.measurements.length);
+    case "signal":
+      return `«${step.payload.signal.excerpt}»`
+    case "corroboration":
+    case "inference":
+    case "conclusion":
+      return step.payload.text
+    case "measurement":
+      return replayMeasurementSummary(step.payload.measurements.length)
   }
 }

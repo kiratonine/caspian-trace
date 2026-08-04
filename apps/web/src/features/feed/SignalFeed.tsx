@@ -1,37 +1,37 @@
-import { useQuery } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useQuery } from "@tanstack/react-query"
+import { useSearchParams } from "react-router-dom"
 
-import type { IncidentDetail, IncidentSummary } from '@/api/contracts';
-import { incidentsQueryOptions } from '@/api/queries';
-import { EvidenceLevelBadge } from '@/components/common';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { IncidentDetail, IncidentSummary } from "@/api/contracts"
+import { incidentsQueryOptions } from "@/api/queries"
+import { EvidenceLevelBadge } from "@/components/common"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   FEED_NO_INCIDENTS,
   FEED_NO_SIGNALS,
   FEED_SIGNALS_HEADING,
-} from '@/constants/feed';
-import { REGION_LABELS } from '@/constants/regions';
-import { INCIDENT_SEARCH_PARAM } from '@/constants/routing';
-import { DATA_LOAD_ERROR } from '@/constants/strings';
-import { useSelectedIncidentDetail } from '@/hooks/use-selected-incident-detail';
-import { cn } from '@/lib/utils';
-import { SignalCard } from './SignalCard';
+} from "@/constants/feed"
+import { REGION_LABELS } from "@/constants/regions"
+import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
+import { DATA_LOAD_ERROR } from "@/constants/strings"
+import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
+import { cn } from "@/lib/utils"
+import { SignalCard } from "./SignalCard"
 
 // Лента §13: список расследований карточками; сигналы показываются под
 // карточкой выбранного события из его detail — списковый эндпоинт сигналы
 // не отдаёт (вопрос 2 плана), а detail уже загружен для схемы и панели.
 export function SignalFeed() {
-  const incidentsQuery = useQuery(incidentsQueryOptions);
-  const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail();
-  const [, setSearchParams] = useSearchParams();
+  const incidentsQuery = useQuery(incidentsQueryOptions)
+  const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail()
+  const [, setSearchParams] = useSearchParams()
 
   const selectIncident = (id: string) => {
     setSearchParams((params) => {
-      params.set(INCIDENT_SEARCH_PARAM, id);
-      return params;
-    });
-  };
+      params.set(INCIDENT_SEARCH_PARAM, id)
+      return params
+    })
+  }
 
   return (
     <section
@@ -59,17 +59,17 @@ export function SignalFeed() {
         )}
       </ScrollArea>
     </section>
-  );
+  )
 }
 
 type SignalFeedContentProps = {
-  incidents: IncidentSummary[];
-  selectedIncidentId: string | null;
+  incidents: IncidentSummary[]
+  selectedIncidentId: string | null
   /** Детали выбранного события; null — ещё грузятся или не загрузились. */
-  selectedDetail: IncidentDetail | null;
-  detailError?: boolean;
-  onSelect: (id: string) => void;
-};
+  selectedDetail: IncidentDetail | null
+  detailError?: boolean
+  onSelect: (id: string) => void
+}
 
 /** Презентационная часть ленты — контейнер и дев-превью отдают ей готовые данные. */
 export function SignalFeedContent({
@@ -82,7 +82,7 @@ export function SignalFeedContent({
   if (incidents.length === 0) {
     return (
       <p className="p-4 text-sm text-muted-foreground">{FEED_NO_INCIDENTS}</p>
-    );
+    )
   }
 
   return (
@@ -102,17 +102,17 @@ export function SignalFeedContent({
         />
       ))}
     </ul>
-  );
+  )
 }
 
 type IncidentCardProps = {
-  incident: IncidentSummary;
-  selected: boolean;
+  incident: IncidentSummary
+  selected: boolean
   /** Детали — только у выбранной карточки, остальным всегда null. */
-  detail: IncidentDetail | null;
-  detailError: boolean;
-  onSelect: (id: string) => void;
-};
+  detail: IncidentDetail | null
+  detailError: boolean
+  onSelect: (id: string) => void
+}
 
 function IncidentCard({
   incident,
@@ -124,8 +124,8 @@ function IncidentCard({
   return (
     <li
       className={cn(
-        'relative flex flex-col gap-1.5 border p-3 transition-colors',
-        selected ? 'border-foreground/40 bg-muted/40' : 'hover:bg-muted/20',
+        "relative flex flex-col gap-1.5 border p-3 transition-colors",
+        selected ? "border-foreground/40 bg-muted/40" : "hover:bg-muted/20"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -151,13 +151,13 @@ function IncidentCard({
       </p>
       {selected && <SignalsBlock detail={detail} detailError={detailError} />}
     </li>
-  );
+  )
 }
 
 type SignalsBlockProps = {
-  detail: IncidentDetail | null;
-  detailError: boolean;
-};
+  detail: IncidentDetail | null
+  detailError: boolean
+}
 
 // relative — блок должен ловить клики поверх растянутой кнопки карточки.
 function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
@@ -175,7 +175,7 @@ function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
                   signal={signal}
                   sourceDocument={
                     detail.sourceDocuments.find(
-                      (doc) => doc.id === signal.sourceDocumentId,
+                      (doc) => doc.id === signal.sourceDocumentId
                     ) ?? null
                   }
                 />
@@ -194,10 +194,10 @@ function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
         </div>
       )}
     </div>
-  );
+  )
 }
 
-const FEED_SKELETON_CARDS = 3;
+const FEED_SKELETON_CARDS = 3
 
 function FeedSkeleton() {
   return (
@@ -209,5 +209,5 @@ function FeedSkeleton() {
         </div>
       ))}
     </div>
-  );
+  )
 }

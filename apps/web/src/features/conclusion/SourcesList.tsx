@@ -1,15 +1,15 @@
-import { SourceLink } from '@/components/common';
-import { PANEL_NO_SOURCES } from '@/constants/panel';
-import type { SourceEntry } from './panel-model';
+import { SourceLink } from "@/components/common"
+import { PANEL_NO_SOURCES } from "@/constants/panel"
+import type { SourceEntry } from "./panel-model"
 
 type SourcesListProps = {
-  entries: SourceEntry[];
-};
+  entries: SourceEntry[]
+}
 
 /** Блок 6 §13: кликабельные документы; страница — из ссылающегося измерения. */
 export function SourcesList({ entries }: SourcesListProps) {
   if (entries.length === 0) {
-    return <p className="text-sm text-muted-foreground">{PANEL_NO_SOURCES}</p>;
+    return <p className="text-sm text-muted-foreground">{PANEL_NO_SOURCES}</p>
   }
 
   return (
@@ -20,5 +20,5 @@ export function SourcesList({ entries }: SourcesListProps) {
         </li>
       ))}
     </ul>
-  );
+  )
 }

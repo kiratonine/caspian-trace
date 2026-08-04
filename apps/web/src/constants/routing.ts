@@ -3,4 +3,4 @@
 // хук use-selected-incident-detail (фолбэк — первое событие списка),
 // пишет — лента (клик по карточке); переключатель май/сентябрь добавится
 // в своей сессии.
-export const INCIDENT_SEARCH_PARAM = 'incident';
+export const INCIDENT_SEARCH_PARAM = "incident"

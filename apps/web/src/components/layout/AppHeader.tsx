@@ -1,4 +1,4 @@
-import { APP_NAME, APP_TAGLINE } from '@/constants/strings';
+import { APP_NAME, APP_TAGLINE } from "@/constants/strings"
 
 export function AppHeader() {
   return (
@@ -10,5 +10,5 @@ export function AppHeader() {
         {APP_TAGLINE}
       </p>
     </header>
-  );
+  )
 }

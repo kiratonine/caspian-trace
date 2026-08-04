@@ -1,11 +1,11 @@
-import { MeasurementValue } from '@/components/common';
-import type { StatementEntry } from './panel-model';
+import { MeasurementValue } from "@/components/common"
+import type { StatementEntry } from "./panel-model"
 
 type StatementListProps = {
-  entries: StatementEntry[];
+  entries: StatementEntry[]
   /** Пустое состояние — своё у фактов и у версий (константы panel.ts). */
-  emptyText: string;
-};
+  emptyText: string
+}
 
 /**
  * Утверждения «Что установлено» / «Что не подтверждается» (§13, блоки 3–4):
@@ -14,7 +14,7 @@ type StatementListProps = {
  */
 export function StatementList({ entries, emptyText }: StatementListProps) {
   if (entries.length === 0) {
-    return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+    return <p className="text-sm text-muted-foreground">{emptyText}</p>
   }
 
   return (
@@ -46,5 +46,5 @@ export function StatementList({ entries, emptyText }: StatementListProps) {
         </li>
       ))}
     </ul>
-  );
+  )
 }

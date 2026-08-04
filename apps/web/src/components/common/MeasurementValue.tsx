@@ -2,18 +2,18 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { formatMeasurement, formatSampledAt } from '@/lib/format';
-import { hasConfirmedPage, sourceHref } from '@/lib/source';
-import { cn } from '@/lib/utils';
-import type { Measurement, SourceDocument } from '@/types';
+} from "@/components/ui/tooltip"
+import { formatMeasurement, formatSampledAt } from "@/lib/format"
+import { hasConfirmedPage, sourceHref } from "@/lib/source"
+import { cn } from "@/lib/utils"
+import type { Measurement, SourceDocument } from "@/types"
 
 type MeasurementValueProps = {
-  measurement: Measurement;
+  measurement: Measurement
   /** Документ, из которого взято число; ищется по `measurement.sourceDocumentId`. */
-  sourceDocument: SourceDocument;
-  className?: string;
-};
+  sourceDocument: SourceDocument
+  className?: string
+}
 
 /**
  * Любое число в интерфейсе кликабельно и открывает документ и страницу,
@@ -24,7 +24,7 @@ export function MeasurementValue({
   sourceDocument,
   className,
 }: MeasurementValueProps) {
-  const pageConfirmed = hasConfirmedPage(sourceDocument, measurement.sourcePage);
+  const pageConfirmed = hasConfirmedPage(sourceDocument, measurement.sourcePage)
 
   return (
     <Tooltip>
@@ -35,8 +35,8 @@ export function MeasurementValue({
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              'font-medium whitespace-nowrap tabular-nums underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 outline-none hover:decoration-current hover:decoration-solid focus-visible:decoration-current focus-visible:decoration-solid',
-              className,
+              "font-medium whitespace-nowrap tabular-nums underline decoration-muted-foreground/50 decoration-dotted underline-offset-4 outline-none hover:decoration-current hover:decoration-solid focus-visible:decoration-current focus-visible:decoration-solid",
+              className
             )}
           >
             {formatMeasurement(measurement.value, measurement.unit)}
@@ -45,13 +45,13 @@ export function MeasurementValue({
       />
       <TooltipContent>
         <p className="max-w-64 text-pretty">
-          {measurement.indicator}, {formatSampledAt(measurement.sampledAt)} ·{' '}
+          {measurement.indicator}, {formatSampledAt(measurement.sampledAt)} ·{" "}
           {sourceDocument.title}
           {pageConfirmed
             ? `, стр. ${measurement.sourcePage}`
-            : ' (страница уточняется)'}
+            : " (страница уточняется)"}
         </p>
       </TooltipContent>
     </Tooltip>
-  );
+  )
 }

@@ -1,4 +1,4 @@
-import type { SourceDocument } from '@/types';
+import type { SourceDocument } from "@/types"
 
 /**
  * Ссылка на первоисточник. Для PDF с подтверждённой страницей добавляет
@@ -7,16 +7,16 @@ import type { SourceDocument } from '@/types';
  * (вопрос 8 плана): якорь не ставим, открываем документ целиком.
  */
 export function sourceHref(doc: SourceDocument, page?: number): string {
-  if (doc.contentType === 'pdf' && page !== undefined && page > 0) {
-    return `${doc.url}#page=${page}`;
+  if (doc.contentType === "pdf" && page !== undefined && page > 0) {
+    return `${doc.url}#page=${page}`
   }
-  return doc.url;
+  return doc.url
 }
 
 /** Страница подтверждена и имеет смысл в ссылке/подписи. */
 export function hasConfirmedPage(
   doc: SourceDocument,
-  page?: number,
+  page?: number
 ): page is number {
-  return doc.contentType === 'pdf' && page !== undefined && page > 0;
+  return doc.contentType === "pdf" && page !== undefined && page > 0
 }

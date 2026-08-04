@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Pause, Play, Square } from 'lucide-react';
+import { useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { Pause, Play, Square } from "lucide-react"
 
-import { replayScenarioQueryOptions } from '@/api/queries';
-import { EvidenceLevelBadge } from '@/components/common';
-import { Button } from '@/components/ui/button';
+import { replayScenarioQueryOptions } from "@/api/queries"
+import { EvidenceLevelBadge } from "@/components/common"
+import { Button } from "@/components/ui/button"
 import {
   REPLAY_EXIT_LABEL,
   REPLAY_KEYBOARD_HINT,
@@ -17,12 +17,12 @@ import {
   REPLAY_STEP_TYPE_ORDER,
   REPLAY_UNAVAILABLE,
   replayStepAriaLabel,
-} from '@/constants/replay';
-import { useSelectedIncidentDetail } from '@/hooks/use-selected-incident-detail';
-import { cn } from '@/lib/utils';
-import { useReplayStore } from '@/stores/replayStore';
-import { describeReplayStep, useReplayFrame } from './replay-frame';
-import { useReplayPlayback, useReplayPositionMs } from './useReplayPlayback';
+} from "@/constants/replay"
+import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
+import { cn } from "@/lib/utils"
+import { useReplayStore } from "@/stores/replayStore"
+import { describeReplayStep, useReplayFrame } from "./replay-frame"
+import { useReplayPlayback, useReplayPositionMs } from "./useReplayPlayback"
 
 // Шкала-плеер реплея (сессия 9). Маркеры стоят на реальных offsetMs сценария
 // (шкала — хронология доказательств, а не прогресс-бар); до загрузки сценария
@@ -31,131 +31,132 @@ const PLACEHOLDER_STEPS = REPLAY_STEP_TYPE_ORDER.map((type, index) => ({
   id: type,
   type,
   offsetMs: REPLAY_STEP_OFFSETS_MS[index],
-}));
+}))
 
 // Крайние подписи прижаты к краям шкалы, промежуточные центрированы над маркером.
 function labelAlignment(index: number, count: number) {
   if (index === 0) {
-    return '';
+    return ""
   }
   if (index === count - 1) {
-    return '-translate-x-full text-right';
+    return "-translate-x-full text-right"
   }
-  return '-translate-x-1/2 text-center';
+  return "-translate-x-1/2 text-center"
 }
 
 export function ReplayTimeline() {
-  const { selectedIncidentId } = useSelectedIncidentDetail();
+  const { selectedIncidentId } = useSelectedIncidentDetail()
   const scenarioQuery = useQuery({
-    ...replayScenarioQueryOptions(selectedIncidentId ?? ''),
+    ...replayScenarioQueryOptions(selectedIncidentId ?? ""),
     enabled: selectedIncidentId !== null,
-  });
-  const availableScenario = scenarioQuery.data ?? null;
+  })
+  const availableScenario = scenarioQuery.data ?? null
 
-  const activeScenario = useReplayStore((state) => state.scenario);
-  const status = useReplayStore((state) => state.status);
-  const start = useReplayStore((state) => state.start);
-  const play = useReplayStore((state) => state.play);
-  const pause = useReplayStore((state) => state.pause);
-  const seekToStep = useReplayStore((state) => state.seekToStep);
-  const exit = useReplayStore((state) => state.exit);
+  const activeScenario = useReplayStore((state) => state.scenario)
+  const status = useReplayStore((state) => state.status)
+  const start = useReplayStore((state) => state.start)
+  const play = useReplayStore((state) => state.play)
+  const pause = useReplayStore((state) => state.pause)
+  const seekToStep = useReplayStore((state) => state.seekToStep)
+  const exit = useReplayStore((state) => state.exit)
 
-  useReplayPlayback();
-  const positionMs = useReplayPositionMs();
-  const frame = useReplayFrame(selectedIncidentId);
+  useReplayPlayback()
+  const positionMs = useReplayPositionMs()
+  const frame = useReplayFrame(selectedIncidentId)
 
   // Реплей не переживает смену выбранного события: сценарий другого события
   // на экране нового — рассинхрон всех трёх колонок.
   useEffect(() => {
     if (activeScenario && activeScenario.incidentId !== selectedIncidentId) {
-      exit();
+      exit()
     }
-  }, [activeScenario, selectedIncidentId, exit]);
+  }, [activeScenario, selectedIncidentId, exit])
 
   // Клавиатура (ТЗ: вести демо мышью на проекторе неудобно). Живое состояние
   // берётся из getState() — обработчик не пересоздаётся на каждый шаг.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.altKey || event.ctrlKey || event.metaKey) return;
-      const target = event.target instanceof HTMLElement ? event.target : null;
+      if (event.altKey || event.ctrlKey || event.metaKey) return
+      const target = event.target instanceof HTMLElement ? event.target : null
       if (
         target &&
-        (target.isContentEditable || target.closest('input, textarea, select'))
+        (target.isContentEditable || target.closest("input, textarea, select"))
       ) {
-        return;
+        return
       }
-      const store = useReplayStore.getState();
+      const store = useReplayStore.getState()
 
-      if (event.code === 'Space') {
+      if (event.code === "Space") {
         // Фокус на кнопке или ссылке — пробел принадлежит нативной активации.
-        if (target?.closest('button, a')) return;
-        event.preventDefault();
-        if (event.repeat) return;
+        if (target?.closest("button, a")) return
+        event.preventDefault()
+        if (event.repeat) return
         if (!store.scenario) {
-          if (availableScenario) store.start(availableScenario);
-        } else if (store.status === 'playing') {
-          store.pause();
+          if (availableScenario) store.start(availableScenario)
+        } else if (store.status === "playing") {
+          store.pause()
         } else {
-          store.play();
+          store.play()
         }
-        return;
+        return
       }
 
-      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-        const delta = event.key === 'ArrowRight' ? 1 : -1;
+      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+        const delta = event.key === "ArrowRight" ? 1 : -1
         if (!store.scenario) {
           // «→» без запущенного реплея — ручной проход по шагам с начала.
           if (delta === 1 && availableScenario) {
-            event.preventDefault();
-            store.start(availableScenario, { autoplay: false });
+            event.preventDefault()
+            store.start(availableScenario, { autoplay: false })
           }
-          return;
+          return
         }
-        event.preventDefault();
-        store.seekToStep(store.stepIndex + delta);
+        event.preventDefault()
+        store.seekToStep(store.stepIndex + delta)
       }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [availableScenario]);
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [availableScenario])
 
-  const isPlaying = frame !== null && status === 'playing';
-  const canReplay = availableScenario !== null || activeScenario !== null;
+  const isPlaying = frame !== null && status === "playing"
+  const canReplay = availableScenario !== null || activeScenario !== null
   const playLabel = !activeScenario
     ? REPLAY_PLAY_LABEL
-    : status === 'playing'
+    : status === "playing"
       ? REPLAY_PAUSE_LABEL
-      : status === 'finished'
+      : status === "finished"
         ? REPLAY_RESTART_LABEL
-        : REPLAY_RESUME_LABEL;
+        : REPLAY_RESUME_LABEL
 
-  const steps = (activeScenario ?? availableScenario)?.steps ?? PLACEHOLDER_STEPS;
-  const totalMs = steps[steps.length - 1]?.offsetMs || 1;
+  const steps =
+    (activeScenario ?? availableScenario)?.steps ?? PLACEHOLDER_STEPS
+  const totalMs = steps[steps.length - 1]?.offsetMs || 1
   const progress =
-    positionMs === null ? null : Math.min(positionMs / totalMs, 1);
-  const stepSummary = frame ? describeReplayStep(frame.step) : null;
+    positionMs === null ? null : Math.min(positionMs / totalMs, 1)
+  const stepSummary = frame ? describeReplayStep(frame.step) : null
 
   const togglePlayback = () => {
     if (!activeScenario) {
-      if (availableScenario) start(availableScenario);
-      return;
+      if (availableScenario) start(availableScenario)
+      return
     }
-    if (status === 'playing') {
-      pause();
+    if (status === "playing") {
+      pause()
     } else {
-      play();
+      play()
     }
-  };
+  }
 
   const handleMarkerClick = (index: number) => {
     if (activeScenario) {
-      seekToStep(index);
+      seekToStep(index)
     } else if (availableScenario) {
       // Клик по маркеру без запущенного реплея — старт на этом шаге без
       // воспроизведения: ручной режим для демо.
-      start(availableScenario, { stepIndex: index, autoplay: false });
+      start(availableScenario, { stepIndex: index, autoplay: false })
     }
-  };
+  }
 
   return (
     <footer
@@ -217,7 +218,7 @@ export function ReplayTimeline() {
           {progress !== null && (
             <>
               <div
-                className="absolute left-0 top-2.25 h-px bg-foreground"
+                className="absolute top-2.25 left-0 h-px bg-foreground"
                 style={{ width: `${progress * 100}%` }}
               />
               <div
@@ -228,9 +229,9 @@ export function ReplayTimeline() {
             </>
           )}
           {steps.map((step, index) => {
-            const reached = frame !== null && index <= frame.stepIndex;
-            const isCurrent = frame !== null && index === frame.stepIndex;
-            const label = REPLAY_STEP_TYPE_LABELS[step.type];
+            const reached = frame !== null && index <= frame.stepIndex
+            const isCurrent = frame !== null && index === frame.stepIndex
+            const label = REPLAY_STEP_TYPE_LABELS[step.type]
             return (
               <div
                 key={step.id}
@@ -242,31 +243,31 @@ export function ReplayTimeline() {
                   disabled={!canReplay}
                   onClick={() => handleMarkerClick(index)}
                   aria-label={replayStepAriaLabel(label)}
-                  aria-current={isCurrent ? 'step' : undefined}
+                  aria-current={isCurrent ? "step" : undefined}
                   className="absolute top-2.25 -translate-x-1/2 -translate-y-1/2 rounded-full p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-default"
                 >
                   <span
                     className={cn(
-                      'block size-2 rounded-full bg-muted-foreground/50 transition-colors',
-                      reached && 'bg-foreground',
-                      isCurrent && 'ring-4 ring-foreground/15',
+                      "block size-2 rounded-full bg-muted-foreground/50 transition-colors",
+                      reached && "bg-foreground",
+                      isCurrent && "ring-4 ring-foreground/15"
                     )}
                   />
                 </button>
                 <span
                   className={cn(
-                    'absolute top-5 block w-max text-[10px] leading-tight text-muted-foreground',
+                    "absolute top-5 block w-max text-[10px] leading-tight text-muted-foreground",
                     labelAlignment(index, steps.length),
-                    isCurrent && 'font-medium text-foreground',
+                    isCurrent && "font-medium text-foreground"
                   )}
                 >
                   {label}
                 </span>
               </div>
-            );
+            )
           })}
         </div>
       </div>
     </footer>
-  );
+  )
 }

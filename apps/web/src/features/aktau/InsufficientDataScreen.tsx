@@ -1,6 +1,6 @@
-import type { IncidentDetail } from '@/api/contracts';
-import { EvidenceLevelBadge, InsufficientData } from '@/components/common';
-import { REGION_LABELS } from '@/constants/regions';
+import type { IncidentDetail } from "@/api/contracts"
+import { EvidenceLevelBadge, InsufficientData } from "@/components/common"
+import { REGION_LABELS } from "@/constants/regions"
 
 // Экран «недостаточно данных» (ТЗ §13 «Экран Актау», §7.6) — полноценное
 // состояние центральной колонки, когда у события нет ни одного створа:
@@ -9,11 +9,13 @@ import { REGION_LABELS } from '@/constants/regions';
 // причины — unknowns; экран ничего не сочиняет и не хардкодит кейс Актау.
 
 type InsufficientDataScreenProps = {
-  detail: IncidentDetail;
-};
+  detail: IncidentDetail
+}
 
-export function InsufficientDataScreen({ detail }: InsufficientDataScreenProps) {
-  const { investigation, region } = detail;
+export function InsufficientDataScreen({
+  detail,
+}: InsufficientDataScreenProps) {
+  const { investigation, region } = detail
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -35,5 +37,5 @@ export function InsufficientDataScreen({ detail }: InsufficientDataScreenProps) 
         </div>
       </div>
     </div>
-  );
+  )
 }

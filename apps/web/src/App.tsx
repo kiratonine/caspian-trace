@@ -1,8 +1,8 @@
-import { AppHeader } from '@/components/layout/AppHeader';
-import { ConclusionPanel } from '@/features/conclusion/ConclusionPanel';
-import { SignalFeed } from '@/features/feed/SignalFeed';
-import { ReplayTimeline } from '@/features/replay/ReplayTimeline';
-import { RiverScheme } from '@/features/river-scheme/RiverScheme';
+import { AppHeader } from "@/components/layout/AppHeader"
+import { ConclusionPanel } from "@/features/conclusion/ConclusionPanel"
+import { SignalFeed } from "@/features/feed/SignalFeed"
+import { ReplayTimeline } from "@/features/replay/ReplayTimeline"
+import { RiverScheme } from "@/features/river-scheme/RiverScheme"
 
 // Главный экран по ТЗ §13: слева лента, в центре схема реки, справа вывод,
 // внизу шкала реплея. На узких экранах колонки складываются в столбец —
@@ -18,7 +18,7 @@ export function App() {
       </main>
       <ReplayTimeline />
     </div>
-  );
+  )
 }
 
 export default App

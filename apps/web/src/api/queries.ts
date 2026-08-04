@@ -1,21 +1,21 @@
-import { queryOptions } from '@tanstack/react-query';
+import { queryOptions } from "@tanstack/react-query"
 
-import { fetchIncidentDetail, fetchIncidents } from './incidents';
-import { startReplay } from './replays';
+import { fetchIncidentDetail, fetchIncidents } from "./incidents"
+import { startReplay } from "./replays"
 
 // Ключи и опции запросов в одном месте: все три колонки главного экрана читают
 // одно и то же выбранное событие, TanStack Query дедуплицирует их по ключу.
 
 export const incidentsQueryOptions = queryOptions({
-  queryKey: ['incidents'],
+  queryKey: ["incidents"],
   queryFn: () => fetchIncidents(),
-});
+})
 
 export function incidentDetailQueryOptions(id: string) {
   return queryOptions({
-    queryKey: ['incidents', id],
+    queryKey: ["incidents", id],
     queryFn: () => fetchIncidentDetail(id),
-  });
+  })
 }
 
 // Эндпоинт — POST, но сценарий «неизменяемый» (ТЗ §12), поэтому читаем его
@@ -23,7 +23,7 @@ export function incidentDetailQueryOptions(id: string) {
 // а ошибка «сценария нет» заранее гасит кнопку play на шкале.
 export function replayScenarioQueryOptions(incidentId: string) {
   return queryOptions({
-    queryKey: ['replays', incidentId],
+    queryKey: ["replays", incidentId],
     queryFn: () => startReplay(incidentId),
-  });
+  })
 }

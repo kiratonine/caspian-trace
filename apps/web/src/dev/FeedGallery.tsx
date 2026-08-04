@@ -1,19 +1,19 @@
-import { useState } from 'react';
+import { useState } from "react"
 
-import { incidentDetails, incidentSummaries } from '@/api/seed-data';
-import { SignalFeedContent } from '@/features/feed/SignalFeed';
+import { incidentDetails, incidentSummaries } from "@/api/seed-data"
+import { SignalFeedContent } from "@/features/feed/SignalFeed"
 
 // Дев-превью ленты (только dev-сборка, см. router.tsx) в ширине реальной
 // колонки (260–320px). Клики по карточкам работают, но пишут локальный
 // useState, а не ?incident= — превью не трогает URL. Данные — seed ТЗ §5/§10.
 
 type FeedFrameProps = {
-  title: string;
-  initialSelectedId: string;
-};
+  title: string
+  initialSelectedId: string
+}
 
 function FeedFrame({ title, initialSelectedId }: FeedFrameProps) {
-  const [selectedId, setSelectedId] = useState(initialSelectedId);
+  const [selectedId, setSelectedId] = useState(initialSelectedId)
 
   return (
     <section className="flex shrink-0 flex-col gap-2">
@@ -29,7 +29,7 @@ function FeedFrame({ title, initialSelectedId }: FeedFrameProps) {
         />
       </div>
     </section>
-  );
+  )
 }
 
 export default function FeedGallery() {
@@ -58,5 +58,5 @@ export default function FeedGallery() {
         />
       </div>
     </main>
-  );
+  )
 }

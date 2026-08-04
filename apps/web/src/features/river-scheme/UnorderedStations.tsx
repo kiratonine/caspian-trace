@@ -1,13 +1,13 @@
-import { Info } from 'lucide-react';
+import { Info } from "lucide-react"
 
-import { SCHEME_UNORDERED_NOTE } from '@/constants/scheme';
-import { StationNode } from './StationNode';
-import type { SchemeModel, StationSchemeEntry } from './scheme-model';
+import { SCHEME_UNORDERED_NOTE } from "@/constants/scheme"
+import { StationNode } from "./StationNode"
+import type { SchemeModel, StationSchemeEntry } from "./scheme-model"
 
 type UnorderedStationsProps = {
-  entries: StationSchemeEntry[];
-  corridor: SchemeModel['corridor'];
-};
+  entries: StationSchemeEntry[]
+  corridor: SchemeModel["corridor"]
+}
 
 /**
  * Группа «порядок не подтверждён»: станции с riverOrder = null не встраиваются
@@ -18,7 +18,7 @@ export function UnorderedStations({
   entries,
   corridor,
 }: UnorderedStationsProps) {
-  const openUp = corridor?.upstreamStationId == null;
+  const openUp = corridor?.upstreamStationId == null
 
   return (
     <div className="flex flex-col gap-3">
@@ -30,10 +30,10 @@ export function UnorderedStations({
         {entries.map((entry) => {
           const bound =
             corridor?.downstreamStationId === entry.station.id
-              ? 'downstream'
+              ? "downstream"
               : corridor?.upstreamStationId === entry.station.id
-                ? 'upstream'
-                : null;
+                ? "upstream"
+                : null
           return (
             <StationNode
               key={entry.station.id}
@@ -41,9 +41,9 @@ export function UnorderedStations({
               corridorBound={bound}
               corridorOpenUp={openUp}
             />
-          );
+          )
         })}
       </div>
     </div>
-  );
+  )
 }

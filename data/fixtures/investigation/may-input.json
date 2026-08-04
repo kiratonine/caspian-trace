@@ -1,0 +1,21 @@
+{
+  "incident": { "id": "inv-atyrau-2025-05", "title": "Жайык, Атырау: нефтепродукты, май 2025", "region": "atyrau", "indicator": "нефтепродукты" },
+  "signals": [],
+  "stations": [
+    { "id": "st-asa-0-5km-above", "name": "0,5 км выше сброса КГП «Атырау су арнасы»", "waterBody": "Жайык" },
+    { "id": "st-asa-0-5km-below", "name": "0,5 км ниже сброса КГП «Атырау су арнасы»", "waterBody": "Жайык" }
+  ],
+  "stationRelations": [
+    { "id": "rel-may-asa-pair", "upstreamStationId": "st-asa-0-5km-above", "downstreamStationId": "st-asa-0-5km-below", "sourceDocumentId": "doc-kazhydromet-2025-05", "basis": "Официальная парная маркировка выше/ниже одного сброса", "verified": true, "comparisonPair": true }
+  ],
+  "measurements": [
+    { "id": "m-2025-05-asa-above", "stationId": "st-asa-0-5km-above", "indicator": "нефтепродукты", "matrix": "water", "value": "0.114", "rawValueText": "0,114", "unit": "mg/dm3", "sampledAt": null, "sampledPeriod": "2025-05", "sourceDocumentId": "doc-kazhydromet-2025-05", "sourcePage": 24, "sourceExcerpt": "Нефтепродукты – 0,114 мг/дм3", "verified": true },
+    { "id": "m-2025-05-asa-below", "stationId": "st-asa-0-5km-below", "indicator": "нефтепродукты", "matrix": "water", "value": "0.193", "rawValueText": "0,193", "unit": "mg/dm3", "sampledAt": null, "sampledPeriod": "2025-05", "sourceDocumentId": "doc-kazhydromet-2025-05", "sourcePage": 24, "sourceExcerpt": "Нефтепродукты – 0,193 мг/дм3", "verified": true }
+  ],
+  "candidateObjects": [
+    { "id": "obj-atyrau-su-arnasy", "name": "КГП «Атырау су арнасы»", "category": "сброс сточных вод", "stationId": "st-asa-0-5km-below", "waterBody": "Жайык", "evidenceDocumentIds": ["doc-kazhydromet-2025-05"], "completeness": "confirmed" }
+  ],
+  "sourceDocuments": [
+    { "id": "doc-kazhydromet-2025-05", "title": "Бюллетень Атырауской области, май 2025", "publisher": "РГП «Казгидромет»", "url": "https://www.kazhydromet.kz/uploads/files_calendar/8606/file/6850158c0099catyrau-russ-byulleten-za-may-2025g.pdf", "official": true, "verified": true, "publishedAt": null, "fetchedAt": null, "contentType": "pdf", "sha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce", "cachePath": null, "status": "unverified" }
+  ]
+}

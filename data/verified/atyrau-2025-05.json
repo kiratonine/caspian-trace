@@ -1,0 +1,46 @@
+{
+  "document": {
+    "id": "doc-kazhydromet-2025-05",
+    "url": "https://www.kazhydromet.kz/uploads/files_calendar/8606/file/6850158c0099catyrau-russ-byulleten-za-may-2025g.pdf",
+    "sha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
+    "sourcePage": 24,
+    "period": "2025-05",
+    "verificationStatus": "automated_source_checked_human_review_pending"
+  },
+  "measurements": [
+    {
+      "id": "m-2025-05-asa-above",
+      "stationId": "st-asa-0-5km-above",
+      "stationLabel": "0,5 км выше сброса КГП «Атырау су арнасы»",
+      "indicator": "нефтепродукты",
+      "rawValueText": "0,114",
+      "normalizedValue": "0.114",
+      "unit": "mg/dm3",
+      "sampledAt": null,
+      "sampledPeriod": "2025-05",
+      "sourceUrl": "https://www.kazhydromet.kz/uploads/files_calendar/8606/file/6850158c0099catyrau-russ-byulleten-za-may-2025g.pdf",
+      "sourceSha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
+      "sourcePage": 24,
+      "sourceExcerpt": "г.Атырау, 0,5 км выше сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,114 мг/дм3",
+      "checkedBy": ["codex-automated-source-verification"],
+      "checkedAt": "2026-08-04"
+    },
+    {
+      "id": "m-2025-05-asa-below",
+      "stationId": "st-asa-0-5km-below",
+      "stationLabel": "0,5 км ниже сброса КГП «Атырау су арнасы»",
+      "indicator": "нефтепродукты",
+      "rawValueText": "0,193",
+      "normalizedValue": "0.193",
+      "unit": "mg/dm3",
+      "sampledAt": null,
+      "sampledPeriod": "2025-05",
+      "sourceUrl": "https://www.kazhydromet.kz/uploads/files_calendar/8606/file/6850158c0099catyrau-russ-byulleten-za-may-2025g.pdf",
+      "sourceSha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
+      "sourcePage": 24,
+      "sourceExcerpt": "г.Атырау, 0,5 км ниже сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,193 мг/дм3",
+      "checkedBy": ["codex-automated-source-verification"],
+      "checkedAt": "2026-08-04"
+    }
+  ]
+}

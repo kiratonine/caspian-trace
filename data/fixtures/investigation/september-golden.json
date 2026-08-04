@@ -1,0 +1,46 @@
+{
+  "evidenceLevel": "L2",
+  "corridorBounds": {
+    "upstreamStationId": null,
+    "downstreamStationId": "st-zhaiyk-1km-above-atyrau"
+  },
+  "supportedFacts": [],
+  "contradictedHypotheses": [
+    {
+      "id": "evidence-no-increase-rel-sep-asa-pair",
+      "code": "NO_LOCAL_INCREASE_IN_PAIR",
+      "kind": "contradicts",
+      "text": "В сопоставимой паре изменение составляет -0,004 мг/дм³; эта пара не подтверждает дополнительное поступление внутри интервала в данном временном срезе.",
+      "measurementIds": ["m-2025-09-asa-above", "m-2025-09-asa-below"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-09"],
+      "generatedBy": "rule_engine",
+      "sortOrder": 0
+    },
+    {
+      "id": "evidence-maximum-upstream-obj-atyrau-su-arnasy",
+      "code": "MAXIMUM_UPSTREAM_OF_OBJECT",
+      "kind": "contradicts",
+      "text": "Объект для проверки «КГП «Атырау су арнасы»» расположен ниже максимального вышележащего измерения и не объясняет этот максимум обычным переносом вниз по течению. Это не оценивает другие события или участки ниже объекта.",
+      "measurementIds": ["m-2025-09-1km-above-atyrau"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-09"],
+      "generatedBy": "rule_engine",
+      "sortOrder": 1
+    }
+  ],
+  "objectDispositions": [
+    {
+      "objectId": "obj-atyrau-su-arnasy",
+      "disposition": "does_not_explain_event",
+      "evidenceStatementIds": ["evidence-maximum-upstream-obj-atyrau-su-arnasy"]
+    }
+  ],
+  "unknowns": [
+    {
+      "code": "UPSTREAM_BOUNDARY_UNMEASURED",
+      "text": "Нет сопоставимого числового значения на ближайшем подтверждённом вышележащем створе."
+    }
+  ],
+  "conclusion": "Источник не установлен. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
+  "inputHash": "40007fdb7450c226f20b21a881e46acb16dce9b413376409972c0ba4791e42f4",
+  "rulesetVersion": "1.0.0"
+}

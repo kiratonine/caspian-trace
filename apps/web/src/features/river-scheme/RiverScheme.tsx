@@ -1,51 +1,33 @@
-import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
 import type { IncidentDetail } from '@/api/contracts';
-import {
-  incidentDetailQueryOptions,
-  incidentsQueryOptions,
-} from '@/api/queries';
 import { InsufficientData } from '@/components/common';
 import { Skeleton } from '@/components/ui/skeleton';
-import { INCIDENT_SEARCH_PARAM } from '@/constants/routing';
 import {
-  SCHEME_LOAD_ERROR,
   SCHEME_UNCONFIRMED_ORDER_HINT,
   SCHEME_UPSTREAM_HINT,
 } from '@/constants/scheme';
+import { DATA_LOAD_ERROR } from '@/constants/strings';
+import { useSelectedIncidentDetail } from '@/hooks/use-selected-incident-detail';
 import { formatSampledAt } from '@/lib/format';
 import { OrderedStations } from './OrderedStations';
 import { UnorderedStations } from './UnorderedStations';
 import { buildSchemeModel } from './scheme-model';
 
-/** Колонка схемы: выбирает событие (URL → первое в списке) и грузит его данные. */
+/** Колонка схемы: рисует выбранное событие (общий хук выбора). */
 export function RiverScheme() {
-  const incidentsQuery = useQuery(incidentsQueryOptions);
-  const [searchParams] = useSearchParams();
-  // Deep-link ?incident= уже читается; писать его начнёт лента в своей сессии.
-  const selectedIncidentId =
-    searchParams.get(INCIDENT_SEARCH_PARAM) ??
-    incidentsQuery.data?.[0]?.id ??
-    null;
-  const detailQuery = useQuery({
-    ...incidentDetailQueryOptions(selectedIncidentId ?? ''),
-    enabled: selectedIncidentId !== null,
-  });
+  const { detail, isError } = useSelectedIncidentDetail();
 
   return (
     <section aria-label="Линейная схема реки" className="flex min-h-0 flex-col">
-      {detailQuery.data ? (
-        <RiverSchemeContent detail={detailQuery.data} />
+      {detail ? (
+        <RiverSchemeContent detail={detail} />
       ) : (
         <>
           <SchemeHeader subtitle={null} />
           <div className="flex min-h-0 flex-1 items-center justify-center p-8">
-            {incidentsQuery.isError || detailQuery.isError ? (
-              <p className="text-sm text-muted-foreground">
-                {SCHEME_LOAD_ERROR}
-              </p>
+            {isError ? (
+              <p className="text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
             ) : (
               <SchemeSkeleton />
             )}

@@ -2,7 +2,39 @@
 
 ## Состояние на конец последней сессии
 
-**Сессия 5 (04.08.2026) — линейная схема реки v1. Завершена.**
+**Сессия 6 (04.08.2026) — правая панель §13 на данных выбранного события. Завершена.**
+
+- `src/hooks/use-selected-incident-detail.ts` — общий хук выбора события
+  (`?incident=` → первое в списке); `RiverScheme` переведён на него, панель
+  и схема гарантированно показывают одно и то же событие (запросы
+  дедуплицируются TanStack Query по ключу).
+- `src/features/conclusion/`: `panel-model.ts` (утверждениям разворачиваются
+  измерения-основания со створом и документом), `StatementList` (один компонент
+  на блоки 3–4 — текст утверждения с бэка дословно + кликабельные значения под
+  ним, §16 п.5 работает и в панели), `SourcesList` (блок 6, страница — из
+  ссылающегося измерения: сентябрь «стр. 22», май скрыт сентинелом 0),
+  `ConclusionPanel` (контейнер + `ConclusionPanelContent` для дев-превью;
+  секции строго из `CONCLUSION_SECTIONS`).
+- Блок 2 — `EvidenceLevelBadge` + видимая расшифровка уровня из
+  `EVIDENCE_LEVEL_META` (§13 «с расшифровкой», не только в тултипе).
+- Пустые состояния — осторожные формулировки в `constants/panel.ts`
+  («Ни одна конкретная версия пока не исключена фактами» — состояние данных,
+  не оценка невиновности); Актау в панели полностью рабочий: L0 + пустые
+  блоки + unknowns.
+- `DATA_LOAD_ERROR` перенесён в `constants/strings.ts` (общий для колонок),
+  `SCHEME_LOAD_ERROR` удалён.
+- Дев-превью `/dev/conclusion`: сентябрь (L2, исключённая версия),
+  май (L3), Актау (L0, пустые состояния) в ширине реальной колонки.
+- Проверено: `typecheck`, `lint`, `build` зелёные; Playwright 1280×720
+  свет/тьма: главный экран (схема + панель на одном событии), галерея панели;
+  в консоли только `STUB:`-варны.
+- **Следующая задача (сессия 7): лента слева** — сигналы + расследования
+  (`SignalFeed`, `SignalCard`), выбор события кликом = запись `?incident=`
+  (хук выбора уже читает его), уровни компактными бейджами.
+- **Блокеры прежние:** вопросы 1 и 2.
+
+<details>
+<summary>Сессия 5 (04.08.2026) — линейная схема реки v1. Завершена.</summary>
 
 - `src/api/queries.ts` — `queryOptions` списка событий и деталей события; все
   колонки главного экрана читают одно выбранное событие, TanStack Query
@@ -40,6 +72,7 @@
 - **Блокеры прежние:** вопросы 1 (порядок створов — обе ветки схемы готовы,
   ответ команды включит линию правкой `riverOrder` в seed-data) и 2
   (incident vs investigation).
+</details>
 
 <details>
 <summary>Сессия 4 (04.08.2026) — common-примитивы + lib/format. Завершена.</summary>
@@ -174,9 +207,9 @@
 - [x] **Контрольная точка 12 ч:** сентябрьский кейс виден на схеме, каждое число открывает источник. ✓ 04.08.2026
 
 ### Блок 24–36 ч
-- [ ] Правая панель: 6 блоков по ТЗ §13 (Вывод → Уровень → Установлено → Не подтверждается → Неизвестно → Источники). ← СЛЕДУЮЩАЯ (сессия 6)
-- [ ] Состояния L0–L3 через `EVIDENCE_LEVEL_META` (цвета из ТЗ §6: серый/синий/янтарный/зелёный).
-- [ ] Лента слева: сигналы + расследования.
+- [x] Правая панель: 6 блоков по ТЗ §13 (Вывод → Уровень → Установлено → Не подтверждается → Неизвестно → Источники) — сессия 6, 04.08.2026.
+- [x] Состояния L0–L3 через `EVIDENCE_LEVEL_META` (цвета из ТЗ §6: серый/синий/янтарный/зелёный) — бейдж с сессии 4, в панели с расшифровкой с сессии 6.
+- [ ] Лента слева: сигналы + расследования. ← СЛЕДУЮЩАЯ (сессия 7): клик = запись `?incident=`.
 - [ ] Экран Актау «недостаточно данных» — полноценный, часть демо.
 
 ### Блок 36–45 ч
@@ -206,13 +239,14 @@ src/
   types/          — типы 1:1 из ТЗ §8
   constants/      — api, evidence (EVIDENCE_LEVEL_META), phenomena, replay, strings (юр. оговорка)
   lib/format.ts   — числа ru-RU, даты +05:00, мг/дм³
+  hooks/          — use-selected-incident-detail (общий выбор события: ?incident= → первое в списке)
   stores/replayStore.ts — Zustand: шаги, индекс, play/pause/seek
   components/ui/  — shadcn (Base UI)
   components/common/ — MeasurementValue, SourceLink, EvidenceLevelBadge, InsufficientData
   features/
     feed/         — SignalFeed, SignalCard
     river-scheme/ — RiverScheme (DOM/flex, решение сессии 5), scheme-model, StationNode, OrderedStations, CorridorBand, UnorderedStations (riverOrder=null)
-    conclusion/   — ConclusionPanel + FactsList, RejectedList, UnknownsList, SourcesList
+    conclusion/   — ConclusionPanel + panel-model, StatementList (блоки 3–4), SourcesList
     replay/       — ReplayTimeline, ReplayControls, useReplayPlayback (таймеры от performance.now())
     comparison/   — переключатель май/сентябрь
     dossier/      — печатный маршрут

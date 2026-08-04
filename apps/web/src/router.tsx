@@ -13,8 +13,10 @@ const routes: RouteObject[] = [{ path: '/', element: <App /> }];
 if (import.meta.env.DEV) {
   const PrimitivesGallery = lazy(() => import('@/dev/PrimitivesGallery'));
   const RiverSchemeGallery = lazy(() => import('@/dev/RiverSchemeGallery'));
+  const ConclusionGallery = lazy(() => import('@/dev/ConclusionGallery'));
   routes.push({ path: '/dev/primitives', element: <PrimitivesGallery /> });
   routes.push({ path: '/dev/river-scheme', element: <RiverSchemeGallery /> });
+  routes.push({ path: '/dev/conclusion', element: <ConclusionGallery /> });
 }
 
 export const router = createBrowserRouter(routes);

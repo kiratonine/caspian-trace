@@ -29,5 +29,3 @@ export const SCHEME_CORRIDOR_OPEN_UP_TOOLTIP =
   'Вероятный коридор открыт вверх по течению: источник следует искать выше этого створа.';
 
 export const SCHEME_NO_VALUE_LABEL = 'нет значения';
-
-export const SCHEME_LOAD_ERROR = 'Не удалось загрузить данные события.';

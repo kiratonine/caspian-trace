@@ -2,21 +2,36 @@
 
 ## Состояние на конец последней сессии
 
-**Сессия 1 (04.08.2026) — аудит ТЗ. Завершена, подтверждена.**
+**Сессия 2 (04.08.2026) — типы + константы + api-слой с заглушками. Завершена.**
 
-- Кода нет. Созданы файлы памяти: `CLAUDE.md`, `docs/frontend-plan.md`, `docs/decisions.md`, `docs/stubs.md`.
-- **Монорепа сделана (вопрос 9 закрыт):** Vite-приложение переехало в `apps/web`,
-  корневой `package.json` — npm workspaces (`apps/*`, `packages/*`), команды проксируются
-  (`npm run dev` из корня). `npm install` — из корня. Сборка и typecheck проверены после переезда.
-  Бэкендеры кладут своё в `apps/api` и `packages/*` — им нужен `git pull` до первого файла.
-- `.gitignore` дополнен: `.env`/`.env.*` игнорируются, `.env.example` разрешён.
-- Установлены React 19, TS strict, Tailwind 4, shadcn на Base UI (base-lyra), @fontsource Inter
-  (кириллический сабсет в бандле — проверено). НЕ установлены: TanStack Query, Zustand,
-  react-router-dom — ставить в сессии 2 (`npm install <pkg> -w web`).
-- **Следующая задача (сессия 2): «Типы + константы + api-слой с заглушками»** — см. блок 2–24 ч.
-- **Блокеры сессии 2:** ответы команды на вопросы 1 (порядок створов) и 2 (incident vs
-  investigation). Без ответа на 2 слой заглушек не фиксировать; типы ТЗ §8
-  и константы можно делать в любом случае.
+- Установлены: @tanstack/react-query, zustand, react-router-dom, @types/geojson (dev).
+- `src/types/` — 1:1 из ТЗ §8 + `ReplayStep` из §12 (payload = unknown), barrel `index.ts`.
+- `src/constants/` — `api` (API_BASE_URL с фолбэком `/api`, MAX_INCIDENTS_LIMIT),
+  `evidence` (EVIDENCE_LEVEL_META по §6), `phenomena` (PHENOMENON_LABELS,
+  VERIFICATION_STATUS_META), `replay` (REPLAY_STEP_OFFSETS_MS §12, лейблы шагов),
+  `strings` (LEGAL_DISCLAIMER, OBJECT_FOR_REVIEW_LABEL, INSUFFICIENT_DATA_TITLE).
+- `src/api/` — `client` (apiGet/apiPost + warnStubOnce), `contracts` (**провизорные**
+  формы ответов §12 — вопросы 2/3/6 открыты), `seed-data` (только данные ТЗ
+  §5/§7/§10/§14, riverOrder везде null), заглушки `incidents`, `replays`,
+  `investigations`, `live-status` — реестр в `docs/stubs.md`.
+- `.env.example` (VITE_API_BASE_URL, необязателен), `vite-env.d.ts`;
+  в eslint отключён react-refresh/only-export-components для `src/components/ui`.
+- Проверено: `typecheck`, `lint`, `build` — зелёные. ВАЖНО: eslint запускать из
+  `apps/web` (конфиг там), корневой `npm run lint` через обёртку может искать конфиг в корне.
+- **Следующая задача (сессия 3): каркас трёх колонок + шкала снизу** (порядок
+  блоков панели строго по ТЗ §13); затем common-примитивы.
+- **Блокеры прежние:** вопросы 1 (порядок створов) и 2 (incident vs investigation).
+  Контракт заглушек — провизорный (`src/api/contracts.ts`); при ответах команды
+  правятся только `contracts.ts` + `seed-data.ts`.
+
+<details>
+<summary>Сессия 1 (04.08.2026) — аудит ТЗ, монорепа. Завершена.</summary>
+
+- Созданы файлы памяти: `CLAUDE.md`, `docs/frontend-plan.md`, `docs/decisions.md`, `docs/stubs.md`.
+- Монорепа по ТЗ §11 (вопрос 9 закрыт): `apps/web` + npm workspaces, команды из корня.
+- `.gitignore`: `.env`/`.env.*` игнорируются, `.env.example` разрешён.
+- Установлены React 19, TS strict, Tailwind 4, shadcn на Base UI (base-lyra), @fontsource Inter.
+</details>
 
 ## Открытые вопросы к команде (закрыть в первые 2 часа хакатона)
 
@@ -24,18 +39,24 @@
    точек; где в порядке «посёлок Дамба» и «1 км выше/ниже Атырау» относительно точек
    «Атырау су арнасы». ← БЛОКЕР линейной схемы
 2. **Incident vs Investigation:** одна сущность или две? Какой эндпоинт отдаёт ленту слева
-   и какой — полные данные правой панели? Будет ли `GET /api/investigations/:id`? ← БЛОКЕР api-слоя
+   и какой — полные данные правой панели? Будет ли `GET /api/investigations/:id`? ← БЛОКЕР
+   фиксации контракта. Провизорный вариант зафиксирован в `src/api/contracts.ts`
+   (IncidentSummary/IncidentDetail: investigation + signals + measurements + stations
+   + candidateObjects + sourceDocuments) — команде подтвердить или поправить.
 3. **Реплей:** `:id` в `POST /api/replays/:id/start` — чей? Пример JSON полного сентябрьского
    сценария со всеми 5 типами шагов — для типизации `payload` (дискриминированный юнион).
+   Провизорный юнион — `TypedReplayStep` в `src/api/contracts.ts`.
 4. **Май/сентябрь:** как в данных связаны два расследования одного участка — признак для UI
    сравнения (главный «вау»-момент демо).
 5. **Экспорт:** досье печатает фронт из тех же данных, бэковский `/export` не используем — подтвердить.
 6. **Коридор:** добавить в контракт пару `stationId` границ (GeoJSON для линейной схемы недостаточен;
-   можно в `properties` GeoJSON-фичи).
+   можно в `properties` GeoJSON-фичи). Провизорно — `corridorBounds` в `IncidentDetail`
+   (`upstreamStationId: null` = интервал открыт вверх, кейс сентября).
 7. **Актау:** формат кейса «недостаточно данных» — incident с `region=mangystau`? причины отказа
    в `unknowns`? кто их формирует?
 8. **Страницы PDF:** подтвердить `source_pages` майских значений; проверить, открываются ли URL
-   Казгидромета с якорем `#page=N` без принудительного скачивания.
+   Казгидромета с якорем `#page=N` без принудительного скачивания. В заглушке майская
+   `sourcePage = 0` (сентинел «не подтверждено») — заменить после проверки.
 9. ~~**Монорепа:** переезд в `apps/web` сейчас или отказ.~~ РЕШЕНО 04.08: переезд выполнен,
    структура по ТЗ §11; бэкендерам — `git pull` до первого файла, их зона `apps/api` и `packages/*`.
 10. **Цвет значений:** формула «относительного положения» (моё предложение: монохромная
@@ -52,14 +73,13 @@
 - [x] Завершена 04.08.2026.
 
 ### Блок 2–24 ч (фронт работает параллельно бэку, ничего не ждёт)
-- [ ] **Типы + константы + api-слой с заглушками** ← СЛЕДУЮЩАЯ (сессия 2)
-  - установить deps: @tanstack/react-query, zustand, react-router-dom;
-  - `src/types/` буквально по ТЗ §8;
-  - `src/constants/` (api, evidence, phenomena, replay, strings — юр. оговорка);
-  - `src/api/` с заглушками (только реальные данные ТЗ §5 + кейс Актау);
-  - ~~`.gitignore`: добавить `.env`~~ сделано в сессии 1;
-  - `.env.example` с `VITE_API_BASE_URL`; чтение с фолбэком — сборка работает без `.env`.
-- [ ] Каркас трёх колонок + шкала снизу (порядок блоков панели строго по ТЗ §13).
+- [x] **Типы + константы + api-слой с заглушками** — сессия 2, 04.08.2026
+  - [x] deps: @tanstack/react-query, zustand, react-router-dom (+ @types/geojson);
+  - [x] `src/types/` буквально по ТЗ §8;
+  - [x] `src/constants/` (api, evidence, phenomena, replay, strings — юр. оговорка);
+  - [x] `src/api/` с заглушками (только реальные данные ТЗ §5 + кейс Актау);
+  - [x] `.env.example` с `VITE_API_BASE_URL`; чтение с фолбэком — сборка работает без `.env`.
+- [ ] Каркас трёх колонок + шкала снизу (порядок блоков панели строго по ТЗ §13). ← СЛЕДУЮЩАЯ (сессия 3)
 - [ ] Common-примитивы: `MeasurementValue`, `SourceLink`, `EvidenceLevelBadge`, `InsufficientData`.
 - [ ] Линейная схема реки v1 на сентябрьских данных, числа кликабельны.
 - **Контрольная точка 12 ч:** сентябрьский кейс виден на схеме, каждое число открывает источник.

@@ -7,6 +7,23 @@
 - заменил реальным эндпоинтом — вычеркни строку;
 - проверять этот файл в начале каждой сессии.
 
+Пути — от `apps/web/`. Данные всех заглушек лежат в `src/api/seed-data.ts`,
+провизорные формы ответов — в `src/api/contracts.ts` (вопросы 2/3/6 плана).
+
 | Файл | Функция | Заменяет эндпоинт | Кто отдаёт | Статус |
 |---|---|---|---|---|
-| — | — | — | — | заглушек пока нет: код не начат (сессия 2) |
+| `src/api/incidents.ts` | `fetchIncidents` | `GET /api/incidents` | full-stack 1 | активна |
+| `src/api/incidents.ts` | `fetchIncidentDetail` | `GET /api/incidents/:id` | full-stack 1 | активна |
+| `src/api/replays.ts` | `startReplay` | `POST /api/replays/:id/start` | full-stack 2 | активна (только сентябрьский сценарий §14) |
+| `src/api/investigations.ts` | `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | full-stack 2 | активна |
+| `src/api/live-status.ts` | `fetchLiveStatus` | `GET /api/live/status` | full-stack 1 | активна |
+
+Известные условности внутри seed-данных (не выдумки, а явные сентинелы):
+
+- `riverOrder` везде `null` — порядок створов не подтверждён (вопрос 1);
+- майские измерения: `sourcePage: 0` — страница бюллетеня не перепроверена (вопрос 8);
+- `sha256: ''` у документов — хэш посчитает бэк при скачивании;
+- `sampledAt` с точностью до месяца (`'2025-09'`, `'2025-05'`) — точных дат в ТЗ нет;
+- `sourceExcerpt` измерений — реконструкция строки таблицы из значений ТЗ §5,
+  дословные цитаты бюллетеня отдаст бэк;
+- кейс Актау — минимальный investigation без сигналов (формат ждёт ответа на вопрос 7).

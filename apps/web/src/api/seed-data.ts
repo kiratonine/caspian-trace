@@ -450,6 +450,7 @@ export const incidentSummaries: IncidentSummary[] = [
     evidenceLevel: invSeptember.evidenceLevel,
     indicator: invSeptember.indicator,
     updatedAt: invSeptember.updatedAt,
+    period: SEPTEMBER_2025, // тот же месяц, что у измерений события
   },
   {
     id: invMay.id,
@@ -458,6 +459,7 @@ export const incidentSummaries: IncidentSummary[] = [
     evidenceLevel: invMay.evidenceLevel,
     indicator: invMay.indicator,
     updatedAt: invMay.updatedAt,
+    period: MAY_2025,
   },
   {
     id: invAktau.id,
@@ -466,6 +468,7 @@ export const incidentSummaries: IncidentSummary[] = [
     evidenceLevel: invAktau.evidenceLevel,
     indicator: invAktau.indicator,
     updatedAt: invAktau.updatedAt,
+    period: null, // период сообщений не установлен (кейс «недостаточно данных»)
   },
 ]
 

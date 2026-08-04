@@ -1,13 +1,19 @@
-import { useMemo } from "react"
+import { useMemo, type ReactNode } from "react"
+import { useQuery } from "@tanstack/react-query"
+import { useSearchParams } from "react-router-dom"
 
 import type { IncidentDetail } from "@/api/contracts"
+import { incidentsQueryOptions } from "@/api/queries"
 import { Skeleton } from "@/components/ui/skeleton"
+import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
 import {
   SCHEME_UNCONFIRMED_ORDER_HINT,
   SCHEME_UPSTREAM_HINT,
 } from "@/constants/scheme"
 import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { InsufficientDataScreen } from "@/features/aktau/InsufficientDataScreen"
+import { PeriodSwitcher } from "@/features/comparison/PeriodSwitcher"
+import { findComparablePeriods } from "@/features/comparison/comparison-model"
 import {
   projectDetailForReplay,
   useReplayFrame,
@@ -29,10 +35,32 @@ export function RiverScheme() {
     [detail, frame]
   )
 
+  const incidentsQuery = useQuery(incidentsQueryOptions)
+  const [, setSearchParams] = useSearchParams()
+  const periods = useMemo(
+    () => findComparablePeriods(incidentsQuery.data ?? [], selectedIncidentId),
+    [incidentsQuery.data, selectedIncidentId]
+  )
+  const selectPeriod = (id: string) => {
+    setSearchParams((params) => {
+      params.set(INCIDENT_SEARCH_PARAM, id)
+      return params
+    })
+  }
+
   return (
     <section aria-label="Линейная схема реки" className="flex min-h-0 flex-col">
       {shownDetail ? (
-        <RiverSchemeContent detail={shownDetail} />
+        <RiverSchemeContent
+          detail={shownDetail}
+          periodSwitcher={
+            <PeriodSwitcher
+              periods={periods}
+              selectedIncidentId={selectedIncidentId}
+              onSelect={selectPeriod}
+            />
+          }
+        />
       ) : (
         <>
           <SchemeHeader subtitle={null} />
@@ -51,10 +79,15 @@ export function RiverScheme() {
 
 type RiverSchemeContentProps = {
   detail: IncidentDetail
+  /** Переключатель периодов участка; у события без пары его нет. */
+  periodSwitcher?: ReactNode
 }
 
 /** Презентационная часть схемы — контейнер и дев-превью отдают ей готовые данные. */
-export function RiverSchemeContent({ detail }: RiverSchemeContentProps) {
+export function RiverSchemeContent({
+  detail,
+  periodSwitcher = null,
+}: RiverSchemeContentProps) {
   const model = useMemo(() => buildSchemeModel(detail), [detail])
   const hasUnordered = model.unordered.length > 0
 
@@ -79,6 +112,7 @@ export function RiverSchemeContent({ detail }: RiverSchemeContentProps) {
       <SchemeHeader subtitle={subtitle} />
       <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
         <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
+          {periodSwitcher}
           <p className="text-xs text-muted-foreground">
             {detail.investigation.indicator}
             {firstMeasurement &&

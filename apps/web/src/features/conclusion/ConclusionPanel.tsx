@@ -14,12 +14,14 @@ import {
 } from "@/constants/panel"
 import { REPLAY_PENDING } from "@/constants/replay"
 import { DATA_LOAD_ERROR } from "@/constants/strings"
+import { VerdictChange } from "@/features/comparison/VerdictChange"
 import {
   projectDetailForReplay,
   useReplayFrame,
   type ReplayFrame,
 } from "@/features/replay/replay-frame"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
+import { useVerdictChange } from "@/hooks/use-verdict-change"
 import type { Investigation } from "@/types"
 import { SourcesList } from "./SourcesList"
 import { StatementList } from "./StatementList"
@@ -35,6 +37,9 @@ export function ConclusionPanel() {
     () => (detail && frame ? projectDetailForReplay(detail, frame) : detail),
     [detail, frame]
   )
+  // Переход между периодами одного участка (ТЗ §5, §14). Во время реплея
+  // не показываем: там своя хронология, и вывод ещё не наступил.
+  const verdictChange = useVerdictChange(selectedIncidentId)
 
   return (
     <section
@@ -46,6 +51,13 @@ export function ConclusionPanel() {
           Вывод и доказательства
         </h2>
       </header>
+      {verdictChange && !frame && (
+        <VerdictChange
+          before={verdictChange.before}
+          after={verdictChange.after}
+          onDismiss={verdictChange.dismiss}
+        />
+      )}
       <ScrollArea className="min-h-0 flex-1">
         {shownDetail ? (
           <ConclusionPanelContent detail={shownDetail} replayFrame={frame} />

@@ -1,0 +1,5 @@
+process.env.NODE_ENV = 'test'
+process.env.PORT = '3000'
+process.env.API_PREFIX = 'api'
+process.env.WEB_ORIGIN = 'http://localhost:5173'
+process.env.HTTP_BODY_LIMIT = '1kb'

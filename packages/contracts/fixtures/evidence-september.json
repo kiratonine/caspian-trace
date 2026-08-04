@@ -1,0 +1,45 @@
+{
+  "investigationId": "inv-atyrau-2025-09",
+  "statements": [
+    {
+      "id": "es-2025-09-fact-max",
+      "kind": "supports",
+      "text": "На створе «1 км выше Атырау» за сентябрь зафиксировано 0,234 мг/дм³ нефтепродуктов.",
+      "measurementIds": ["m-2025-09-1km-above-atyrau"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-09"],
+      "generatedBy": "human_verified"
+    }
+  ],
+  "measurements": [
+    {
+      "id": "m-2025-09-1km-above-atyrau",
+      "stationId": "st-zhaiyk-1km-above-atyrau",
+      "sampledAt": null,
+      "sampledPeriod": "2025-09",
+      "indicator": "нефтепродукты",
+      "value": 0.234,
+      "rawValueText": "0,234",
+      "unit": "mg/dm3",
+      "matrix": "water",
+      "qualityClass": null,
+      "sourceDocumentId": "doc-kazhydromet-2025-09",
+      "sourcePage": 22,
+      "sourceExcerpt": null,
+      "verified": false
+    }
+  ],
+  "sourceDocuments": [
+    {
+      "id": "doc-kazhydromet-2025-09",
+      "title": "Информационный бюллетень о состоянии окружающей среды: Атырауская область, сентябрь 2025",
+      "publisher": "РГП «Казгидромет»",
+      "url": "https://www.kazhydromet.kz/uploads/files_calendar/9344/file/68f0e81dcc3caatyrau-russ-byulleten-za-sentyabr-2025g.pdf",
+      "publishedAt": null,
+      "fetchedAt": null,
+      "contentType": "pdf",
+      "sha256": null,
+      "cachePath": null,
+      "status": "unverified"
+    }
+  ]
+}

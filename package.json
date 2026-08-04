@@ -2,15 +2,28 @@
   "name": "caspian-trace",
   "private": true,
   "version": "0.0.1",
+  "engines": {
+    "node": ">=20.19 <21"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
     "dev": "npm run dev -w web",
-    "build": "npm run build -w web",
-    "typecheck": "npm run typecheck -w web",
-    "lint": "npm run lint -w web",
-    "format": "npm run format -w web"
+    "dev:web": "npm run dev -w web",
+    "dev:api": "npm run start:dev -w api",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "test:api-clean-start": "node scripts/verify-api-clean-start.mjs",
+    "format": "npm run format -w web",
+    "archive:backend-platform": "node scripts/create-backend-platform-archive.mjs"
+  },
+  "optionalDependencies": {
+    "@rolldown/binding-linux-x64-gnu": "1.2.2",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.3",
+    "lightningcss-linux-x64-gnu": "1.32.0"
   }
 }

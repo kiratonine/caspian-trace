@@ -11,12 +11,11 @@ export async function downloadInvestigationDossier(
     { format }
   )
   const objectUrl = URL.createObjectURL(blob)
-  try {
-    const anchor = document.createElement("a")
-    anchor.href = objectUrl
-    anchor.download = filename
-    anchor.click()
-  } finally {
-    URL.revokeObjectURL(objectUrl)
-  }
+  const anchor = document.createElement("a")
+  anchor.href = objectUrl
+  anchor.download = filename
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
 }

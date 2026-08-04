@@ -13,7 +13,7 @@ export function buildSupportedFacts(
   return intervals
     .filter(({ direction }) => direction === 'increase')
     .map((interval, index) => ({
-      id: `evidence-local-increase-${interval.relationId}`,
+      id: intervalEvidenceId('local-increase', interval),
       code: 'LOCAL_INCREASE_IN_PAIR' as const,
       kind: 'supports' as const,
       text:
@@ -33,7 +33,7 @@ export function excludeDownstreamExplanations(
   const statements: EvidenceStatement[] = intervals
     .filter(({ direction }) => direction === 'no_increase')
     .map((interval, index) => ({
-      id: `evidence-no-increase-${interval.relationId}`,
+      id: intervalEvidenceId('no-increase', interval),
       code: 'NO_LOCAL_INCREASE_IN_PAIR' as const,
       kind: 'contradicts' as const,
       text:
@@ -47,14 +47,18 @@ export function excludeDownstreamExplanations(
 
   const maximum = findEventMaximum(input)
   if (maximum === null) return statements
-  const graph = buildStationGraph(input.stationRelations)
-  for (const candidate of input.candidateObjects) {
+  const graph = buildStationGraph(input.stationRelations, input.sourceDocuments)
+  for (const candidate of [...input.candidateObjects].sort((a, b) =>
+    a.id.localeCompare(b.id),
+  )) {
     if (candidate.stationId === null) continue
     if (isUpstreamOf(maximum.stationId, candidate.stationId, graph) !== true) continue
     const sourceDocumentIds = [
       maximum.sourceDocumentId,
       ...candidate.evidenceDocumentIds,
-    ].filter((value, index, values) => values.indexOf(value) === index)
+    ]
+      .filter((value, index, values) => values.indexOf(value) === index)
+      .sort()
     statements.push({
       id: `evidence-maximum-upstream-${candidate.id}`,
       code: 'MAXIMUM_UPSTREAM_OF_OBJECT',
@@ -67,6 +71,19 @@ export function excludeDownstreamExplanations(
     })
   }
   return statements
+}
+
+function intervalEvidenceId(
+  prefix: 'local-increase' | 'no-increase',
+  interval: IntervalEvaluation,
+): string {
+  return [
+    'evidence',
+    prefix,
+    interval.relationId,
+    interval.upstreamMeasurementId,
+    interval.downstreamMeasurementId,
+  ].join('-')
 }
 
 function formatSigned(value: string): string {

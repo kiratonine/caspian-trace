@@ -13,6 +13,7 @@ import type {
   InvestigationResultWriter,
   StoredInvestigation,
 } from './investigation.ports'
+import { parseInvestigationInput } from './investigation-input.schema'
 
 const FIXTURE_NAMES: Readonly<Record<string, string>> = {
   'inv-atyrau-2025-09': 'september-input.json',
@@ -42,7 +43,7 @@ export class FileInvestigationRepository
       filename,
     )
     const raw: unknown = JSON.parse(await readFile(path, 'utf8'))
-    return assertFixtureInput(raw)
+    return parseInvestigationInput(raw)
   }
 
   findCurrent(investigationId: string): Promise<StoredInvestigation | null> {
@@ -58,6 +59,13 @@ export class FileInvestigationRepository
     result: InvestigationResult,
   ): Promise<StoredInvestigation> {
     const previous = this.versions.get(investigationId) ?? []
+    const current = previous.find(({ isCurrent }) => isCurrent)
+    if (
+      current?.result.inputHash === result.inputHash &&
+      current.result.rulesetVersion === result.rulesetVersion
+    ) {
+      return Promise.resolve(structuredClone(current))
+    }
     const stored: StoredInvestigation = {
       id: `${investigationId}@${result.rulesetVersion}:${result.inputHash.slice(0, 12)}`,
       investigationId,
@@ -72,17 +80,4 @@ export class FileInvestigationRepository
     ])
     return Promise.resolve(structuredClone(stored))
   }
-}
-
-function assertFixtureInput(value: unknown): InvestigationInput {
-  if (
-    typeof value !== 'object' ||
-    value === null ||
-    !('incident' in value) ||
-    !('measurements' in value) ||
-    !Array.isArray(value.measurements)
-  ) {
-    throw new Error('INVALID_INVESTIGATION_FIXTURE')
-  }
-  return value as InvestigationInput
 }

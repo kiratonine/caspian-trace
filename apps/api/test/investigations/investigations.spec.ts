@@ -5,6 +5,7 @@ import type {
 } from '@caspian-trace/investigation-core'
 
 import { FileInvestigationRepository } from '../../src/investigations/file-investigation.repository'
+import { parseInvestigationInput } from '../../src/investigations/investigation-input.schema'
 import type {
   InvestigationInputReader,
   InvestigationResultWriter,
@@ -83,6 +84,34 @@ describe('InvestigationsService', () => {
     await expect(repository.findCurrent(initial!.incident.id)).resolves.toEqual(
       firstResult,
     )
+  })
+
+  it('rejects dangling fixture provenance before rule evaluation', async () => {
+    const repository = new FileInvestigationRepository()
+    const input = await repository.loadInput('inv-atyrau-2025-05')
+    expect(input).not.toBeNull()
+
+    expect(() =>
+      parseInvestigationInput({
+        ...input!,
+        stationRelations: input!.stationRelations.map((relation) => ({
+          ...relation,
+          sourceDocumentId: 'missing-source',
+        })),
+      }),
+    ).toThrow('RELATION_SOURCE_NOT_FOUND')
+  })
+
+  it('deduplicates concurrent saves for the same input and ruleset', async () => {
+    const repository = new FileInvestigationRepository()
+    const service = new InvestigationsService(repository, repository)
+    const [first, second] = await Promise.all([
+      service.recompute('inv-atyrau-2025-09'),
+      service.recompute('inv-atyrau-2025-09'),
+    ])
+
+    expect(second).toEqual(first)
+    await expect(repository.findCurrent('inv-atyrau-2025-09')).resolves.toEqual(first)
   })
 })
 

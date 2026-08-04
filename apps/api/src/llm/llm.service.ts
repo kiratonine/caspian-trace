@@ -18,7 +18,8 @@ import {
   type MeasurementCandidate,
 } from './schemas/llm.schemas'
 
-const FORBIDDEN_BLAME = /(винов(?:ен|на|ны)|доказан(?:о|а)?|причинил(?:а|и)?|ответствен(?:ен|на|ны))/iu
+const FORBIDDEN_BLAME =
+  /(винов(?:ен|на|ны)|нарушител|доказан(?:о|а)?|причинил(?:а|и)?|ответствен(?:ен|на|ны)|(?<!не\s)источник\s+установлен|объект\s+не\s+причастен)/iu
 const NUMBER = /[-+]?\d+(?:[.,]\d+)?/gu
 
 @Injectable()

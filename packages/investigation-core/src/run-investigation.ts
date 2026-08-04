@@ -2,20 +2,33 @@ import { buildConclusion } from './conclusion'
 import { classifyObjects, deriveCorridor } from './corridor'
 import { deriveEvidenceLevel } from './evidence-level'
 import { buildSupportedFacts, excludeDownstreamExplanations } from './exclusions'
-import { calculateInputHash } from './hash'
+import { calculateInputHash, canonicalizeInvestigationInput } from './hash'
 import { evaluatePairedIntervals } from './intervals'
 import { buildUnknowns } from './unknowns'
 import type { InvestigationInput, InvestigationResult } from './types'
 
-export const RULESET_VERSION = '1.0.0'
+export const RULESET_VERSION = '1.1.0'
 
 export function runInvestigation(input: InvestigationInput): InvestigationResult {
-  const intervals = evaluatePairedIntervals(input)
-  const supportedFacts = buildSupportedFacts(input, intervals)
-  const contradictedHypotheses = excludeDownstreamExplanations(input, intervals)
-  const corridorBounds = deriveCorridor(input, intervals, contradictedHypotheses)
+  const canonicalInput = canonicalizeInvestigationInput(input)
+  const intervals = evaluatePairedIntervals(canonicalInput)
+  const supportedFacts = buildSupportedFacts(canonicalInput, intervals).map(
+    (statement, sortOrder) => ({ ...statement, sortOrder }),
+  )
+  const contradictedHypotheses = excludeDownstreamExplanations(
+    canonicalInput,
+    intervals,
+  ).map((statement, index) => ({
+    ...statement,
+    sortOrder: supportedFacts.length + index,
+  }))
+  const corridorBounds = deriveCorridor(
+    canonicalInput,
+    intervals,
+    contradictedHypotheses,
+  )
   const evidenceLevel = deriveEvidenceLevel(
-    input,
+    canonicalInput,
     corridorBounds,
     supportedFacts,
     contradictedHypotheses,
@@ -25,13 +38,17 @@ export function runInvestigation(input: InvestigationInput): InvestigationResult
     corridorBounds,
     supportedFacts,
     contradictedHypotheses,
-    objectDispositions: classifyObjects(input, corridorBounds, contradictedHypotheses),
-    unknowns: buildUnknowns(input, corridorBounds),
+    objectDispositions: classifyObjects(
+      canonicalInput,
+      corridorBounds,
+      contradictedHypotheses,
+    ),
+    unknowns: buildUnknowns(canonicalInput, corridorBounds),
   }
   return {
     ...partial,
-    conclusion: buildConclusion(input, partial),
-    inputHash: calculateInputHash(input),
+    conclusion: buildConclusion(canonicalInput, partial),
+    inputHash: calculateInputHash(canonicalInput),
     rulesetVersion: RULESET_VERSION,
   }
 }

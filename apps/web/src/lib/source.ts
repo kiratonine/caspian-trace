@@ -6,8 +6,8 @@ import type { SourceDocument } from "@/types"
  * и страницу). `page = 0` — сентинел «страница не перепроверена»
  * (вопрос 8 плана): якорь не ставим, открываем документ целиком.
  */
-export function sourceHref(doc: SourceDocument, page?: number): string {
-  if (doc.contentType === "pdf" && page !== undefined && page > 0) {
+export function sourceHref(doc: SourceDocument, page?: number | null): string {
+  if (doc.contentType === "pdf" && page != null && page > 0) {
     return `${doc.url}#page=${page}`
   }
   return doc.url
@@ -16,7 +16,7 @@ export function sourceHref(doc: SourceDocument, page?: number): string {
 /** Страница подтверждена и имеет смысл в ссылке/подписи. */
 export function hasConfirmedPage(
   doc: SourceDocument,
-  page?: number
+  page?: number | null
 ): page is number {
-  return doc.contentType === "pdf" && page !== undefined && page > 0
+  return doc.contentType === "pdf" && page != null && page > 0
 }

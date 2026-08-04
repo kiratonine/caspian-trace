@@ -29,8 +29,8 @@
       "offsetMs": 5000,
       "type": "corroboration",
       "payload": {
-        "text": "Источник «Необычная зелёная вода в Жайыке» включён в доказательную базу.",
-        "sourceDocumentId": "doc-zakon-green-water",
+        "text": "Проверенный официальный источник «Бюллетень Атырауской области, сентябрь 2025» включён в доказательную базу.",
+        "sourceDocumentId": "doc-kazhydromet-2025-09",
         "evidenceLevel": "L1"
       }
     },
@@ -54,6 +54,22 @@
             "sourceDocumentId": "doc-kazhydromet-2025-09",
             "sourcePage": 22,
             "sourceExcerpt": "1 км выше г.Атырау 5 класс Нефтепродукты – 0,234 мг/дм3",
+            "verified": true
+          },
+          {
+            "id": "m-2025-09-1km-below-atyrau",
+            "stationId": "st-zhaiyk-1km-below-atyrau",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.167,
+            "rawValueText": "0,167",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": "1 км ниже г.Атырау 4 класс Нефтепродукты – 0,167 мг/дм3",
             "verified": true
           },
           {
@@ -87,29 +103,13 @@
             "sourcePage": 22,
             "sourceExcerpt": "Нефтепродукты – 0,054 мг/дм3",
             "verified": true
-          },
-          {
-            "id": "m-2025-09-1km-below-atyrau",
-            "stationId": "st-zhaiyk-1km-below-atyrau",
-            "sampledAt": null,
-            "sampledPeriod": "2025-09",
-            "indicator": "нефтепродукты",
-            "value": 0.167,
-            "rawValueText": "0,167",
-            "unit": "mg/dm3",
-            "matrix": "water",
-            "qualityClass": null,
-            "sourceDocumentId": "doc-kazhydromet-2025-09",
-            "sourcePage": 22,
-            "sourceExcerpt": "1 км ниже г.Атырау 4 класс Нефтепродукты – 0,167 мг/дм3",
-            "verified": true
           }
         ],
         "evidenceLevel": "L1"
       }
     },
     {
-      "id": "inv-atyrau-2025-09-inference-evidence-no-increase-rel-sep-asa-pair",
+      "id": "inv-atyrau-2025-09-inference-evidence-no-increase-rel-sep-asa-pair-m-2025-09-asa-above-m-2025-09-asa-below",
       "offsetMs": 15000,
       "type": "inference",
       "payload": {

@@ -10,7 +10,7 @@ import {
 import type { StoredInvestigation } from '../investigations/investigation.ports'
 
 export function toDossier(stored: StoredInvestigation): Dossier {
-  return DossierSchema.parse({
+  const dossier = DossierSchema.parse({
     title: stored.input.incident.title,
     generatedAt: stored.generatedAt,
     disclaimer:
@@ -28,4 +28,32 @@ export function toDossier(stored: StoredInvestigation): Dossier {
     inputHash: stored.result.inputHash,
     rulesetVersion: stored.result.rulesetVersion,
   })
+  assertDossierReferences(dossier)
+  return dossier
+}
+
+function assertDossierReferences(dossier: Dossier): void {
+  const measurementIds = new Set(dossier.measurements.map(({ id }) => id))
+  const sourceIds = new Set(dossier.sources.map(({ id }) => id))
+  for (const measurement of dossier.measurements) {
+    if (!sourceIds.has(measurement.sourceDocumentId)) {
+      throw new Error(`DOSSIER_UNKNOWN_MEASUREMENT_SOURCE:${measurement.id}`)
+    }
+  }
+  for (const statement of [
+    ...dossier.supportedFacts,
+    ...dossier.contradictedHypotheses,
+  ]) {
+    if (statement.measurementIds.some((id) => !measurementIds.has(id))) {
+      throw new Error(`DOSSIER_UNKNOWN_MEASUREMENT:${statement.id}`)
+    }
+    if (statement.sourceDocumentIds.some((id) => !sourceIds.has(id))) {
+      throw new Error(`DOSSIER_UNKNOWN_SOURCE:${statement.id}`)
+    }
+  }
+  for (const candidate of dossier.candidateObjects) {
+    if (candidate.evidenceDocumentIds.some((id) => !sourceIds.has(id))) {
+      throw new Error(`DOSSIER_UNKNOWN_CANDIDATE_SOURCE:${candidate.id}`)
+    }
+  }
 }

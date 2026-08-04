@@ -1,3 +1,5 @@
+import { timingSafeEqual } from 'node:crypto'
+
 import type { Request } from 'express'
 
 import {
@@ -22,7 +24,7 @@ export class IngestionTokenGuard implements CanActivate {
       })
     }
     const request = context.switchToHttp().getRequest<Request>()
-    if (request.header('x-ingestion-token') !== expected) {
+    if (!tokensMatch(request.header('x-ingestion-token'), expected)) {
       throw new UnauthorizedException({
         code: 'INGESTION_TOKEN_INVALID',
         message: 'A valid ingestion token is required',
@@ -30,4 +32,14 @@ export class IngestionTokenGuard implements CanActivate {
     }
     return true
   }
+}
+
+function tokensMatch(actual: string | undefined, expected: string): boolean {
+  if (actual === undefined) return false
+  const actualBytes = Buffer.from(actual)
+  const expectedBytes = Buffer.from(expected)
+  return (
+    actualBytes.length === expectedBytes.length &&
+    timingSafeEqual(actualBytes, expectedBytes)
+  )
 }

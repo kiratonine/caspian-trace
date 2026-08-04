@@ -45,7 +45,11 @@ export function MeasurementValue({
       />
       <TooltipContent>
         <p className="max-w-64 text-pretty">
-          {measurement.indicator}, {formatSampledAt(measurement.sampledAt)} ·{" "}
+          {measurement.indicator},{" "}
+          {formatSampledAt(
+            measurement.sampledAt ?? measurement.sampledPeriod ?? ""
+          )}{" "}
+          ·{" "}
           {sourceDocument.title}
           {pageConfirmed
             ? `, стр. ${measurement.sourcePage}`

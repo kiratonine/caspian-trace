@@ -1,4 +1,5 @@
 import {
+  validateApplicationEnvironment,
   validateFutureIntegrationEnvironment,
   validatePlatformEnvironment,
 } from '../src/config/environment'
@@ -82,5 +83,27 @@ describe('platform environment validation', () => {
       GEMINI_API_KEY: 'test-key',
       GEMINI_MODEL: 'gemini-test-model',
     })
+  })
+
+  it('applies integration validation during application startup', () => {
+    expect(() =>
+      validateApplicationEnvironment({
+        WEB_ORIGIN: 'http://localhost:5173',
+        INGESTION_TOKEN: 'too-short',
+      }),
+    ).toThrow()
+    expect(() =>
+      validateApplicationEnvironment({
+        WEB_ORIGIN: 'http://localhost:5173',
+        LLM_PROVIDER: 'gemini',
+      }),
+    ).toThrow()
+    expect(
+      validateApplicationEnvironment({
+        WEB_ORIGIN: 'http://localhost:5173',
+        LLM_PROVIDER: 'disabled',
+        GEMINI_API_KEY: '',
+      }),
+    ).toMatchObject({ LLM_PROVIDER: 'disabled' })
   })
 })

@@ -1,8 +1,10 @@
 import { ReplayScenarioSchema } from '@caspian-trace/contracts'
+import { runInvestigation } from '@caspian-trace/investigation-core'
 
 import { FileInvestigationRepository } from '../../src/investigations/file-investigation.repository'
 import { InvestigationsService } from '../../src/investigations/investigations.service'
 import { ReplaysRepository } from '../../src/replays/replays.repository'
+import { toReplayScenario } from '../../src/replays/replay.mapper'
 import { ReplaysService } from '../../src/replays/replays.service'
 
 describe('ReplaysService', () => {
@@ -33,5 +35,47 @@ describe('ReplaysService', () => {
         .filter(({ type }) => type === 'inference')
         .every(({ payload }) => payload.evidenceLevel === 'L2'),
     ).toBe(true)
+  })
+
+  it('does not invent L1 steps from unverified sources or measurements', async () => {
+    const repository = new FileInvestigationRepository()
+    const input = await repository.loadInput('inv-atyrau-2025-09')
+    expect(input).not.toBeNull()
+    const unverifiedInput = {
+      ...input!,
+      signals: input!.signals.map((signal) => ({
+        ...signal,
+        verificationStatus: 'unverified' as const,
+      })),
+      stationRelations: input!.stationRelations.map((relation) => ({
+        ...relation,
+        verified: false,
+      })),
+      measurements: input!.measurements.map((measurement) => ({
+        ...measurement,
+        verified: false,
+      })),
+      candidateObjects: [],
+      sourceDocuments: input!.sourceDocuments.map((source) => ({
+        ...source,
+        official: false,
+        verified: false,
+      })),
+    }
+    const scenario = toReplayScenario({
+      id: 'unverified@1',
+      investigationId: unverifiedInput.incident.id,
+      input: unverifiedInput,
+      result: runInvestigation(unverifiedInput),
+      generatedAt: '2026-08-04T00:00:00.000Z',
+      isCurrent: true,
+    })
+
+    expect(scenario.steps.map(({ payload }) => payload.evidenceLevel)).toEqual([
+      'L0',
+      'L0',
+    ])
+    expect(scenario.steps.some(({ type }) => type === 'corroboration')).toBe(false)
+    expect(scenario.steps.some(({ type }) => type === 'measurement')).toBe(false)
   })
 })

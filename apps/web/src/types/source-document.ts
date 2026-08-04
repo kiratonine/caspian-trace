@@ -6,9 +6,9 @@ export type SourceDocument = {
   publisher: string
   url: string
   publishedAt: string | null
-  fetchedAt: string
+  fetchedAt: string | null
   contentType: "html" | "pdf" | "json"
-  sha256: string
+  sha256: string | null
   cachePath: string | null
   status: "verified" | "unverified" | "unavailable"
 }

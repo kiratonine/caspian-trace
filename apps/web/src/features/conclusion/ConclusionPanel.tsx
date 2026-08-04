@@ -26,6 +26,7 @@ import type { Investigation } from "@/types"
 import { SourcesList } from "./SourcesList"
 import { StatementList } from "./StatementList"
 import { buildPanelModel, type PanelModel } from "./panel-model"
+import { DossierActions } from "./DossierActions"
 
 // Порядок и нумерация секций приходят из CONCLUSION_SECTIONS (ТЗ §13, 1–6).
 export function ConclusionPanel() {
@@ -46,10 +47,13 @@ export function ConclusionPanel() {
       aria-label="Вывод и доказательства"
       className="flex min-h-0 flex-col"
     >
-      <header className="border-b px-4 py-3">
+      <header className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
           Вывод и доказательства
         </h2>
+        {selectedIncidentId && (
+          <DossierActions investigationId={selectedIncidentId} />
+        )}
       </header>
       {verdictChange && !frame && (
         <VerdictChange

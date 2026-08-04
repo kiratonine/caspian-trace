@@ -2,7 +2,7 @@
   "investigationId": "inv-atyrau-2025-09",
   "statements": [
     {
-      "id": "evidence-no-increase-rel-sep-asa-pair",
+      "id": "evidence-no-increase-rel-sep-asa-pair-m-2025-09-asa-above-m-2025-09-asa-below",
       "code": "NO_LOCAL_INCREASE_IN_PAIR",
       "kind": "contradicts",
       "text": "В сопоставимой паре изменение составляет -0,004 мг/дм³; эта пара не подтверждает дополнительное поступление внутри интервала в данном временном срезе.",
@@ -49,6 +49,22 @@
       "verified": true
     },
     {
+      "id": "m-2025-09-1km-below-atyrau",
+      "stationId": "st-zhaiyk-1km-below-atyrau",
+      "sampledAt": null,
+      "sampledPeriod": "2025-09",
+      "indicator": "нефтепродукты",
+      "value": 0.167,
+      "rawValueText": "0,167",
+      "unit": "mg/dm3",
+      "matrix": "water",
+      "qualityClass": null,
+      "sourceDocumentId": "doc-kazhydromet-2025-09",
+      "sourcePage": 22,
+      "sourceExcerpt": "1 км ниже г.Атырау 4 класс Нефтепродукты – 0,167 мг/дм3",
+      "verified": true
+    },
+    {
       "id": "m-2025-09-asa-above",
       "stationId": "st-asa-0-5km-above",
       "sampledAt": null,
@@ -78,22 +94,6 @@
       "sourceDocumentId": "doc-kazhydromet-2025-09",
       "sourcePage": 22,
       "sourceExcerpt": "Нефтепродукты – 0,054 мг/дм3",
-      "verified": true
-    },
-    {
-      "id": "m-2025-09-1km-below-atyrau",
-      "stationId": "st-zhaiyk-1km-below-atyrau",
-      "sampledAt": null,
-      "sampledPeriod": "2025-09",
-      "indicator": "нефтепродукты",
-      "value": 0.167,
-      "rawValueText": "0,167",
-      "unit": "mg/dm3",
-      "matrix": "water",
-      "qualityClass": null,
-      "sourceDocumentId": "doc-kazhydromet-2025-09",
-      "sourcePage": 22,
-      "sourceExcerpt": "1 км ниже г.Атырау 4 класс Нефтепродукты – 0,167 мг/дм3",
       "verified": true
     }
   ],

@@ -218,7 +218,7 @@ const MAY_2025 = "2025-05"
 function measurement(
   id: string,
   station: Station,
-  sampledAt: string,
+  sampledPeriod: string,
   value: number,
   sourceDocumentId: string,
   sourcePage: number
@@ -226,9 +226,11 @@ function measurement(
   return {
     id,
     stationId: station.id,
-    sampledAt,
+    sampledAt: null,
+    sampledPeriod,
     indicator: "нефтепродукты",
     value,
+    rawValueText: value.toLocaleString("ru-RU"),
     unit: "mg/dm3",
     matrix: "water",
     qualityClass: null,

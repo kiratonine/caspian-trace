@@ -19,6 +19,7 @@
     "test": "npm run test --workspaces --if-present",
     "test:api-clean-start": "node scripts/verify-api-clean-start.mjs",
     "verify:investigation-data": "node scripts/verify-investigation-data.mjs",
+    "verify:investigation-data:human": "node scripts/verify-investigation-data.mjs --require-human",
     "generate:investigation-samples": "npm run build -w api && node scripts/generate-investigation-samples.mjs",
     "format": "npm run format -w web",
     "archive:backend-platform": "node scripts/create-backend-platform-archive.mjs"

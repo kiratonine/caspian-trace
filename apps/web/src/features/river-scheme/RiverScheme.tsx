@@ -116,7 +116,7 @@ export function RiverSchemeContent({
           <p className="text-xs text-muted-foreground">
             {detail.investigation.indicator}
             {firstMeasurement &&
-              ` · ${formatSampledAt(firstMeasurement.sampledAt)}`}
+              ` · ${formatSampledAt(firstMeasurement.sampledAt ?? firstMeasurement.sampledPeriod ?? "")}`}
           </p>
           {model.ordered.length > 0 && (
             <OrderedStations

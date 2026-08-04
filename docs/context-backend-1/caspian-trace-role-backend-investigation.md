@@ -836,22 +836,32 @@ test(api): cover provenance replay export and LLM guards
 ## 25. Definition of Done Backend 2
 
 - [ ] Verified fixtures проверены двумя людьми.
-- [ ] Core не зависит от NestJS/Prisma/LLM.
-- [ ] Decimal calculations точные.
-- [ ] Station graph не выдумывает порядок.
-- [ ] Сентябрь даёт L2/open upstream.
-- [ ] Май даёт `+0,079` и L3 corridor.
-- [ ] Актау даёт L0/insufficient data.
-- [ ] Conclusion не содержит обвинений.
-- [ ] Same input/ruleset даёт same hash/result.
+- [x] Core не зависит от NestJS/Prisma/LLM.
+- [x] Decimal calculations точные.
+- [x] Station graph не выдумывает порядок.
+- [x] Сентябрь даёт L2/open upstream.
+- [x] Май даёт `+0,079` и L3 corridor.
+- [x] Актау даёт L0/insufficient data.
+- [x] Conclusion не содержит обвинений.
+- [x] Same input/ruleset даёт same hash/result.
 - [ ] Recompute versioned и transactional.
-- [ ] Evidence statement имеет provenance.
-- [ ] Replay immutable и contract-valid.
-- [ ] Export JSON/HTML работает и безопасен.
-- [ ] Disabled LLM provider работает.
-- [ ] LLM output проверяется Zod/quotes/numbers.
-- [ ] Feature modules подключаются одним import.
-- [ ] Unit/integration/golden tests зелёные.
+- [x] Evidence statement имеет provenance.
+- [x] Replay immutable и contract-valid.
+- [x] Export JSON/HTML работает и безопасен.
+- [x] Disabled LLM provider работает.
+- [x] LLM output проверяется Zod/quotes/numbers.
+- [x] Feature modules подключаются одним import.
+- [x] Unit/integration/golden tests зелёные.
+
+Оставшиеся два пункта являются внешними gates, а не задачами, которые можно
+честно закрыть внутри fixture-ветки:
+
+- human review остаётся `0/2`; финальная команда
+  `npm run verify:investigation-data:human` намеренно завершается ошибкой;
+- общий `PrismaService`, generated client и утверждённая schema Backend Platform
+  P2 отсутствуют. До их появления fixture repository обеспечивает атомарную
+  замену current version, rollback при ошибке и дедупликацию конкурентных save,
+  но не выдаётся за реализацию `prisma.$transaction`.
 
 ---
 

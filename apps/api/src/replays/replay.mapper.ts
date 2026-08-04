@@ -7,9 +7,21 @@ const REPLAY_STEP_INTERVAL_MS = 5_000
 
 export function toReplayScenario(stored: StoredInvestigation): ReplayScenario {
   const signal = stored.input.signals[0]
-  const primarySource = stored.input.sourceDocuments.find(
-    ({ id }) => id === signal?.sourceDocumentId,
-  ) ?? stored.input.sourceDocuments[0]
+  const officialSourceIds = new Set(
+    stored.input.sourceDocuments
+      .filter(({ official, verified }) => official && verified)
+      .map(({ id }) => id),
+  )
+  const verifiedMeasurements = stored.input.measurements.filter(
+    ({ sourceDocumentId, verified }) =>
+      verified && officialSourceIds.has(sourceDocumentId),
+  )
+  const corroboratingSource = stored.input.sourceDocuments.find(
+    ({ id }) =>
+      officialSourceIds.has(id) &&
+      (verifiedMeasurements.some(({ sourceDocumentId }) => sourceDocumentId === id) ||
+        stored.input.signals.some(({ sourceDocumentId }) => sourceDocumentId === id)),
+  )
 
   const steps: ReplayScenario['steps'] = []
   let offsetMs = 0
@@ -22,26 +34,32 @@ export function toReplayScenario(stored: StoredInvestigation): ReplayScenario {
     })
     offsetMs += REPLAY_STEP_INTERVAL_MS
   }
-  if (primarySource !== undefined) {
+  if (
+    corroboratingSource !== undefined &&
+    evidenceRank(stored.result.evidenceLevel) >= evidenceRank('L1')
+  ) {
     steps.push({
       id: `${stored.investigationId}-corroboration`,
       offsetMs,
       type: 'corroboration',
       payload: {
-        text: `Источник «${primarySource.title}» включён в доказательную базу.`,
-        sourceDocumentId: primarySource.id,
+        text: `Проверенный официальный источник «${corroboratingSource.title}» включён в доказательную базу.`,
+        sourceDocumentId: corroboratingSource.id,
         evidenceLevel: 'L1',
       },
     })
     offsetMs += REPLAY_STEP_INTERVAL_MS
   }
-  if (stored.input.measurements.length > 0) {
+  if (
+    verifiedMeasurements.length > 0 &&
+    evidenceRank(stored.result.evidenceLevel) >= evidenceRank('L1')
+  ) {
     steps.push({
       id: `${stored.investigationId}-measurements`,
       offsetMs,
       type: 'measurement',
       payload: {
-        measurements: stored.input.measurements.map(toMeasurement),
+        measurements: verifiedMeasurements.map(toMeasurement),
         evidenceLevel: 'L1',
       },
     })
@@ -75,6 +93,10 @@ export function toReplayScenario(stored: StoredInvestigation): ReplayScenario {
     incidentId: stored.input.incident.id,
     steps,
   })
+}
+
+function evidenceRank(level: 'L0' | 'L1' | 'L2' | 'L3'): number {
+  return Number(level.slice(1))
 }
 
 function validateReferences(

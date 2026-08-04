@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query"
 
 import { fetchIncidentDetail, fetchIncidents } from "./incidents"
+import { fetchInvestigationEvidence } from "./investigations"
 import { startReplay } from "./replays"
 
 // Ключи и опции запросов в одном месте: все три колонки главного экрана читают
@@ -15,6 +16,13 @@ export function incidentDetailQueryOptions(id: string) {
   return queryOptions({
     queryKey: ["incidents", id],
     queryFn: () => fetchIncidentDetail(id),
+  })
+}
+
+export function investigationEvidenceQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: ["investigations", id, "evidence"],
+    queryFn: () => fetchInvestigationEvidence(id),
   })
 }
 

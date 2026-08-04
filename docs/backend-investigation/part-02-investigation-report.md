@@ -5,9 +5,9 @@
 - `@caspian-trace/investigation-core`: точная decimal-арифметика, сравнимость,
   граф створов, corridor, evidence levels, unknowns и безопасный conclusion.
 - Golden cases: сентябрь `L2/open upstream`, май `+0,079/L3`, Актау `L0`.
-- Versioned fixture repository с атомарной заменой current version и rollback
-  regression. Prisma adapter подключается через существующие ports после P2
-  Backend Platform.
+- Versioned fixture repository с атомарной заменой current version, rollback
+  regression и дедупликацией конкурентного save. Prisma adapter подключается
+  через существующие ports после P2 Backend Platform.
 - Evidence, replay и JSON/HTML dossier endpoints подключены к основному
   `AppModule`.
 - Replay возвращает immutable snapshot; сентябрьский сценарий длится 25 секунд.
@@ -15,13 +15,21 @@
   `nosniff` и print CSS.
 - Disabled и Gemini LLM providers; structured output проходит Zod, exact quote,
   date precision, table-number и forbidden-blame проверки.
-- Frontend evidence/replay clients используют реальные endpoints. Для Vite dev
-  `/api` проксируется на `http://localhost:3000`.
+- Frontend evidence/replay clients используют реальные endpoints; evidence
+  подмешивается в выбранный incident detail, а JSON/HTML dossier доступны из
+  правой панели. Для Vite dev `/api` проксируется на `http://localhost:3000`.
 - Стабильные ответы находятся в `data/fixtures/investigation/api` и
   воспроизводятся командой `npm run generate:investigation-samples`.
 - Направления связей станций не выводятся из порядка строк или названий: они
   имеют отдельные verified fixtures с PDF-страницей, основанием и выдержкой;
-  relation без полной provenance core игнорирует как непроверенную.
+  relation без полной provenance, существующего официального source document
+  и runtime-valid references core игнорирует как непроверенную.
+- Ruleset `1.1.0` канонизирует вход перед hash/evaluation, создаёт уникальные
+  evidence IDs для каждой пары измерений и не связывает corridor с
+  противоречием из другого компонента графа.
+- Replay не создаёт L1-шаги из непроверенных источников/измерений; Gemini key
+  передаётся заголовком, запрос ограничен timeout, а startup валидирует все
+  integration env variables.
 
 ## Endpoints
 
@@ -60,6 +68,9 @@ LLM не повышает evidence level и не создаёт rule-engine stat
 
 ## Prisma schema requests для Backend Platform P2
 
+Полный schema request и transaction boundary вынесены в
+[`prisma-schema-request.md`](./prisma-schema-request.md).
+
 Prisma в текущем platform bootstrap отсутствует. После появления единственного
 `PrismaService` adapter должен сохранить существующие ports и обеспечить одной
 `$transaction`:
@@ -80,6 +91,7 @@ models до появления утверждённой migration Backend Platfo
 ```bash
 npm ci --include=optional
 npm run verify:investigation-data
+npm run verify:investigation-data:human
 npm run typecheck
 npm run lint
 npm run test
@@ -101,6 +113,8 @@ node scripts/verify-investigation-data.mjs --require-human
 Техническая часть роли закрыта в автономном fixture mode:
 
 - core изолирован от NestJS/Prisma/LLM, decimal/golden/hash/safety tests зелёные;
+- одинаковый канонический input/ruleset даёт одинаковые hash и result даже при
+  нескольких измерениях на relation и перестановке входных массивов;
 - versioned recompute идемпотентен, а неуспешное атомарное сохранение не меняет current;
 - evidence/replay/export/LLM modules подключены к реальному `AppModule`;
 - contracts, frontend clients, стабильные samples и production/dev runtime probe синхронизированы;

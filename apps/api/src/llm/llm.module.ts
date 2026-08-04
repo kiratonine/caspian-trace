@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 
 import { DisabledLlmProvider } from './disabled-llm.provider'
 import { GeminiLlmProvider } from './gemini-llm.provider'
@@ -11,12 +12,13 @@ import { LlmService } from './llm.service'
     GeminiLlmProvider,
     {
       provide: LLM_PROVIDER,
-      inject: [DisabledLlmProvider, GeminiLlmProvider],
+      inject: [DisabledLlmProvider, GeminiLlmProvider, ConfigService],
       useFactory: (
         disabled: DisabledLlmProvider,
         gemini: GeminiLlmProvider,
+        config: ConfigService,
       ): DisabledLlmProvider | GeminiLlmProvider =>
-        process.env.LLM_PROVIDER === 'gemini' ? gemini : disabled,
+        config.get<string>('LLM_PROVIDER') === 'gemini' ? gemini : disabled,
     },
     LlmService,
   ],

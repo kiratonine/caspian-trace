@@ -18,7 +18,7 @@ import type {
 import type { StoredInvestigation } from './investigation.ports'
 
 export function toEvidenceGraph(stored: StoredInvestigation): EvidenceGraph {
-  return EvidenceGraphSchema.parse({
+  const graph = EvidenceGraphSchema.parse({
     investigationId: stored.investigationId,
     statements: [
       ...stored.result.supportedFacts,
@@ -27,6 +27,26 @@ export function toEvidenceGraph(stored: StoredInvestigation): EvidenceGraph {
     measurements: stored.input.measurements.map(toMeasurement),
     sourceDocuments: stored.input.sourceDocuments.map(toSourceDocument),
   })
+  assertEvidenceGraphReferences(graph)
+  return graph
+}
+
+function assertEvidenceGraphReferences(graph: EvidenceGraph): void {
+  const measurementIds = new Set(graph.measurements.map(({ id }) => id))
+  const sourceDocumentIds = new Set(graph.sourceDocuments.map(({ id }) => id))
+  for (const measurement of graph.measurements) {
+    if (!sourceDocumentIds.has(measurement.sourceDocumentId)) {
+      throw new Error(`EVIDENCE_UNKNOWN_MEASUREMENT_SOURCE:${measurement.id}`)
+    }
+  }
+  for (const statement of graph.statements) {
+    if (statement.measurementIds.some((id) => !measurementIds.has(id))) {
+      throw new Error(`EVIDENCE_UNKNOWN_MEASUREMENT:${statement.id}`)
+    }
+    if (statement.sourceDocumentIds.some((id) => !sourceDocumentIds.has(id))) {
+      throw new Error(`EVIDENCE_UNKNOWN_SOURCE:${statement.id}`)
+    }
+  }
 }
 
 export function toIncidentSignal(signal: IncidentSignalFact): IncidentSignal {

@@ -1,11 +1,18 @@
-import type { StationGraph, StationRelationFact } from './types'
+import type {
+  SourceDocumentFact,
+  StationGraph,
+  StationRelationFact,
+} from './types'
 
-export function buildStationGraph(relations: readonly StationRelationFact[]): StationGraph {
+export function buildStationGraph(
+  relations: readonly StationRelationFact[],
+  sourceDocuments?: readonly SourceDocumentFact[],
+): StationGraph {
   const outgoing = new Map<string, Set<string>>()
   const incoming = new Map<string, Set<string>>()
   const nodes = new Set<string>()
   for (const relation of relations) {
-    if (!hasVerifiedRelationProvenance(relation)) continue
+    if (!hasVerifiedRelationProvenance(relation, sourceDocuments)) continue
     nodes.add(relation.upstreamStationId)
     nodes.add(relation.downstreamStationId)
     addEdge(outgoing, relation.upstreamStationId, relation.downstreamStationId)
@@ -16,16 +23,26 @@ export function buildStationGraph(relations: readonly StationRelationFact[]): St
   return { nodes, outgoing, incoming }
 }
 
-export function hasVerifiedRelationProvenance(relation: StationRelationFact): boolean {
+export function hasVerifiedRelationProvenance(
+  relation: StationRelationFact,
+  sourceDocuments?: readonly SourceDocumentFact[],
+): boolean {
   const provenance = relation.provenance
-  return Boolean(
+  const structurallyVerified = Boolean(
     relation.verified &&
       provenance &&
+      relation.sourceDocumentId.trim() &&
+      relation.basis.trim() &&
       provenance.fixturePath.trim() &&
       Number.isInteger(provenance.sourcePage) &&
       provenance.sourcePage > 0 &&
       provenance.sourceExcerpt.trim(),
   )
+  if (!structurallyVerified || sourceDocuments === undefined) {
+    return structurallyVerified
+  }
+  const source = sourceDocuments.find(({ id }) => id === relation.sourceDocumentId)
+  return source?.official === true && source.verified
 }
 
 export function detectCycle(graph: StationGraph): boolean {

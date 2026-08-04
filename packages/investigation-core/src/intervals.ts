@@ -27,14 +27,19 @@ export function findEventMaximum(input: InvestigationInput): MeasurementFact | n
 
 export function evaluatePairedIntervals(input: InvestigationInput): IntervalEvaluation[] {
   const evaluations: IntervalEvaluation[] = []
-  for (const relation of input.stationRelations) {
+  for (const relation of [...input.stationRelations].sort((a, b) =>
+    a.id.localeCompare(b.id),
+  )) {
     if (!relation.comparisonPair) continue
     const upstreamMeasurements = measurementsAt(input, relation.upstreamStationId)
     const downstreamMeasurements = measurementsAt(input, relation.downstreamStationId)
     for (const upstream of upstreamMeasurements) {
       for (const downstream of downstreamMeasurements) {
         const comparison = areMeasurementsComparable(upstream, downstream, {
-          relationVerified: hasVerifiedRelationProvenance(relation),
+          relationVerified: hasVerifiedRelationProvenance(
+            relation,
+            input.sourceDocuments,
+          ),
           sourceDocuments: input.sourceDocuments,
         })
         if (!comparison.comparable) continue
@@ -47,18 +52,32 @@ export function evaluatePairedIntervals(input: InvestigationInput): IntervalEval
           downstreamStationId: relation.downstreamStationId,
           delta: delta.toString(),
           direction: delta.compare(ExactDecimal.parse('0')) > 0 ? 'increase' : 'no_increase',
-          sourceDocumentIds: [...new Set([upstream.sourceDocumentId, downstream.sourceDocumentId])],
+          sourceDocumentIds: [
+            ...new Set([
+              upstream.sourceDocumentId,
+              downstream.sourceDocumentId,
+              relation.sourceDocumentId,
+            ]),
+          ].sort(),
         })
       }
     }
   }
-  return evaluations.sort((a, b) => a.relationId.localeCompare(b.relationId))
+  return evaluations.sort(
+    (a, b) =>
+      a.relationId.localeCompare(b.relationId) ||
+      a.upstreamMeasurementId.localeCompare(b.upstreamMeasurementId) ||
+      a.downstreamMeasurementId.localeCompare(b.downstreamMeasurementId),
+  )
 }
 
 function measurementsAt(input: InvestigationInput, stationId: string): MeasurementFact[] {
-  return input.measurements.filter(
-    ({ stationId: candidateStationId, indicator }) =>
-      candidateStationId === stationId &&
-      normalizeIndicatorName(indicator) === normalizeIndicatorName(input.incident.indicator),
-  )
+  return input.measurements
+    .filter(
+      ({ stationId: candidateStationId, indicator }) =>
+        candidateStationId === stationId &&
+        normalizeIndicatorName(indicator) ===
+          normalizeIndicatorName(input.incident.indicator),
+    )
+    .sort((a, b) => a.id.localeCompare(b.id))
 }

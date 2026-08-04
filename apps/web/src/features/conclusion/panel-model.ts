@@ -24,7 +24,7 @@ export type StatementEntry = {
 export type SourceEntry = {
   document: SourceDocument
   /** Страница из ссылающегося измерения; 0 — сентинел «не подтверждена». */
-  page: number | undefined
+  page: number | null | undefined
 }
 
 export type PanelModel = {

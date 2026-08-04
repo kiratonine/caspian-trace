@@ -20,7 +20,7 @@ describe('investigation features (e2e)', () => {
   let httpServer: Server
 
   beforeAll(async () => {
-    process.env.INGESTION_TOKEN = 'test-ingestion-token'
+    process.env.INGESTION_TOKEN = 'test-ingestion-token-at-least-32-chars'
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile()
@@ -77,7 +77,7 @@ describe('investigation features (e2e)', () => {
       .expect(401)
     await request(httpServer)
       .post('/api/admin/investigations/inv-atyrau-2025-09/recompute')
-      .set('x-ingestion-token', 'test-ingestion-token')
+      .set('x-ingestion-token', 'test-ingestion-token-at-least-32-chars')
       .expect(201)
   })
 

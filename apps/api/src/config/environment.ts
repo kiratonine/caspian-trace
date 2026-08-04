@@ -30,8 +30,8 @@ export const FutureIntegrationEnvironmentSchema = z
     HTTP_MAX_BYTES: z.coerce.number().int().positive().optional(),
     GDELT_CACHE_TTL_SECONDS: z.coerce.number().int().nonnegative().optional(),
     LLM_PROVIDER: z.enum(['disabled', 'gemini']).optional(),
-    GEMINI_API_KEY: z.string().trim().min(1).optional(),
-    GEMINI_MODEL: z.string().trim().min(1).optional(),
+    GEMINI_API_KEY: optionalNonEmptyString(),
+    GEMINI_MODEL: optionalNonEmptyString(),
   })
   .strict()
   .superRefine(({ LLM_PROVIDER, GEMINI_API_KEY }, context) => {
@@ -63,6 +63,17 @@ export type PlatformEnvironment = z.infer<typeof PlatformEnvironmentSchema>
 export type FutureIntegrationEnvironment = z.infer<
   typeof FutureIntegrationEnvironmentSchema
 >
+export type ApplicationEnvironment = PlatformEnvironment &
+  FutureIntegrationEnvironment
+
+export function validateApplicationEnvironment(
+  environment: Record<string, unknown>,
+): ApplicationEnvironment {
+  return {
+    ...validatePlatformEnvironment(environment),
+    ...validateFutureIntegrationEnvironment(environment),
+  }
+}
 
 export function validatePlatformEnvironment(
   environment: Record<string, unknown>,
@@ -80,4 +91,14 @@ export function validateFutureIntegrationEnvironment(
   }
 
   return FutureIntegrationEnvironmentSchema.parse(integrationEnvironment)
+}
+
+function optionalNonEmptyString(): z.ZodType<string | undefined> {
+  return z.preprocess(
+    (value) =>
+      typeof value === 'string' && value.trim().length === 0
+        ? undefined
+        : value,
+    z.string().trim().min(1).optional(),
+  )
 }

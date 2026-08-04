@@ -1,6 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common'
 
 import {
+  canonicalizeInvestigationInput,
   runInvestigation,
   type InvestigationResult,
 } from '@caspian-trace/investigation-core'
@@ -25,8 +26,9 @@ export class InvestigationsService {
   ) {}
 
   async recompute(investigationId: string): Promise<StoredInvestigation> {
-    const input = await this.inputReader.loadInput(investigationId)
-    if (input === null) throw investigationNotFound(investigationId)
+    const loadedInput = await this.inputReader.loadInput(investigationId)
+    if (loadedInput === null) throw investigationNotFound(investigationId)
+    const input = canonicalizeInvestigationInput(loadedInput)
     const result = runInvestigation(input)
     const current = await this.resultWriter.findCurrent(investigationId)
     if (

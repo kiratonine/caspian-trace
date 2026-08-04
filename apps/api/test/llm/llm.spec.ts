@@ -1,4 +1,5 @@
 import { DisabledLlmProvider } from '../../src/llm/disabled-llm.provider'
+import { ConfigService } from '@nestjs/config'
 import { GeminiLlmProvider } from '../../src/llm/gemini-llm.provider'
 import type { LlmProvider } from '../../src/llm/llm-provider'
 import { LlmService } from '../../src/llm/llm.service'
@@ -39,6 +40,13 @@ describe('LLM validation boundary', () => {
     }))
     await expect(blame.explainFacts({ facts: ['Объект проверяется.'], unknowns: [] }))
       .rejects.toThrow('LLM_FORBIDDEN_BLAME')
+
+    const sourceEstablished = new LlmService(providerWith({
+      explainFacts: () => Promise.resolve({ text: 'Источник установлен.' }),
+    }))
+    await expect(
+      sourceEstablished.explainFacts({ facts: ['Источник проверяется.'], unknowns: [] }),
+    ).rejects.toThrow('LLM_FORBIDDEN_BLAME')
   })
 
   it('rejects unsupported temporal precision and mutated table numbers', async () => {
@@ -74,8 +82,6 @@ describe('LLM validation boundary', () => {
   })
 
   it('parses structured JSON through the Gemini adapter without a real network call', async () => {
-    const previousKey = process.env.GEMINI_API_KEY
-    process.env.GEMINI_API_KEY = 'test-key'
     const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({
         candidates: [{ content: { parts: [{ text: JSON.stringify({
@@ -91,13 +97,26 @@ describe('LLM validation boundary', () => {
     )
     try {
       await expect(
-        new GeminiLlmProvider().extractIncidentSignal({ sourceText: 'зелёная вода' }),
+        new GeminiLlmProvider(
+          new ConfigService({
+            GEMINI_API_KEY: 'test-key',
+            GEMINI_MODEL: 'gemini-test-model',
+            HTTP_TIMEOUT_MS: 1_000,
+          }),
+        ).extractIncidentSignal({ sourceText: 'зелёная вода' }),
       ).resolves.toMatchObject({ phenomenon: 'color_change', confidence: 0.75 })
       expect(fetchMock).toHaveBeenCalledTimes(1)
+      const [url, options] = fetchMock.mock.calls[0]!
+      const requestUrl =
+        typeof url === 'string'
+          ? url
+          : url instanceof URL
+            ? url.href
+            : url.url
+      expect(requestUrl).not.toContain('test-key')
+      expect(options?.headers).toMatchObject({ 'x-goog-api-key': 'test-key' })
     } finally {
       fetchMock.mockRestore()
-      if (previousKey === undefined) delete process.env.GEMINI_API_KEY
-      else process.env.GEMINI_API_KEY = previousKey
     }
   })
 })

@@ -1,4 +1,5 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 
 import type {
   DuplicateInput,
@@ -16,26 +17,38 @@ import {
   type GeneratedExplanation,
   type MeasurementCandidate,
 } from './schemas/llm.schemas'
+import { LLM_PROMPTS } from './prompts/llm.prompts'
 
 @Injectable()
 export class GeminiLlmProvider implements LlmProvider {
-  private readonly apiKey = process.env.GEMINI_API_KEY
-  private readonly model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash'
+  private readonly apiKey: string | undefined
+  private readonly model: string
+  private readonly timeoutMs: number
+
+  constructor(config: ConfigService) {
+    this.apiKey = config.get<string>('GEMINI_API_KEY')
+    this.model = config.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash'
+    this.timeoutMs = config.get<number>('HTTP_TIMEOUT_MS') ?? 12_000
+  }
 
   extractIncidentSignal(input: SourceTextInput): Promise<ExtractedSignal | null> {
-    return this.generate('Extract one incident signal as JSON. Do not infer absent fields.', input, ExtractedSignalSchema)
+    return this.generate(LLM_PROMPTS.incidentSignal, input, ExtractedSignalSchema)
   }
 
   extractMeasurementCandidates(input: SourceTextInput): Promise<MeasurementCandidate[]> {
-    return this.generate('Extract only explicitly quoted measurement candidates as a JSON array.', input, MeasurementCandidatesSchema)
+    return this.generate(
+      LLM_PROMPTS.measurementCandidates,
+      input,
+      MeasurementCandidatesSchema,
+    )
   }
 
   classifyPossibleDuplicate(input: DuplicateInput): Promise<DuplicateAssessment> {
-    return this.generate('Assess possible duplication as JSON. Quote only exact input text.', input, DuplicateAssessmentSchema)
+    return this.generate(LLM_PROMPTS.duplicate, input, DuplicateAssessmentSchema)
   }
 
   explainFacts(input: ExplanationInput): Promise<GeneratedExplanation | null> {
-    return this.generate('Explain only the supplied facts and unknowns as JSON. Add no numbers or blame.', input, GeneratedExplanationSchema)
+    return this.generate(LLM_PROMPTS.explanation, input, GeneratedExplanationSchema)
   }
 
   private async generate<T>(
@@ -49,17 +62,38 @@ export class GeminiLlmProvider implements LlmProvider {
         message: 'GEMINI_API_KEY is required for the Gemini provider',
       })
     }
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.model)}:generateContent?key=${encodeURIComponent(this.apiKey)}`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${instruction}\nINPUT:\n${JSON.stringify(input)}` }] }],
-          generationConfig: { responseMimeType: 'application/json', temperature: 0 },
-        }),
-      },
-    )
+    let response: Response
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(this.model)}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'x-goog-api-key': this.apiKey,
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: `${instruction}\nINPUT:\n${JSON.stringify(input)}` },
+                ],
+              },
+            ],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0,
+            },
+          }),
+          signal: AbortSignal.timeout(this.timeoutMs),
+        },
+      )
+    } catch {
+      throw new ServiceUnavailableException({
+        code: 'LLM_PROVIDER_FAILED',
+        message: 'Gemini request failed before a response was received',
+      })
+    }
     if (!response.ok) {
       throw new ServiceUnavailableException({
         code: 'LLM_PROVIDER_FAILED',

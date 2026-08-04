@@ -112,6 +112,22 @@ describe('station graph', () => {
     expect(graph.nodes.size).toBe(0)
   })
 
+  it('does not trust relation provenance without a verified official source', () => {
+    const result = runInvestigation({
+      ...may,
+      stationRelations: may.stationRelations.map((relation) => ({
+        ...relation,
+        sourceDocumentId: 'missing-source',
+      })),
+    })
+
+    expect(result.evidenceLevel).not.toBe('L3')
+    expect(result.corridorBounds).toBeNull()
+    expect(result.unknowns.map(({ code }) => code)).toContain(
+      'STATION_ORDER_UNVERIFIED',
+    )
+  })
+
   it('keeps a partial graph partial instead of inventing an order', () => {
     const graph = buildStationGraph([may.stationRelations[0]!])
 
@@ -175,6 +191,68 @@ describe('safety boundaries', () => {
 
     expect(result.evidenceLevel).toBe('L0')
   })
+
+  it('does not derive an L2 corridor from a disconnected no-increase pair', () => {
+    const provenance = {
+      fixturePath: 'test-only',
+      sourcePage: 1,
+      sourceExcerpt: 'test-only',
+    }
+    const result = runInvestigation({
+      ...september,
+      candidateObjects: [],
+      stationRelations: [
+        {
+          id: 'root-component',
+          upstreamStationId: 'st-zhaiyk-1km-above-atyrau',
+          downstreamStationId: 'st-zhaiyk-1km-below-atyrau',
+          sourceDocumentId: 'doc-kazhydromet-2025-09',
+          basis: 'test-only',
+          verified: true,
+          comparisonPair: false,
+          provenance,
+        },
+        {
+          id: 'disconnected-pair',
+          upstreamStationId: 'st-asa-0-5km-above',
+          downstreamStationId: 'st-asa-0-5km-below',
+          sourceDocumentId: 'doc-kazhydromet-2025-09',
+          basis: 'test-only',
+          verified: true,
+          comparisonPair: true,
+          provenance,
+        },
+      ],
+    })
+
+    expect(result.contradictedHypotheses.map(({ code }) => code)).toEqual([
+      'NO_LOCAL_INCREASE_IN_PAIR',
+    ])
+    expect(result.corridorBounds).toBeNull()
+    expect(result.evidenceLevel).not.toBe('L2')
+  })
+
+  it('marks a partially connected station graph as unverified order', () => {
+    const result = runInvestigation({
+      ...september,
+      stationRelations: [september.stationRelations[1]!],
+    })
+
+    expect(result.unknowns.map(({ code }) => code)).toContain(
+      'STATION_ORDER_UNVERIFIED',
+    )
+  })
+
+  it('keeps an official verified measurement at L1 without a spatial rule', () => {
+    const result = runInvestigation({
+      ...may,
+      stationRelations: [],
+      candidateObjects: [],
+    })
+
+    expect(result.evidenceLevel).toBe('L1')
+    expect(result.corridorBounds).toBeNull()
+  })
 })
 
 describe('golden investigations', () => {
@@ -191,7 +269,7 @@ describe('golden investigations', () => {
         upstreamStationId: null,
         downstreamStationId: 'st-zhaiyk-1km-above-atyrau',
       },
-      rulesetVersion: '1.0.0',
+      rulesetVersion: '1.1.0',
     })
     expect(result.contradictedHypotheses.map(({ code }) => code)).toEqual(
       expect.arrayContaining(['NO_LOCAL_INCREASE_IN_PAIR', 'MAXIMUM_UPSTREAM_OF_OBJECT']),
@@ -209,7 +287,7 @@ describe('golden investigations', () => {
         upstreamStationId: 'st-asa-0-5km-above',
         downstreamStationId: 'st-asa-0-5km-below',
       },
-      rulesetVersion: '1.0.0',
+      rulesetVersion: '1.1.0',
     })
     expect(result.supportedFacts).toHaveLength(1)
     expect(result.supportedFacts[0]?.text).toContain('+0,079')
@@ -240,5 +318,53 @@ describe('golden investigations', () => {
     }
     expect(calculateInputHash(reversed)).toBe(calculateInputHash(september))
     expect(runInvestigation(reversed)).toEqual(runInvestigation(september))
+  })
+
+  it('keeps multi-measurement interval results deterministic with unique IDs', () => {
+    const multiMeasurementInput: InvestigationInput = {
+      ...may,
+      measurements: [
+        ...may.measurements,
+        {
+          ...may.measurements[0]!,
+          id: 'm-2025-05-asa-above-second',
+          value: '0.100',
+          rawValueText: '0,100',
+        },
+      ],
+    }
+    const reversed: InvestigationInput = {
+      ...multiMeasurementInput,
+      measurements: [...multiMeasurementInput.measurements].reverse(),
+    }
+    const first = runInvestigation(multiMeasurementInput)
+    const second = runInvestigation(reversed)
+
+    expect(second.inputHash).toBe(first.inputHash)
+    expect(second).toEqual(first)
+    const statementIds = first.supportedFacts.map(({ id }) => id)
+    expect(new Set(statementIds).size).toBe(statementIds.length)
+  })
+
+  it('assigns a unique global sort order across supported and contradicted facts', () => {
+    const mixed = runInvestigation({
+      ...may,
+      measurements: [
+        ...may.measurements,
+        {
+          ...may.measurements[1]!,
+          id: 'm-2025-05-asa-below-low',
+          value: '0.050',
+          rawValueText: '0,050',
+        },
+      ],
+    })
+    const sortOrders = [
+      ...mixed.supportedFacts,
+      ...mixed.contradictedHypotheses,
+    ].map(({ sortOrder }) => sortOrder)
+
+    expect(new Set(sortOrders).size).toBe(sortOrders.length)
+    expect(sortOrders).toEqual(sortOrders.map((_, index) => index))
   })
 })

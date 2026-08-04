@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 
 import type { IncidentDetail } from '@/api/contracts';
-import { InsufficientData } from '@/components/common';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   SCHEME_UNCONFIRMED_ORDER_HINT,
   SCHEME_UPSTREAM_HINT,
 } from '@/constants/scheme';
 import { DATA_LOAD_ERROR } from '@/constants/strings';
+import { InsufficientDataScreen } from '@/features/aktau/InsufficientDataScreen';
 import { useSelectedIncidentDetail } from '@/hooks/use-selected-incident-detail';
 import { formatSampledAt } from '@/lib/format';
 import { OrderedStations } from './OrderedStations';
@@ -45,52 +45,48 @@ type RiverSchemeContentProps = {
 /** Презентационная часть схемы — контейнер и дев-превью отдают ей готовые данные. */
 export function RiverSchemeContent({ detail }: RiverSchemeContentProps) {
   const model = useMemo(() => buildSchemeModel(detail), [detail]);
-  const hasStations = detail.stations.length > 0;
   const hasUnordered = model.unordered.length > 0;
+
+  // Без единого створа рисовать нечего: вместо рамки схемы — полноценный
+  // экран «недостаточно данных» (ТЗ §13 «Экран Актау»); заголовок
+  // «Линейная схема реки» для прибрежного кейса был бы неправдой.
+  if (detail.stations.length === 0) {
+    return <InsufficientDataScreen detail={detail} />;
+  }
+
   const waterBody = detail.stations[0]?.waterBody ?? null;
   // Пока хоть одна станция без подтверждённого порядка — «вверху — выше по
   // течению» обещать нельзя.
-  const orderHint = hasStations
-    ? hasUnordered
-      ? SCHEME_UNCONFIRMED_ORDER_HINT
-      : SCHEME_UPSTREAM_HINT
-    : null;
+  const orderHint = hasUnordered
+    ? SCHEME_UNCONFIRMED_ORDER_HINT
+    : SCHEME_UPSTREAM_HINT;
   const subtitle = [waterBody, orderHint].filter(Boolean).join(' · ') || null;
   const firstMeasurement = detail.measurements[0] ?? null;
 
   return (
     <>
       <SchemeHeader subtitle={subtitle} />
-      {hasStations ? (
-        <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
-          <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
-            <p className="text-xs text-muted-foreground">
-              {detail.investigation.indicator}
-              {firstMeasurement &&
-                ` · ${formatSampledAt(firstMeasurement.sampledAt)}`}
-            </p>
-            {model.ordered.length > 0 && (
-              <OrderedStations
-                entries={model.ordered}
-                corridor={model.corridor}
-              />
-            )}
-            {hasUnordered && (
-              <UnorderedStations
-                entries={model.unordered}
-                corridor={model.corridor}
-              />
-            )}
-          </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-6">
+        <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
+          <p className="text-xs text-muted-foreground">
+            {detail.investigation.indicator}
+            {firstMeasurement &&
+              ` · ${formatSampledAt(firstMeasurement.sampledAt)}`}
+          </p>
+          {model.ordered.length > 0 && (
+            <OrderedStations
+              entries={model.ordered}
+              corridor={model.corridor}
+            />
+          )}
+          {hasUnordered && (
+            <UnorderedStations
+              entries={model.unordered}
+              corridor={model.corridor}
+            />
+          )}
         </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-y-auto p-6">
-          <InsufficientData
-            reasons={detail.investigation.unknowns}
-            className="max-w-md"
-          />
-        </div>
-      )}
+      </div>
     </>
   );
 }

@@ -12,7 +12,13 @@ import {
   PANEL_NO_UNKNOWNS,
   type ConclusionSectionId,
 } from '@/constants/panel';
+import { REPLAY_PENDING } from '@/constants/replay';
 import { DATA_LOAD_ERROR } from '@/constants/strings';
+import {
+  projectDetailForReplay,
+  useReplayFrame,
+  type ReplayFrame,
+} from '@/features/replay/replay-frame';
 import { useSelectedIncidentDetail } from '@/hooks/use-selected-incident-detail';
 import type { Investigation } from '@/types';
 import { SourcesList } from './SourcesList';
@@ -21,7 +27,14 @@ import { buildPanelModel, type PanelModel } from './panel-model';
 
 // Порядок и нумерация секций приходят из CONCLUSION_SECTIONS (ТЗ §13, 1–6).
 export function ConclusionPanel() {
-  const { detail, isError } = useSelectedIncidentDetail();
+  const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail();
+  // Во время реплея панель показывает состояние текущего шага — селектор
+  // поверх загруженных данных, без рефетча (план сессии 9).
+  const frame = useReplayFrame(selectedIncidentId);
+  const shownDetail = useMemo(
+    () => (detail && frame ? projectDetailForReplay(detail, frame) : detail),
+    [detail, frame],
+  );
 
   return (
     <section
@@ -34,8 +47,8 @@ export function ConclusionPanel() {
         </h2>
       </header>
       <ScrollArea className="min-h-0 flex-1">
-        {detail ? (
-          <ConclusionPanelContent detail={detail} />
+        {shownDetail ? (
+          <ConclusionPanelContent detail={shownDetail} replayFrame={frame} />
         ) : isError ? (
           <p className="p-4 text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
         ) : (
@@ -48,10 +61,15 @@ export function ConclusionPanel() {
 
 type ConclusionPanelContentProps = {
   detail: IncidentDetail;
+  /** Кадр активного реплея: блоки, до которых хронология не дошла, ждут шага. */
+  replayFrame?: ReplayFrame | null;
 };
 
 /** Презентационная часть панели — контейнер и дев-превью отдают ей готовые данные. */
-export function ConclusionPanelContent({ detail }: ConclusionPanelContentProps) {
+export function ConclusionPanelContent({
+  detail,
+  replayFrame = null,
+}: ConclusionPanelContentProps) {
   const model = useMemo(() => buildPanelModel(detail), [detail]);
 
   return (
@@ -62,6 +80,7 @@ export function ConclusionPanelContent({ detail }: ConclusionPanelContentProps) 
             sectionId={section.id}
             investigation={detail.investigation}
             model={model}
+            replayFrame={replayFrame}
           />
         </SectionItem>
       ))}
@@ -73,26 +92,44 @@ type SectionBodyProps = {
   sectionId: ConclusionSectionId;
   investigation: Investigation;
   model: PanelModel;
+  replayFrame: ReplayFrame | null;
 };
 
-function SectionBody({ sectionId, investigation, model }: SectionBodyProps) {
+function SectionBody({
+  sectionId,
+  investigation,
+  model,
+  replayFrame,
+}: SectionBodyProps) {
   switch (sectionId) {
-    case 'conclusion':
+    case 'conclusion': {
+      if (replayFrame && !replayFrame.conclusionReached) {
+        return <ReplayPendingNote />;
+      }
+      // Во время реплея вывод — дословный текст payload шага conclusion.
       return (
         <p className="text-sm leading-relaxed text-pretty">
-          {investigation.conclusion}
+          {replayFrame?.conclusionText ?? investigation.conclusion}
         </p>
       );
-    case 'evidenceLevel':
+    }
+    case 'evidenceLevel': {
+      // Уровень на текущем шаге реплея приходит в payload шага (запрет 6:
+      // фронт уровни не вычисляет — ни финальные, ни промежуточные).
+      const level = replayFrame?.evidenceLevel ?? investigation.evidenceLevel;
       return (
         <div className="flex flex-col items-start gap-1.5">
-          <EvidenceLevelBadge level={investigation.evidenceLevel} />
+          <EvidenceLevelBadge level={level} />
           <p className="text-xs text-pretty text-muted-foreground">
-            {EVIDENCE_LEVEL_META[investigation.evidenceLevel].description}
+            {EVIDENCE_LEVEL_META[level].description}
           </p>
         </div>
       );
+    }
     case 'supportedFacts':
+      if (replayFrame && !replayFrame.inferenceReached) {
+        return <ReplayPendingNote />;
+      }
       return (
         <StatementList
           entries={model.supportedFacts}
@@ -100,6 +137,9 @@ function SectionBody({ sectionId, investigation, model }: SectionBodyProps) {
         />
       );
     case 'contradictedHypotheses':
+      if (replayFrame && !replayFrame.inferenceReached) {
+        return <ReplayPendingNote />;
+      }
       return (
         <StatementList
           entries={model.contradictedHypotheses}
@@ -107,6 +147,11 @@ function SectionBody({ sectionId, investigation, model }: SectionBodyProps) {
         />
       );
     case 'unknowns':
+      // Пробелы — часть применённого правила (§14: «L2, но не L3» объясняется
+      // именно пробелом), до шага inference их показывать рано.
+      if (replayFrame && !replayFrame.inferenceReached) {
+        return <ReplayPendingNote />;
+      }
       return investigation.unknowns.length > 0 ? (
         <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm">
           {investigation.unknowns.map((unknown) => (
@@ -121,6 +166,10 @@ function SectionBody({ sectionId, investigation, model }: SectionBodyProps) {
     case 'sources':
       return <SourcesList entries={model.sources} />;
   }
+}
+
+function ReplayPendingNote() {
+  return <p className="text-sm text-muted-foreground">{REPLAY_PENDING}</p>;
 }
 
 type SectionItemProps = {

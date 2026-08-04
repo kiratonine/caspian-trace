@@ -8,6 +8,10 @@ import {
 } from '@/constants/scheme';
 import { DATA_LOAD_ERROR } from '@/constants/strings';
 import { InsufficientDataScreen } from '@/features/aktau/InsufficientDataScreen';
+import {
+  projectDetailForReplay,
+  useReplayFrame,
+} from '@/features/replay/replay-frame';
 import { useSelectedIncidentDetail } from '@/hooks/use-selected-incident-detail';
 import { formatSampledAt } from '@/lib/format';
 import { OrderedStations } from './OrderedStations';
@@ -16,12 +20,19 @@ import { buildSchemeModel } from './scheme-model';
 
 /** Колонка схемы: рисует выбранное событие (общий хук выбора). */
 export function RiverScheme() {
-  const { detail, isError } = useSelectedIncidentDetail();
+  const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail();
+  // Во время реплея схема показывает только «уже загруженные» шагами
+  // измерения и коридор — селектор поверх данных, без рефетча (план сессии 9).
+  const frame = useReplayFrame(selectedIncidentId);
+  const shownDetail = useMemo(
+    () => (detail && frame ? projectDetailForReplay(detail, frame) : detail),
+    [detail, frame],
+  );
 
   return (
     <section aria-label="Линейная схема реки" className="flex min-h-0 flex-col">
-      {detail ? (
-        <RiverSchemeContent detail={detail} />
+      {shownDetail ? (
+        <RiverSchemeContent detail={shownDetail} />
       ) : (
         <>
           <SchemeHeader subtitle={null} />

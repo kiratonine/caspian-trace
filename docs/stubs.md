@@ -14,7 +14,7 @@
 |---|---|---|---|---|
 | `src/api/incidents.ts` | `fetchIncidents` | `GET /api/incidents` | full-stack 1 | активна |
 | `src/api/incidents.ts` | `fetchIncidentDetail` | `GET /api/incidents/:id` | full-stack 1 | активна |
-| `src/api/replays.ts` | `startReplay` | `POST /api/replays/:id/start` | full-stack 2 | активна (только сентябрьский сценарий §14) |
+| `src/api/replays.ts` | `startReplay` | `POST /api/replays/:id/start` | full-stack 2 | активна (только сентябрьский сценарий §14; с сессии 9 на ней работает плеер) |
 | `src/api/investigations.ts` | `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | full-stack 2 | активна |
 | `src/api/live-status.ts` | `fetchLiveStatus` | `GET /api/live/status` | full-stack 1 | активна |
 
@@ -26,7 +26,10 @@
 - `sampledAt` с точностью до месяца (`'2025-09'`, `'2025-05'`) — точных дат в ТЗ нет;
 - `sourceExcerpt` измерений — реконструкция строки таблицы из значений ТЗ §5,
   дословные цитаты бюллетеня отдаст бэк;
-- кейс Актау — минимальный investigation без сигналов (формат ждёт ответа на вопрос 7).
+- кейс Актау — минимальный investigation без сигналов (формат ждёт ответа на вопрос 7);
+- сценарий реплея есть ТОЛЬКО у сентября: у мая и Актау `startReplay` бросает ошибку,
+  и это штатное состояние UI — управление плеером отключается с формулировкой
+  «Сценарий реплея для этого события пока недоступен» (не ошибка загрузки).
 
 Сентинелы уже учтены common-примитивами (сессия 4): при `sourcePage = 0`
 `MeasurementValue`/`SourceLink` не ставят якорь `#page` и не показывают страницу,

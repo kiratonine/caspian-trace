@@ -14,9 +14,11 @@ if (import.meta.env.DEV) {
   const PrimitivesGallery = lazy(() => import('@/dev/PrimitivesGallery'));
   const RiverSchemeGallery = lazy(() => import('@/dev/RiverSchemeGallery'));
   const ConclusionGallery = lazy(() => import('@/dev/ConclusionGallery'));
+  const FeedGallery = lazy(() => import('@/dev/FeedGallery'));
   routes.push({ path: '/dev/primitives', element: <PrimitivesGallery /> });
   routes.push({ path: '/dev/river-scheme', element: <RiverSchemeGallery /> });
   routes.push({ path: '/dev/conclusion', element: <ConclusionGallery /> });
+  routes.push({ path: '/dev/feed', element: <FeedGallery /> });
 }
 
 export const router = createBrowserRouter(routes);

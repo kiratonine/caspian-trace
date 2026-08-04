@@ -23,6 +23,9 @@ export function useSelectedIncidentDetail() {
   });
 
   return {
+    // Ленте нужен и сам id: подсветка карточки должна идти из того же
+    // источника истины, что и данные схемы/панели.
+    selectedIncidentId,
     detail: detailQuery.data ?? null,
     isError: incidentsQuery.isError || detailQuery.isError,
   };

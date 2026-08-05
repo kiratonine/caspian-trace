@@ -1,0 +1,36 @@
+{
+  "evidenceLevel": "L3",
+  "corridorBounds": {
+    "upstreamStationId": "st-asa-0-5km-above",
+    "downstreamStationId": "st-asa-0-5km-below"
+  },
+  "supportedFacts": [
+    {
+      "id": "evidence-local-increase-rel-may-asa-pair-m-2025-05-asa-above-m-2025-05-asa-below",
+      "code": "LOCAL_INCREASE_IN_PAIR",
+      "kind": "supports",
+      "text": "В сопоставимом парном интервале зарегистрирован рост +0,079 мг/дм³; интервал требует проверки, но причина роста не установлена.",
+      "measurementIds": [
+        "m-2025-05-asa-above",
+        "m-2025-05-asa-below"
+      ],
+      "sourceDocumentIds": [
+        "doc-kazhydromet-2025-05"
+      ],
+      "generatedBy": "rule_engine",
+      "sortOrder": 0
+    }
+  ],
+  "contradictedHypotheses": [],
+  "objectDispositions": [
+    {
+      "objectId": "obj-atyrau-su-arnasy",
+      "disposition": "in_corridor",
+      "evidenceStatementIds": []
+    }
+  ],
+  "unknowns": [],
+  "conclusion": "Источник не установлен. В сопоставимом парном интервале зарегистрирован рост; интервал требует проверки как возможная зона дополнительного поступления.",
+  "inputHash": "30c0ebeec4f0ecc6f0b5fc90491bfec8fa69cb9eba228379c5fb87a7cec1981b",
+  "rulesetVersion": "1.1.0"
+}

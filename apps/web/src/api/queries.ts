@@ -3,6 +3,7 @@ import { queryOptions } from "@tanstack/react-query"
 import { LIVE_STATUS_STALE_TIME_MS } from "@/constants/api"
 import type { IncidentListParams } from "./contracts"
 import { fetchIncidentDetail, fetchIncidents } from "./incidents"
+import { fetchInvestigationEvidence } from "./investigations"
 import { fetchLiveStatus } from "./live-status"
 import { startReplay } from "./replays"
 
@@ -29,6 +30,15 @@ export function incidentDetailQueryOptions(id: string) {
   return queryOptions({
     queryKey: queryKeys.incident(id),
     queryFn: ({ signal }) => fetchIncidentDetail(id, signal),
+  })
+}
+
+// Граф доказательств отдельным запросом (F3/F5): у бэка это первый готовый
+// read-эндпоинт, а `GET /api/incidents` ещё нет.
+export function investigationEvidenceQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: queryKeys.evidence(id),
+    queryFn: ({ signal }) => fetchInvestigationEvidence(id, signal),
   })
 }
 

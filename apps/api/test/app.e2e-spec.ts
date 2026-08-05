@@ -13,10 +13,15 @@ import { Test } from '@nestjs/testing'
 import { IsString } from 'class-validator'
 import request from 'supertest'
 
-import { ApiErrorSchema, HealthLiveSchema } from '@caspian-trace/contracts'
+import {
+  ApiErrorSchema,
+  HealthLiveSchema,
+  HealthReadySchema,
+} from '@caspian-trace/contracts'
 
 import { AppModule } from '../src/app.module'
 import { configureApplication } from '../src/config/application.setup'
+import { PrismaService } from '../src/prisma/prisma.service'
 
 class ValidationProbeDto {
   @IsString()
@@ -54,12 +59,16 @@ describe('API foundation (e2e)', () => {
   let app: INestApplication
   let httpServer: Server
   let swaggerPaths: Record<string, unknown>
+  const checkReadiness = jest.fn()
 
   beforeAll(async () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
       controllers: [ValidationProbeController, ErrorProbeController],
-    }).compile()
+    })
+      .overrideProvider(PrismaService)
+      .useValue({ checkReadiness })
+      .compile()
 
     app = module.createNestApplication({ bodyParser: false })
     swaggerPaths = configureApplication(app).paths
@@ -71,6 +80,11 @@ describe('API foundation (e2e)', () => {
 
   afterAll(async () => {
     await app.close()
+  })
+
+  beforeEach(() => {
+    checkReadiness.mockReset()
+    checkReadiness.mockResolvedValue(undefined)
   })
 
   it('boots and returns a contract-valid liveness response', async () => {
@@ -92,6 +106,52 @@ describe('API foundation (e2e)', () => {
       .expect(200)
 
     expect(response.headers['x-request-id']).toBe('part-01-forwarded')
+  })
+
+  it('returns contract-valid readiness after a database probe', async () => {
+    const response = await request(httpServer)
+      .get('/api/health/ready')
+      .expect(200)
+
+    expect(HealthReadySchema.parse(response.body)).toEqual({
+      status: 'ok',
+      service: 'caspian-trace-api',
+      database: 'ready',
+    })
+    expect(checkReadiness).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps liveness independent from the database', async () => {
+    checkReadiness.mockRejectedValue(new Error('database is down'))
+    await request(httpServer).get('/api/health/live').expect(200)
+    expect(checkReadiness).not.toHaveBeenCalled()
+  })
+
+  it('normalizes a failed readiness probe without leaking secrets', async () => {
+    checkReadiness.mockRejectedValue(
+      new Error('postgresql://api:should-not-leak@database'),
+    )
+    const response = await request(httpServer)
+      .get('/api/health/ready')
+      .expect(503)
+
+    expect(ApiErrorSchema.parse(response.body)).toEqual({
+      code: 'DATABASE_UNAVAILABLE',
+      message: 'Database is unavailable',
+      requestId: response.headers['x-request-id'],
+    })
+    expect(JSON.stringify(response.body)).not.toContain('should-not-leak')
+  })
+
+  it('times out a stalled readiness query', async () => {
+    checkReadiness.mockReturnValue(new Promise(() => undefined))
+    const response = await request(httpServer)
+      .get('/api/health/ready')
+      .expect(503)
+
+    expect(ApiErrorSchema.parse(response.body).code).toBe(
+      'DATABASE_UNAVAILABLE',
+    )
   })
 
   it('normalizes unknown routes', async () => {
@@ -174,6 +234,7 @@ describe('API foundation (e2e)', () => {
 
   it('creates Swagger documentation with the health endpoint', () => {
     expect(swaggerPaths).toHaveProperty('/api/health/live')
+    expect(swaggerPaths).toHaveProperty('/api/health/ready')
   })
 })
 

@@ -7,6 +7,7 @@ import { incidentsQueryOptions } from "@/api/queries"
 import { Skeleton } from "@/components/ui/skeleton"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
 import {
+  SCHEME_PARTIAL_ORDER_HINT,
   SCHEME_UNCONFIRMED_ORDER_HINT,
   SCHEME_UPSTREAM_HINT,
 } from "@/constants/scheme"
@@ -100,10 +101,13 @@ export function RiverSchemeContent({
 
   const waterBody = detail.stations[0]?.waterBody ?? null
   // Пока хоть одна станция без подтверждённого порядка — «вверху — выше по
-  // течению» обещать нельзя.
-  const orderHint = hasUnordered
-    ? SCHEME_UNCONFIRMED_ORDER_HINT
-    : SCHEME_UPSTREAM_HINT
+  // течению» обещать нельзя. Но если часть створов всё-таки выстроена
+  // проверенными связями, «порядок не подтверждён» тоже неправда.
+  const orderHint = !hasUnordered
+    ? SCHEME_UPSTREAM_HINT
+    : model.ordered.length > 0
+      ? SCHEME_PARTIAL_ORDER_HINT
+      : SCHEME_UNCONFIRMED_ORDER_HINT
   const subtitle = [waterBody, orderHint].filter(Boolean).join(" · ") || null
   const firstMeasurement = detail.measurements[0] ?? null
   // Дата отбора известна не всегда — тогда в подзаголовке остаётся показатель.

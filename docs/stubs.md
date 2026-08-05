@@ -19,42 +19,58 @@
 |---|---|---|---|---|
 | `src/api/incidents.ts` | `fetchIncidents` | `GET /api/incidents` | full-stack 1 | ветка api написана, эндпоинта нет |
 | `src/api/incidents.ts` | `fetchIncidentDetail` | `GET /api/incidents/:id` | full-stack 1 | ветка api написана, эндпоинта нет |
-| `src/api/replays.ts` | `startReplay` | `POST /api/replays/:id/start` | full-stack 2 | ветка api написана; в seed только сентябрьский сценарий |
-| `src/api/investigations.ts` | `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | full-stack 2 | ветка api написана, эндпоинта нет; UI пока не потребляет |
+| `src/api/replays.ts` | `startReplay` | `POST /api/replays/:id/start` | full-stack 2 | **эндпоинт поднят** (сессия 14); в seed сценарий повторяет его ответ |
+| `src/api/investigations.ts` | `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | full-stack 2 | **эндпоинт поднят** (сессия 14); UI пока не потребляет — см. ниже |
 | `src/api/live-status.ts` | `fetchLiveStatus` | `GET /api/live/status` | full-stack 1 | ветка api написана; UI появится на этапе F6 |
-| `src/api/export.ts` | `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | full-stack 2 | ветка api написана, эндпоинта нет |
+| `src/api/export.ts` | `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | full-stack 2 | **эндпоинт поднят** (сессия 14), есть и `format=html` |
+
+Три эндпоинта Backend 2 уже отвечают, но `VITE_DATA_MODE=api` включать рано:
+списковый `GET /api/incidents` и `GET /api/incidents/:id` не подняты, а без них
+в api-режиме нет ни ленты, ни состава события. Переключение — этап F3/F5.
+
+`fetchInvestigationEvidence` намеренно не подмешивается в detail: граф несёт
+только измерения и документы, на которых стоят утверждения (сентябрь — 4 створа
+из 7 и 2 документа из 4), и подмена ими detail стёрла бы со схемы створы без
+утверждений, а из блока «Источники» — публикации §7.4.
 
 Seed-данные проверяются теми же схемами, что и ответы сети (`parseSeed`
 в `src/api/client.ts`): если пакет контрактов изменится, офлайн-режим упадёт
 сразу и явно, а не разойдётся с бэком молча.
 
-Известные условности внутри seed-данных (не выдумки, а явные сентинелы):
+Известные условности внутри seed-данных (не выдумки, а явные сентинелы).
+Сессия 14 сняла с этого списка страницы, выдержки, хэши и порядок створов:
 
-- `riverOrder` везде `null` — порядок створов не подтверждён (вопрос 1).
-  Из-за этого же сентябрь стоит на **L1**, без коридора и без опровергнутой
-  версии: так решил бэк в `packages/contracts/fixtures/incident-september.json`,
-  и фронт следует его оценке (запрет 6 — уровни считает не фронт);
-- связи створов `relationType: 'neutral'`, `relatedObjectId: null` — «выше/ниже
-  сброса» есть в названии створа, но машинным утверждением без provenance
-  не становится (та же фикстура);
+- `riverOrder` заполнен у четырёх створов — линеаризация проверенных попарных
+  связей `data/verified/atyrau-2025-*-station-relations.json`. У осетрового
+  завода (два створа) и посёлка Дамба он остаётся `null`: этих связей нет,
+  и схема показывает их без ранжирования (вопрос 1 закрыт частично);
+- связи створов `relationType: 'neutral'`, `relatedObjectId: null` — привязка
+  объекта к створу у бэка живёт во входе расчётного ядра
+  (`candidateObjects[].stationId`), а не в контракте створа; UI её не читает;
 - `location: null` у всех створов и объектов, а значит и
   `locationSourceDocumentId: null` — схема требует документ местоположения
   ровно тогда, когда есть координаты;
-- документы: `fetchedAt: null`, `sha256: null`, `status: 'unverified'` — файлы
-  бюллетеней не скачаны и не захэшированы, а схема запрещает `verified`
-  без обоих полей. Досье печатает «SHA-256: не вычислен»;
-- измерения: `sourceExcerpt: null` и `verified: false` — дословную выдержку
-  из PDF отдаст бэк; наша прежняя «цитата» была реконструкцией строки таблицы;
+- документы: `sha256` бюллетеней настоящий (сверен скачиванием), но
+  `fetchedAt: null` и `status: 'unverified'` — ровно как в выгрузке бэка:
+  времени скачивания в проверенных данных нет. У новостных публикаций
+  `sha256: null`, досье печатает «SHA-256: не вычислен»;
+- измерения: `sourceExcerpt` — дословные строки бюллетеня из
+  `data/verified/atyrau-2025-*.json`, `verified: true`, `sourcePage` 22
+  (сентябрь) и 24 (май). Вопрос 8 закрыт: майские числа тоже ведут на `#page=`;
 - `qualityClass: null` — класса качества в таблицах ТЗ §5 нет;
-- майские измерения: `sourcePage: null` — страница бюллетеня не перепроверена
-  (вопрос 8); майские числа открывают документ целиком, без якоря `#page=`;
-- майский detail и кейс Актау — наши: фикстур для них бэк не прислал (вопрос 16).
-  Майский L3 взят из его же `incidents.json`;
+- сентябрь: L2, коридор открыт вверх, **ноль** утверждений `supports` и два
+  `contradicts` — дословно `september-golden.json` (ruleset 1.1.0). Май (L3)
+  и Актау (L0) — из `may-golden.json` / `aktau-golden.json`;
+- `Investigation.unknowns` сентября — один пробел из golden плюс один наш:
+  у ядра во входе четыре створа, у нас в событии семь, и трём порядок нечем
+  подтвердить. Это состояние наших данных, а не оценка ядра;
+- `rulesetVersion`/`inputHash` в seed-досье остаются `null`, хотя golden их
+  содержит: хэш посчитан по входу ядра (4 створа), а наш detail шире —
+  чужой хэш рядом с другими данными был бы недоказуемым утверждением;
 - `Dossier.unknowns` в seed-экспорте получает `code: 'UNSPECIFIED'` — коды
   пробелов присваивает расчётное ядро, выдумывать таксономию нельзя (вопрос 18).
 
 Неизвестное уже учтено common-примитивами (сессия 4): при `sourcePage: null`
 `MeasurementValue`/`SourceLink` не ставят якорь `#page` и не показывают
 страницу, пустой `sha256` в `SourceLink` скрыт, отсутствующая дата отбора
-просто не выводится в подписи. После подтверждения майской страницы (вопрос 8)
-достаточно поправить `seed-data.ts` — компоненты не трогаются.
+просто не выводится в подписи.

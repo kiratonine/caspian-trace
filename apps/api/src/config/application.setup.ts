@@ -46,6 +46,7 @@ export function configureApplication(app: INestApplication): OpenAPIObject {
   app.enableCors({
     origin: webOrigin,
     methods: ['GET', 'POST', 'OPTIONS'],
+    exposedHeaders: ['Content-Disposition', 'X-Request-Id'],
   })
   app.useGlobalPipes(
     new ValidationPipe({

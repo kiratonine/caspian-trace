@@ -148,11 +148,13 @@ export const CandidateObjectSchema = z
 export const EvidenceStatementSchema = z
   .object({
     id: nonEmptyId,
+    code: z.string().trim().regex(/^[A-Z][A-Z0-9_]*$/),
     kind: z.enum(['supports', 'contradicts', 'limits', 'unknown']),
     text: nonEmptyText,
     measurementIds: z.array(nonEmptyId),
     sourceDocumentIds: z.array(nonEmptyId),
     generatedBy: z.enum(['rule_engine', 'human_verified']),
+    sortOrder: z.number().int().nonnegative(),
   })
   .strict()
   .superRefine(({ kind, sourceDocumentIds }, context) => {
@@ -399,6 +401,14 @@ export const HealthLiveSchema = z
   })
   .strict()
 
+export const HealthReadySchema = z
+  .object({
+    status: z.literal('ok'),
+    service: z.literal('caspian-trace-api'),
+    database: z.literal('ready'),
+  })
+  .strict()
+
 export const PrismaRegionSchema = z.enum(['ATYRAU', 'MANGYSTAU'])
 
 export function mapRegionToApi(value: z.input<typeof PrismaRegionSchema>): Region {
@@ -430,3 +440,4 @@ export type LiveStatus = z.infer<typeof LiveStatusSchema>
 export type Dossier = z.infer<typeof DossierSchema>
 export type ApiError = z.infer<typeof ApiErrorSchema>
 export type HealthLive = z.infer<typeof HealthLiveSchema>
+export type HealthReady = z.infer<typeof HealthReadySchema>

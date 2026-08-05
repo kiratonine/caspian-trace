@@ -8,6 +8,7 @@ import {
   EvidenceGraphSchema,
   EvidenceStatementSchema,
   ExtractionModeSchema,
+  HealthReadySchema,
   IncidentDetailSchema,
   IncidentSummaryListSchema,
   LiveStatusSchema,
@@ -202,11 +203,13 @@ describe('strict API boundaries', () => {
       expect(
         EvidenceStatementSchema.safeParse({
           id: `statement-${kind}`,
+          code: 'TEST_STATEMENT',
           kind,
           text: 'Проверяемое утверждение',
           measurementIds: [],
           sourceDocumentIds: [],
           generatedBy: 'human_verified',
+          sortOrder: 0,
         }).success,
       ).toBe(false)
     },
@@ -216,11 +219,13 @@ describe('strict API boundaries', () => {
     expect(
       EvidenceStatementSchema.safeParse({
         id: 'statement-with-source',
+        code: 'TEST_STATEMENT',
         kind: 'supports',
         text: 'Факт подтвержден документом',
         measurementIds: [],
         sourceDocumentIds: ['source-document'],
         generatedBy: 'human_verified',
+        sortOrder: 0,
       }).success,
     ).toBe(true)
   })
@@ -229,11 +234,13 @@ describe('strict API boundaries', () => {
     expect(
       EvidenceStatementSchema.safeParse({
         id: 'statement-unknown',
+        code: 'DATA_UNAVAILABLE',
         kind: 'unknown',
         text: 'Данных недостаточно',
         measurementIds: [],
         sourceDocumentIds: [],
         generatedBy: 'human_verified',
+        sortOrder: 0,
       }).success,
     ).toBe(true)
   })
@@ -382,6 +389,20 @@ describe('strict API boundaries', () => {
       code: 'VALIDATION_ERROR',
       message: 'Validation failed',
       requestId: 'forwarded-request-id',
+    })
+  })
+
+  it('validates the additive database readiness contract', () => {
+    expect(
+      HealthReadySchema.parse({
+        status: 'ok',
+        service: 'caspian-trace-api',
+        database: 'ready',
+      }),
+    ).toEqual({
+      status: 'ok',
+      service: 'caspian-trace-api',
+      database: 'ready',
     })
   })
 })

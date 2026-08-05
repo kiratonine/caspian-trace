@@ -1,6 +1,6 @@
 # Контракт фронт ↔ бэк одной страницей
 
-Обновлено: 04.08.2026 после сессии 13 (переезд на общий пакет).
+Обновлено: 05.08.2026 после сессии 14 (влита ветка `feat/backend-investigation`).
 
 **Источник истины — код, а не этот файл.** Схемы и типы живут в
 `packages/contracts/src/schemas.ts`, эталонные значения — в
@@ -12,14 +12,20 @@
 
 | Функция фронта | Эндпоинт | Схема ответа | Владелец | Статус |
 |---|---|---|---|---|
-| `fetchIncidents` | `GET /api/incidents` | `IncidentSummaryListSchema` | Full-stack 1 | эндпоинта нет, есть фикстура |
-| `fetchIncidentDetail` | `GET /api/incidents/:id` | `IncidentDetailSchema` | Full-stack 1 | эндпоинта нет, есть фикстура |
+| `fetchIncidents` | `GET /api/incidents` | `IncidentSummaryListSchema` | Full-stack 1 | **эндпоинта нет**, есть фикстура |
+| `fetchIncidentDetail` | `GET /api/incidents/:id` | `IncidentDetailSchema` | Full-stack 1 | **эндпоинта нет**, есть фикстура |
 | `fetchLiveStatus` | `GET /api/live/status` | `LiveStatusSchema` | Full-stack 1 | эндпоинта нет, есть фикстура |
-| `startReplay` | `POST /api/replays/:id/start` | `ReplayScenarioSchema` | Full-stack 2 | эндпоинта нет, есть фикстура |
-| `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | `EvidenceGraphSchema` | Full-stack 2 | эндпоинта нет, есть фикстура |
-| `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | `DossierSchema` | Full-stack 2 | эндпоинта нет, есть фикстура |
+| `startReplay` | `POST /api/replays/:id/start` | `ReplayScenarioSchema` | Full-stack 2 | ✅ поднят |
+| `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | `EvidenceGraphSchema` | Full-stack 2 | ✅ поднят |
+| `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | `DossierSchema` | Full-stack 2 | ✅ поднят (+ `format=html`) |
 
-Поднят и работает пока только `GET /api/health/live`.
+Работают также `GET /api/health/live` и `GET /api/health/ready` (`HealthReadySchema`,
+проверка соединения с БД). Стабильные ответы трёх поднятых эндпоинтов лежат
+в `data/fixtures/investigation/api/` — их и надо сверять при интеграции.
+
+**Узкое место интеграции:** ленты и состава события у бэка ещё нет, поэтому
+`VITE_DATA_MODE=api` без `GET /api/incidents` включать нечем — три поднятых
+эндпоинта покрывают доказательства, реплей и экспорт, но не сами события.
 
 Служебные, которые может понадобиться знать фронту:
 `GET /api/source-documents/:id/open?page=22` (документ из кэша Storage, когда
@@ -40,6 +46,20 @@
 | `sourceExcerpt: string` | `string \| null`; `verified: true` требует непустой выдержки |
 | `Station.locationSourceDocumentId: string` | `string \| null`, обязателен ровно при наличии `location` |
 | `TypedReplayStep` (наш юнион) | `ReplayStep` — совпал дословно, включая офсеты |
+
+## Что изменилось в сессии 14 (ветка расследований)
+
+| Было | Стало |
+|---|---|
+| `EvidenceStatement { id, kind, text, ... }` | добавлены обязательные `code` (маска `^[A-Z][A-Z0-9_]*$`) и `sortOrder` (int ≥ 0) |
+| — | `HealthReadySchema` (`status`/`service`/`database: 'ready'`) |
+| офсеты реплея `0/5/12/22/32 с`, 5 шагов | сентябрьский сценарий: **6 шагов**, `0/5/10/15/20/25 с`, по шагу `inference` на каждое правило |
+| порядок створов неизвестен | попарные проверенные связи в `data/verified/*-station-relations.json` (sha256, страница, выдержка, основание) |
+| `generatedBy: 'human_verified'` в наших данных | утверждения ядра приходят с `generatedBy: 'rule_engine'` |
+
+`rulesetVersion` расчётного ядра — `1.1.0`. Утверждения `supports` ядро выпускает
+не всегда: у сентября их ноль, а два `contradicts` несут весь вывод. Блок 3
+панели «Что установлено» обязан переживать пустоту как штатное состояние.
 
 ## Замороженные решения (менять — только правкой пакета)
 
@@ -140,7 +160,7 @@ queryKeys.liveStatus()        // staleTime: 60 000
 | Точка | Час | Что должно сойтись | Состояние |
 |---|---|---|---|
 | A | 2 | sample JSON пяти эндпоинтов | ✅ фикстуры в `packages/contracts/fixtures` |
-| B | 8 | реплей на seed; у бэка list/detail и golden-результат core | реплей ✅, бэк — нет |
-| C | 12 | три read-эндпоинта на NestJS, видна сентябрьская исключённая версия | ждёт эндпоинтов; исключённая версия ждёт `riverOrder` |
-| D | 30 | подключены replay/evidence/export; формы ответов замораживаются | не начата |
+| B | 8 | реплей на seed; у бэка list/detail и golden-результат core | реплей ✅, golden ✅, list/detail — нет |
+| C | 12 | три read-эндпоинта на NestJS, видна сентябрьская исключённая версия | исключённые версии ✅ (две); эндпоинты ленты и detail — нет |
+| D | 30 | подключены replay/evidence/export; формы ответов замораживаются | эндпоинты есть, подключение ждёт ленты (F3/F5) |
 | freeze | 43 | только исправления, тесты и подготовка демо | не начата |

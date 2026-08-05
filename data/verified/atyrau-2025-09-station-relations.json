@@ -1,0 +1,44 @@
+{
+  "document": {
+    "id": "doc-kazhydromet-2025-09",
+    "url": "https://www.kazhydromet.kz/uploads/files_calendar/9344/file/68f0e81dcc3caatyrau-russ-byulleten-za-sentyabr-2025g.pdf",
+    "sha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
+    "sourcePage": 22,
+    "verificationStatus": "automated_source_checked_human_review_pending"
+  },
+  "relations": [
+    {
+      "id": "rel-sep-city-to-asa-above",
+      "upstreamStationId": "st-zhaiyk-1km-above-atyrau",
+      "downstreamStationId": "st-asa-0-5km-above",
+      "basis": "official_monitoring_table_sequence_and_station_labels",
+      "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
+      "sourcePage": 22,
+      "sourceExcerpt": "Реконструкция последовательности строк официальной таблицы: 1 км выше г. Атырау; г. Атырау, 0,5 км выше сброса КГП «Атырау су арнасы».",
+      "checkedBy": ["codex-automated-source-verification"],
+      "checkedAt": "2026-08-04"
+    },
+    {
+      "id": "rel-sep-asa-pair",
+      "upstreamStationId": "st-asa-0-5km-above",
+      "downstreamStationId": "st-asa-0-5km-below",
+      "basis": "official_paired_above_below_labels",
+      "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
+      "sourcePage": 22,
+      "sourceExcerpt": "Официальная парная маркировка: 0,5 км выше и 0,5 км ниже одного сброса КГП «Атырау су арнасы».",
+      "checkedBy": ["codex-automated-source-verification"],
+      "checkedAt": "2026-08-04"
+    },
+    {
+      "id": "rel-sep-asa-below-to-city-below",
+      "upstreamStationId": "st-asa-0-5km-below",
+      "downstreamStationId": "st-zhaiyk-1km-below-atyrau",
+      "basis": "official_monitoring_table_sequence_and_station_labels",
+      "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
+      "sourcePage": 22,
+      "sourceExcerpt": "Реконструкция последовательности строк официальной таблицы: 0,5 км ниже сброса КГП «Атырау су арнасы»; 1 км ниже г. Атырау.",
+      "checkedBy": ["codex-automated-source-verification"],
+      "checkedAt": "2026-08-04"
+    }
+  ]
+}

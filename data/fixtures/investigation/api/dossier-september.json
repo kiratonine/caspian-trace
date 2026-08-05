@@ -1,0 +1,169 @@
+{
+  "title": "Жайык, Атырау: нефтепродукты, сентябрь 2025",
+  "generatedAt": null,
+  "disclaimer": "Досье отражает проверенные источники и ограничения данных; оно не устанавливает юридическую ответственность.",
+  "conclusion": "Источник не установлен. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
+  "evidenceLevel": "L2",
+  "signals": [
+    {
+      "id": "sig-zakon-green-water",
+      "title": "Необычная зелёная окраска воды в Жайыке",
+      "observedAt": null,
+      "observedPeriod": "2025-09",
+      "reportedAt": "2025-09-09T15:16:00+05:00",
+      "location": null,
+      "locationText": "река Жайык, Атырау",
+      "phenomenon": "color_change",
+      "excerpt": "Жителей Атырау встревожила необычная зеленая окраска воды",
+      "sourceDocumentId": "doc-zakon-green-water",
+      "extractionMode": "verified_seed",
+      "verificationStatus": "corroborated"
+    }
+  ],
+  "measurements": [
+    {
+      "id": "m-2025-09-1km-above-atyrau",
+      "stationId": "st-zhaiyk-1km-above-atyrau",
+      "sampledAt": null,
+      "sampledPeriod": "2025-09",
+      "indicator": "нефтепродукты",
+      "value": 0.234,
+      "rawValueText": "0,234",
+      "unit": "mg/dm3",
+      "matrix": "water",
+      "qualityClass": null,
+      "sourceDocumentId": "doc-kazhydromet-2025-09",
+      "sourcePage": 22,
+      "sourceExcerpt": "1 км выше г.Атырау 5 класс Нефтепродукты – 0,234 мг/дм3",
+      "verified": true
+    },
+    {
+      "id": "m-2025-09-1km-below-atyrau",
+      "stationId": "st-zhaiyk-1km-below-atyrau",
+      "sampledAt": null,
+      "sampledPeriod": "2025-09",
+      "indicator": "нефтепродукты",
+      "value": 0.167,
+      "rawValueText": "0,167",
+      "unit": "mg/dm3",
+      "matrix": "water",
+      "qualityClass": null,
+      "sourceDocumentId": "doc-kazhydromet-2025-09",
+      "sourcePage": 22,
+      "sourceExcerpt": "1 км ниже г.Атырау 4 класс Нефтепродукты – 0,167 мг/дм3",
+      "verified": true
+    },
+    {
+      "id": "m-2025-09-asa-above",
+      "stationId": "st-asa-0-5km-above",
+      "sampledAt": null,
+      "sampledPeriod": "2025-09",
+      "indicator": "нефтепродукты",
+      "value": 0.058,
+      "rawValueText": "0,058",
+      "unit": "mg/dm3",
+      "matrix": "water",
+      "qualityClass": null,
+      "sourceDocumentId": "doc-kazhydromet-2025-09",
+      "sourcePage": 22,
+      "sourceExcerpt": "Нефтепродукты – 0,058 мг/дм3",
+      "verified": true
+    },
+    {
+      "id": "m-2025-09-asa-below",
+      "stationId": "st-asa-0-5km-below",
+      "sampledAt": null,
+      "sampledPeriod": "2025-09",
+      "indicator": "нефтепродукты",
+      "value": 0.054,
+      "rawValueText": "0,054",
+      "unit": "mg/dm3",
+      "matrix": "water",
+      "qualityClass": null,
+      "sourceDocumentId": "doc-kazhydromet-2025-09",
+      "sourcePage": 22,
+      "sourceExcerpt": "Нефтепродукты – 0,054 мг/дм3",
+      "verified": true
+    }
+  ],
+  "supportedFacts": [],
+  "contradictedHypotheses": [
+    {
+      "id": "evidence-no-increase-rel-sep-asa-pair-m-2025-09-asa-above-m-2025-09-asa-below",
+      "code": "NO_LOCAL_INCREASE_IN_PAIR",
+      "kind": "contradicts",
+      "text": "В сопоставимой паре изменение составляет -0,004 мг/дм³; эта пара не подтверждает дополнительное поступление внутри интервала в данном временном срезе.",
+      "measurementIds": [
+        "m-2025-09-asa-above",
+        "m-2025-09-asa-below"
+      ],
+      "sourceDocumentIds": [
+        "doc-kazhydromet-2025-09"
+      ],
+      "generatedBy": "rule_engine",
+      "sortOrder": 0
+    },
+    {
+      "id": "evidence-maximum-upstream-obj-atyrau-su-arnasy",
+      "code": "MAXIMUM_UPSTREAM_OF_OBJECT",
+      "kind": "contradicts",
+      "text": "Объект для проверки «КГП «Атырау су арнасы»» расположен ниже максимального вышележащего измерения и не объясняет этот максимум обычным переносом вниз по течению. Это не оценивает другие события или участки ниже объекта.",
+      "measurementIds": [
+        "m-2025-09-1km-above-atyrau"
+      ],
+      "sourceDocumentIds": [
+        "doc-kazhydromet-2025-09"
+      ],
+      "generatedBy": "rule_engine",
+      "sortOrder": 1
+    }
+  ],
+  "unknowns": [
+    {
+      "code": "UPSTREAM_BOUNDARY_UNMEASURED",
+      "text": "Нет сопоставимого числового значения на ближайшем подтверждённом вышележащем створе."
+    }
+  ],
+  "candidateObjects": [
+    {
+      "id": "obj-atyrau-su-arnasy",
+      "name": "КГП «Атырау су арнасы»",
+      "category": "сброс сточных вод",
+      "location": null,
+      "waterBody": "Жайык",
+      "riverOrder": null,
+      "evidenceDocumentIds": [
+        "doc-kazhydromet-2025-09"
+      ],
+      "completeness": "confirmed"
+    }
+  ],
+  "sources": [
+    {
+      "id": "doc-kazhydromet-2025-09",
+      "title": "Бюллетень Атырауской области, сентябрь 2025",
+      "publisher": "РГП «Казгидромет»",
+      "url": "https://www.kazhydromet.kz/uploads/files_calendar/9344/file/68f0e81dcc3caatyrau-russ-byulleten-za-sentyabr-2025g.pdf",
+      "publishedAt": null,
+      "fetchedAt": null,
+      "contentType": "pdf",
+      "sha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
+      "cachePath": null,
+      "status": "unverified"
+    },
+    {
+      "id": "doc-zakon-green-water",
+      "title": "Необычная зелёная вода в Жайыке",
+      "publisher": "Zakon.kz",
+      "url": "https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html",
+      "publishedAt": "2025-09-09T15:16:00+05:00",
+      "fetchedAt": null,
+      "contentType": "html",
+      "sha256": null,
+      "cachePath": null,
+      "status": "unverified"
+    }
+  ],
+  "inputHash": "e8f907b88f7d1fbaf1aa8636ed88019f9ba7ba955b3eee162d61446194810f7c",
+  "rulesetVersion": "1.1.0"
+}

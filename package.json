@@ -31,6 +31,7 @@
     "verify:investigation-data": "node scripts/verify-investigation-data.mjs",
     "verify:investigation-data:human": "node scripts/verify-investigation-data.mjs --require-human",
     "generate:investigation-samples": "npm run build -w api && node scripts/generate-investigation-samples.mjs",
+    "test:gemini:free-tier": "npm run build -w api && node scripts/verify-gemini-free-tier.mjs",
     "format": "npm run format -w web",
     "archive:backend-platform": "node scripts/create-backend-platform-archive.mjs"
   },

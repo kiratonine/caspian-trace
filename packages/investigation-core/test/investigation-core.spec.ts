@@ -14,6 +14,7 @@ import {
   computePairedDelta,
   detectCycle,
   evaluatePairedIntervals,
+  findEventMaximum,
   isUpstreamOf,
   runInvestigation,
   type InvestigationInput,
@@ -253,6 +254,37 @@ describe('safety boundaries', () => {
     expect(result.evidenceLevel).toBe('L1')
     expect(result.corridorBounds).toBeNull()
   })
+
+  it.each([
+    ['unit', { unit: 'mg/kg' }],
+    ['matrix', { matrix: 'sediment' }],
+    ['period', { sampledPeriod: '2025-08' }],
+  ] as const)(
+    'does not derive a spatial maximum across a mismatched %s',
+    (_label, override) => {
+      const input: InvestigationInput = {
+        ...september,
+        measurements: [
+          ...september.measurements,
+          {
+            ...september.measurements[0]!,
+            ...override,
+            id: `incomparable-maximum-${_label}`,
+            value: '9',
+            rawValueText: '9',
+          },
+        ],
+      }
+
+      expect(findEventMaximum(input)).toBeNull()
+      const result = runInvestigation(input)
+      expect(result.contradictedHypotheses.map(({ code }) => code)).not.toContain(
+        'MAXIMUM_UPSTREAM_OF_OBJECT',
+      )
+      expect(result.corridorBounds).toBeNull()
+      expect(result.evidenceLevel).toBe('L1')
+    },
+  )
 })
 
 describe('golden investigations', () => {
@@ -269,7 +301,7 @@ describe('golden investigations', () => {
         upstreamStationId: null,
         downstreamStationId: 'st-zhaiyk-1km-above-atyrau',
       },
-      rulesetVersion: '1.1.0',
+      rulesetVersion: '1.2.0',
     })
     expect(result.contradictedHypotheses.map(({ code }) => code)).toEqual(
       expect.arrayContaining(['NO_LOCAL_INCREASE_IN_PAIR', 'MAXIMUM_UPSTREAM_OF_OBJECT']),
@@ -287,7 +319,7 @@ describe('golden investigations', () => {
         upstreamStationId: 'st-asa-0-5km-above',
         downstreamStationId: 'st-asa-0-5km-below',
       },
-      rulesetVersion: '1.1.0',
+      rulesetVersion: '1.2.0',
     })
     expect(result.supportedFacts).toHaveLength(1)
     expect(result.supportedFacts[0]?.text).toContain('+0,079')

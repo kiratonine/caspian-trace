@@ -10,6 +10,7 @@ describe('ExportService', () => {
     const repository = new FileInvestigationRepository()
     const investigations = new InvestigationsService(repository, repository)
     const exporter = new ExportService(investigations)
+    await investigations.recompute('inv-atyrau-2025-09')
     const model = DossierSchema.parse(
       await exporter.buildDossierModel('inv-atyrau-2025-09'),
     )

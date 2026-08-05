@@ -153,6 +153,33 @@ describe('Prisma PostgreSQL foundation (DB e2e)', () => {
       input.candidateObjects.map(({ id }) => id),
     )
 
+    const repeatedCodeResult: InvestigationResult = {
+      ...secondResult,
+      inputHash: 'd'.repeat(64),
+      supportedFacts: [
+        ...secondResult.supportedFacts,
+        {
+          ...secondResult.supportedFacts[0]!,
+          id: `${prefix}-evidence-second-interval`,
+          text: 'Disposable evidence statement for a second interval.',
+          sortOrder: 1,
+        },
+      ],
+    }
+    const repeatedCodeVersion = await investigationRepository.saveVersioned(
+      input.incident.id,
+      input,
+      repeatedCodeResult,
+    )
+    await expect(
+      prisma.evidenceStatement.count({
+        where: {
+          investigationId: repeatedCodeVersion.id,
+          code: 'NO_LOCAL_INCREASE_IN_PAIR',
+        },
+      }),
+    ).resolves.toBe(2)
+
     const invalidResult: InvestigationResult = {
       ...secondResult,
       inputHash: 'c'.repeat(64),
@@ -178,7 +205,7 @@ describe('Prisma PostgreSQL foundation (DB e2e)', () => {
     ).rejects.toThrow()
     await expect(
       investigationRepository.findCurrent(input.incident.id),
-    ).resolves.toEqual(second)
+    ).resolves.toEqual(repeatedCodeVersion)
   })
 
   it('enables RLS on every application table without public policies', async () => {

@@ -2,7 +2,8 @@
 
 Статус: реализовано после интеграции Backend Platform P2. Используется общий
 `PrismaService`, generated client и migration
-`20260805120000_investigation_persistence`.
+`20260805120000_investigation_persistence` и corrective migration
+`20260805153000_allow_repeated_evidence_codes`.
 
 ## InvestigationResultVersion
 
@@ -29,6 +30,8 @@
 - `generatedBy: EvidenceGenerator`
 - `sortOrder: Int`
 - unique: `(resultVersionId, sortOrder)`
+- non-unique index: `(resultVersionId, code)`; один rule code может встречаться
+  для нескольких измерительных интервалов
 - many-to-many links к `Measurement` и `SourceDocument`
 
 ## InvestigationUnknown

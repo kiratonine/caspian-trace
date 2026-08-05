@@ -19,14 +19,16 @@ import {
   INVESTIGATION_INPUT_READER,
   INVESTIGATION_RESULT_WRITER,
 } from '../src/investigations/investigation.ports'
+import { InvestigationsService } from '../src/investigations/investigations.service'
 
 describe('investigation features (e2e)', () => {
   let app: INestApplication
   let httpServer: Server
+  let fixtures: FileInvestigationRepository
 
   beforeAll(async () => {
     process.env.INGESTION_TOKEN = 'test-ingestion-token-at-least-32-chars'
-    const fixtures = new FileInvestigationRepository()
+    fixtures = new FileInvestigationRepository()
     const module = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(INVESTIGATION_INPUT_READER)
       .useValue(fixtures)
@@ -37,6 +39,7 @@ describe('investigation features (e2e)', () => {
     configureApplication(app)
     await app.init()
     httpServer = app.getHttpServer() as Server
+    await app.get(InvestigationsService).recompute('inv-atyrau-2025-09')
   })
 
   afterAll(async () => {
@@ -45,6 +48,7 @@ describe('investigation features (e2e)', () => {
   })
 
   it('serves evidence, stable replay and both dossier formats', async () => {
+    const saveVersioned = jest.spyOn(fixtures, 'saveVersioned')
     const evidence = await request(httpServer)
       .get('/api/investigations/inv-atyrau-2025-09/evidence')
       .expect(200)
@@ -78,6 +82,8 @@ describe('investigation features (e2e)', () => {
       .expect(200)
     expect(html.text).not.toContain('<script')
     expect(html.text.trim()).toBe(readSampleText('dossier-september.html').trim())
+    expect(saveVersioned).not.toHaveBeenCalled()
+    saveVersioned.mockRestore()
   })
 
   it('protects recompute with the ingestion token', async () => {

@@ -371,7 +371,7 @@ model EvidenceStatement {
   sources               EvidenceStatementSource[]
   candidateDispositions InvestigationCandidateObjectEvidence[]
 
-  @@unique([investigationId, code])
+  @@index([investigationId, code])
   @@unique([investigationId, sortOrder])
   @@map("evidence_statements")
 }

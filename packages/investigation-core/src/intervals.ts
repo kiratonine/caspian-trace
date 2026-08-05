@@ -17,6 +17,17 @@ export function findEventMaximum(input: InvestigationInput): MeasurementFact | n
       normalizeIndicatorName(measurement.indicator) ===
         normalizeIndicatorName(input.incident.indicator),
   )
+  const reference = candidates[0]
+  if (reference === undefined) return null
+  const containsIncomparableMeasurements = candidates.some(
+    (candidate) =>
+      !areMeasurementsComparable(reference, candidate, {
+        relationVerified: true,
+        sourceDocuments: input.sourceDocuments,
+      }).comparable,
+  )
+  if (containsIncomparableMeasurements) return null
+
   return (
     candidates.sort((a, b) => {
       const comparison = ExactDecimal.parse(b.value).compare(ExactDecimal.parse(a.value))

@@ -7,7 +7,7 @@ import { evaluatePairedIntervals } from './intervals'
 import { buildUnknowns } from './unknowns'
 import type { InvestigationInput, InvestigationResult } from './types'
 
-export const RULESET_VERSION = '1.1.0'
+export const RULESET_VERSION = '1.2.0'
 
 export function runInvestigation(input: InvestigationInput): InvestigationResult {
   const canonicalInput = canonicalizeInvestigationInput(input)

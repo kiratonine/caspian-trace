@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-04",
+  "reviewPolicy": {
+    "requiredHumanReviewers": 2,
+    "completedHumanReviewers": 0,
+    "status": "pending"
+  },
+  "fixtures": [
+    {
+      "kind": "measurements",
+      "path": "atyrau-2025-09.json",
+      "documentSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
+      "sourcePage": 22
+    },
+    {
+      "kind": "measurements",
+      "path": "atyrau-2025-05.json",
+      "documentSha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
+      "sourcePage": 24
+    },
+    {
+      "kind": "station_relations",
+      "path": "atyrau-2025-09-station-relations.json",
+      "documentSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
+      "sourcePage": 22
+    },
+    {
+      "kind": "station_relations",
+      "path": "atyrau-2025-05-station-relations.json",
+      "documentSha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
+      "sourcePage": 24
+    }
+  ]
+}

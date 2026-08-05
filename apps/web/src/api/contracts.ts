@@ -26,7 +26,15 @@ export type {
   SourceHealthItem,
 } from "@caspian-trace/contracts"
 
-import type { EvidenceLevel, Region } from "@caspian-trace/contracts"
+import type {
+  EvidenceLevel,
+  Region,
+  SourceHealthItem,
+} from "@caspian-trace/contracts"
+
+// Перечень статусов источника отдельным типом в пакете не объявлен (как и тип
+// шага реплея), а справочнику `constants/live-status.ts` нужен именно он.
+export type SourceHealthStatus = SourceHealthItem["status"]
 
 // Параметры GET /api/incidents (роадмап §9.1). В пакете их нет: это форма
 // запроса, а не ответа, и проверять на границе сети здесь нечего.

@@ -21,8 +21,15 @@
 | `src/api/incidents.ts` | `fetchIncidentDetail` | `GET /api/incidents/:id` | full-stack 1 | ветка api написана, эндпоинта нет |
 | `src/api/replays.ts` | `startReplay` | `POST /api/replays/:id/start` | full-stack 2 | **эндпоинт поднят** (сессия 14); в seed сценарий повторяет его ответ |
 | `src/api/investigations.ts` | `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | full-stack 2 | **эндпоинт поднят** (сессия 14); UI пока не потребляет — см. ниже |
-| `src/api/live-status.ts` | `fetchLiveStatus` | `GET /api/live/status` | full-stack 1 | ветка api написана; UI появится на этапе F6 |
+| `src/api/live-status.ts` | `fetchLiveStatus` | `GET /api/live/status` | full-stack 1 | ветка api написана, эндпоинта нет; UI сделан (F6, сессия 15) |
 | `src/api/export.ts` | `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | full-stack 2 | **эндпоинт поднят** (сессия 14), есть и `format=html` |
+
+**С сессии 15 этот реестр виден на экране.** Короткая его копия живёт в
+`src/constants/stubs.ts` и печатается в поповере «Состояние данных» (метка
+«заглушки» в шапке): что из видимого приходит из файла и какой эндпоинт это
+заменит. Экранный список намеренно короче — в нём только то, что показано
+пользователю, поэтому `fetchInvestigationEvidence` в него не входит.
+**Правя эту таблицу, правьте и `constants/stubs.ts`.**
 
 Три эндпоинта Backend 2 уже отвечают, но `VITE_DATA_MODE=api` включать рано:
 списковый `GET /api/incidents` и `GET /api/incidents/:id` не подняты, а без них
@@ -68,7 +75,12 @@ Seed-данные проверяются теми же схемами, что и
   содержит: хэш посчитан по входу ядра (4 створа), а наш detail шире —
   чужой хэш рядом с другими данными был бы недоказуемым утверждением;
 - `Dossier.unknowns` в seed-экспорте получает `code: 'UNSPECIFIED'` — коды
-  пробелов присваивает расчётное ядро, выдумывать таксономию нельзя (вопрос 18).
+  пробелов присваивает расчётное ядро, выдумывать таксономию нельзя (вопрос 18);
+- `liveStatusSeed`: все четыре источника — `never_run`, `lastSuccessAt: null`,
+  `cacheAvailable: false`. Это не заглушка «на время», а состояние по факту:
+  опросов не было. Поэтому индикатор F6 на демо честно пишет «не опрашивались:
+  4 из 4», а healthy / degraded / rate_limited / failed показываются только
+  в дев-превью `/dev/live-status` на явно синтетическом списке (вопрос 23).
 
 Неизвестное уже учтено common-примитивами (сессия 4): при `sourcePage: null`
 `MeasurementValue`/`SourceLink` не ставят якорь `#page` и не показывают

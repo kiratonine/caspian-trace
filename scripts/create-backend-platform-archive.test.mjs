@@ -26,6 +26,10 @@ function createFixtureRepository() {
   writeFixture(root, 'apps/api/.env', 'SECRET=value')
   writeFixture(root, 'apps/api/src/main.ts', 'export {}')
   writeFixture(root, 'apps/api/src/health/health.module.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/incidents/incidents.module.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/incidents/incidents.mapper.spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/incidents/incidents.http.e2e-spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/incidents-read-db.e2e-spec.ts', 'export {}')
   writeFixture(root, 'apps/api/prisma.config.ts', 'export default {}')
   writeFixture(root, 'apps/api/prisma/seed.ts', 'export {}')
   writeFixture(root, 'apps/api/prisma/seed/verified-data.schemas.ts', 'export {}')
@@ -101,6 +105,16 @@ function createFixtureRepository() {
     'docs/backend-platform/part-03-verified-seed-report.md',
     '# Seed report',
   )
+  writeFixture(
+    root,
+    'TODO/backend-platform-part-04-incidents-read-api.md',
+    '# Part 04',
+  )
+  writeFixture(
+    root,
+    'docs/backend-platform/part-04-incidents-read-api-report.md',
+    '# Incidents report',
+  )
   return root
 }
 
@@ -133,6 +147,10 @@ test('collects only Backend 1 allowlisted files', () => {
   assert.ok(entries.includes('.node-version'))
   assert.ok(entries.includes('apps/api/src/main.ts'))
   assert.ok(entries.includes('apps/api/src/health/health.module.ts'))
+  assert.ok(entries.includes('apps/api/src/incidents/incidents.module.ts'))
+  assert.ok(entries.includes('apps/api/test/incidents/incidents.mapper.spec.ts'))
+  assert.ok(entries.includes('apps/api/test/incidents/incidents.http.e2e-spec.ts'))
+  assert.ok(entries.includes('apps/api/test/incidents-read-db.e2e-spec.ts'))
   assert.ok(entries.includes('packages/contracts/src/index.ts'))
   assert.ok(entries.includes('scripts/verify-api-clean-start.mjs'))
   assert.ok(entries.includes('scripts/verify-prisma-clean-db.mjs'))
@@ -196,6 +214,12 @@ test('collects only Backend 1 allowlisted files', () => {
   assert.ok(
     entries.includes(
       'docs/backend-platform/part-03-verified-seed-report.md',
+    ),
+  )
+  assert.ok(entries.includes('TODO/backend-platform-part-04-incidents-read-api.md'))
+  assert.ok(
+    entries.includes(
+      'docs/backend-platform/part-04-incidents-read-api-report.md',
     ),
   )
 })

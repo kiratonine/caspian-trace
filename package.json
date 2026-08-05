@@ -27,6 +27,7 @@
     "verify:investigation-data:human": "node scripts/verify-investigation-data.mjs --require-human",
     "test:e2e:seed": "node scripts/verify-verified-seed.mjs",
     "test:seed:clean": "node scripts/verify-verified-seed.mjs",
+    "test:incidents:clean": "node scripts/verify-prisma-clean-db.mjs --incidents-only",
     "test:database-guard": "node --test scripts/disposable-database-guard.test.mjs",
     "prisma:format": "npm run prisma:format -w api",
     "prisma:generate": "npm run prisma:generate -w api",

@@ -9,6 +9,7 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 const dockerCommand = process.platform === 'win32' ? 'docker.exe' : 'docker'
 const apiCleanOnly = process.argv.includes('--api-clean-start-only')
 const verifiedSeedOnly = process.argv.includes('--verified-seed-only')
+const incidentsOnly = process.argv.includes('--incidents-only')
 const externalDatabaseUrl = process.env.PRISMA_CLEAN_DATABASE_URL
 const externalDirectUrl =
   process.env.PRISMA_CLEAN_DIRECT_URL ?? externalDatabaseUrl
@@ -91,6 +92,11 @@ function verify(databaseUrl, directUrl) {
     return
   }
 
+  if (incidentsOnly) {
+    run(npmCommand, ['run', 'test:e2e:incidents:db', '-w', 'api'], { env })
+    return
+  }
+
   if (!apiCleanOnly) {
     run(npmCommand, ['run', 'test:e2e:db'], { env })
   }
@@ -117,7 +123,8 @@ try {
         'Docker is unavailable and PRISMA_CLEAN_DATABASE_URL is not configured',
       )
     }
-    containerName = `caspian-trace-${verifiedSeedOnly ? 'part03' : 'part02'}-${process.pid}-${Date.now()}`
+    const part = verifiedSeedOnly ? 'part03' : incidentsOnly ? 'part04' : 'part02'
+    containerName = `caspian-trace-${part}-${process.pid}-${Date.now()}`
     const password = randomBytes(24).toString('base64url')
     run(dockerCommand, [
       'run',
@@ -148,6 +155,8 @@ try {
   console.log(
     verifiedSeedOnly
       ? 'Clean migration and verified seed DB e2e passed'
+      : incidentsOnly
+      ? 'Clean migration and incidents read DB e2e passed'
       : apiCleanOnly
       ? 'API clean build/start passed against disposable PostgreSQL'
       : 'Clean migration, status, DB e2e, and API clean start passed',

@@ -18,17 +18,31 @@ import {
   type MeasurementCandidate,
 } from './schemas/llm.schemas'
 import { LLM_PROMPTS } from './prompts/llm.prompts'
+import {
+  DEFAULT_GEMINI_FREE_TIER_MODEL,
+  GEMINI_MAX_INPUT_BYTES,
+  GEMINI_MAX_OUTPUT_TOKENS,
+  GeminiProcessQuota,
+  isGeminiFreeTierEligibleModel,
+} from './free-tier-policy'
 
 @Injectable()
 export class GeminiLlmProvider implements LlmProvider {
   private readonly apiKey: string | undefined
   private readonly model: string
   private readonly timeoutMs: number
+  private readonly quota = new GeminiProcessQuota()
 
   constructor(config: ConfigService) {
     this.apiKey = config.get<string>('GEMINI_API_KEY')
-    this.model = config.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash'
+    this.model = config.get<string>('GEMINI_MODEL') ?? DEFAULT_GEMINI_FREE_TIER_MODEL
     this.timeoutMs = config.get<number>('HTTP_TIMEOUT_MS') ?? 12_000
+    if (!isGeminiFreeTierEligibleModel(this.model)) {
+      throw new ServiceUnavailableException({
+        code: 'LLM_MODEL_NOT_FREE_TIER_ELIGIBLE',
+        message: 'Only explicitly allowlisted Gemini free-tier-eligible models are permitted',
+      })
+    }
   }
 
   extractIncidentSignal(input: SourceTextInput): Promise<ExtractedSignal | null> {
@@ -62,6 +76,11 @@ export class GeminiLlmProvider implements LlmProvider {
         message: 'GEMINI_API_KEY is required for the Gemini provider',
       })
     }
+    const prompt = `${instruction}\nINPUT:\n${JSON.stringify(input)}`
+    if (Buffer.byteLength(prompt, 'utf8') > GEMINI_MAX_INPUT_BYTES) {
+      throw new Error('LLM_FREE_TIER_INPUT_LIMIT')
+    }
+    this.quota.consume()
     let response: Response
     try {
       response = await fetch(
@@ -76,13 +95,14 @@ export class GeminiLlmProvider implements LlmProvider {
             contents: [
               {
                 parts: [
-                  { text: `${instruction}\nINPUT:\n${JSON.stringify(input)}` },
+                  { text: prompt },
                 ],
               },
             ],
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0,
+              maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
             },
           }),
           signal: AbortSignal.timeout(this.timeoutMs),

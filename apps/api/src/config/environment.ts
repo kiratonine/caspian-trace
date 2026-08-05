@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { GEMINI_FREE_TIER_ELIGIBLE_MODELS } from '../llm/free-tier-policy'
+
 const postgresUrlSchema = z
   .string()
   .regex(/^postgres(?:ql)?:\/\/\S+$/)
@@ -42,15 +44,23 @@ export const FutureIntegrationEnvironmentSchema = z
     GDELT_CACHE_TTL_SECONDS: z.coerce.number().int().nonnegative().optional(),
     LLM_PROVIDER: z.enum(['disabled', 'gemini']).optional(),
     GEMINI_API_KEY: optionalNonEmptyString(),
-    GEMINI_MODEL: optionalNonEmptyString(),
+    GEMINI_MODEL: z.enum(GEMINI_FREE_TIER_ELIGIBLE_MODELS).optional(),
+    GEMINI_BILLING_TIER: z.literal('free').optional(),
   })
   .strict()
-  .superRefine(({ LLM_PROVIDER, GEMINI_API_KEY }, context) => {
+  .superRefine(({ LLM_PROVIDER, GEMINI_API_KEY, GEMINI_BILLING_TIER }, context) => {
     if (LLM_PROVIDER === 'gemini' && GEMINI_API_KEY === undefined) {
       context.addIssue({
         code: 'custom',
         message: 'GEMINI_API_KEY is required when LLM_PROVIDER=gemini',
         path: ['GEMINI_API_KEY'],
+      })
+    }
+    if (LLM_PROVIDER === 'gemini' && GEMINI_BILLING_TIER !== 'free') {
+      context.addIssue({
+        code: 'custom',
+        message: 'GEMINI_BILLING_TIER=free must be confirmed before enabling Gemini',
+        path: ['GEMINI_BILLING_TIER'],
       })
     }
   })
@@ -68,6 +78,7 @@ const futureIntegrationEnvironmentKeys = [
   'LLM_PROVIDER',
   'GEMINI_API_KEY',
   'GEMINI_MODEL',
+  'GEMINI_BILLING_TIER',
 ] as const
 
 export type PlatformEnvironment = z.infer<typeof PlatformEnvironmentSchema>

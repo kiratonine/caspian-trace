@@ -1,6 +1,12 @@
 import { DisabledLlmProvider } from '../../src/llm/disabled-llm.provider'
 import { ConfigService } from '@nestjs/config'
 import { GeminiLlmProvider } from '../../src/llm/gemini-llm.provider'
+import {
+  GEMINI_MAX_INPUT_BYTES,
+  GEMINI_MAX_OUTPUT_TOKENS,
+  GEMINI_MAX_REQUESTS_PER_ROLLING_DAY,
+  GeminiProcessQuota,
+} from '../../src/llm/free-tier-policy'
 import type { LlmProvider } from '../../src/llm/llm-provider'
 import { LlmService } from '../../src/llm/llm.service'
 
@@ -138,7 +144,7 @@ describe('LLM validation boundary', () => {
         new GeminiLlmProvider(
           new ConfigService({
             GEMINI_API_KEY: 'test-key',
-            GEMINI_MODEL: 'gemini-test-model',
+            GEMINI_MODEL: 'gemini-2.5-flash-lite',
             HTTP_TIMEOUT_MS: 1_000,
           }),
         ).extractIncidentSignal({ sourceText: 'зелёная вода' }),
@@ -153,9 +159,67 @@ describe('LLM validation boundary', () => {
             : url.url
       expect(requestUrl).not.toContain('test-key')
       expect(options?.headers).toMatchObject({ 'x-goog-api-key': 'test-key' })
+      const requestBody = options?.body
+      if (typeof requestBody !== 'string') throw new Error('Expected JSON request body')
+      expect(JSON.parse(requestBody)).toMatchObject({
+        generationConfig: {
+          maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+          responseMimeType: 'application/json',
+          temperature: 0,
+        },
+      })
     } finally {
       fetchMock.mockRestore()
     }
+  })
+
+  it('fails closed for a model outside the free-tier-eligible allowlist', () => {
+    expect(
+      () =>
+        new GeminiLlmProvider(
+          new ConfigService({
+            GEMINI_API_KEY: 'test-key',
+            GEMINI_MODEL: 'gemini-unknown-model',
+          }),
+        ),
+    ).toThrow('Only explicitly allowlisted Gemini free-tier-eligible models')
+  })
+
+  it('rejects oversized prompts before calling Gemini', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch')
+    try {
+      const provider = new GeminiLlmProvider(
+        new ConfigService({
+          GEMINI_API_KEY: 'test-key',
+          GEMINI_MODEL: 'gemini-2.5-flash-lite',
+        }),
+      )
+      await expect(
+        provider.extractMeasurementCandidates({
+          sourceText: 'x'.repeat(GEMINI_MAX_INPUT_BYTES),
+        }),
+      ).rejects.toThrow('LLM_FREE_TIER_INPUT_LIMIT')
+      expect(fetchMock).not.toHaveBeenCalled()
+    } finally {
+      fetchMock.mockRestore()
+    }
+  })
+
+  it('enforces conservative per-process minute and rolling-day quotas', () => {
+    const minuteQuota = new GeminiProcessQuota()
+    minuteQuota.consume(1_000)
+    minuteQuota.consume(2_000)
+    expect(() => minuteQuota.consume(3_000)).toThrow(
+      'LLM_FREE_TIER_MINUTE_LIMIT',
+    )
+
+    const dailyQuota = new GeminiProcessQuota()
+    for (let index = 0; index < GEMINI_MAX_REQUESTS_PER_ROLLING_DAY; index += 1) {
+      dailyQuota.consume(index * 61_000)
+    }
+    expect(() =>
+      dailyQuota.consume(GEMINI_MAX_REQUESTS_PER_ROLLING_DAY * 61_000),
+    ).toThrow('LLM_FREE_TIER_DAILY_LIMIT')
   })
 })
 

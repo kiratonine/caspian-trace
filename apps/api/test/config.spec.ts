@@ -155,13 +155,30 @@ describe('platform environment validation', () => {
       validateFutureIntegrationEnvironment({
         LLM_PROVIDER: 'gemini',
         GEMINI_API_KEY: 'test-key',
-        GEMINI_MODEL: 'gemini-test-model',
+        GEMINI_MODEL: 'gemini-2.5-flash-lite',
+        GEMINI_BILLING_TIER: 'free',
       }),
     ).toEqual({
       LLM_PROVIDER: 'gemini',
       GEMINI_API_KEY: 'test-key',
-      GEMINI_MODEL: 'gemini-test-model',
+      GEMINI_MODEL: 'gemini-2.5-flash-lite',
+      GEMINI_BILLING_TIER: 'free',
     })
+    expect(() =>
+      validateFutureIntegrationEnvironment({
+        LLM_PROVIDER: 'gemini',
+        GEMINI_API_KEY: 'test-key',
+        GEMINI_BILLING_TIER: 'free',
+        GEMINI_MODEL: 'gemini-paid-or-unknown-model',
+      }),
+    ).toThrow()
+    expect(() =>
+      validateFutureIntegrationEnvironment({
+        LLM_PROVIDER: 'gemini',
+        GEMINI_API_KEY: 'test-key',
+        GEMINI_MODEL: 'gemini-2.5-flash-lite',
+      }),
+    ).toThrow()
   })
 
   it('applies integration validation during application startup', () => {

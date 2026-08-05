@@ -51,13 +51,37 @@ LLM_PROVIDER=disabled
 # Optional real provider
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_BILLING_TIER=free
+GEMINI_MODEL=gemini-2.5-flash-lite
 ```
 
 Без ключа система воспроизводит все core/evidence/replay/export результаты.
 LLM не повышает evidence level и не создаёт rule-engine statements. Публичные
 evidence/replay/export endpoints читают только сохранённый current snapshot;
 вычисление и versioned write выполняет защищённый admin recompute.
+
+Gemini работает fail-closed по free-tier policy:
+
+- разрешены только `gemini-2.5-flash-lite` и `gemini-2.5-flash`;
+- prompt ограничен 32 KiB, output — 512 tokens;
+- один API instance допускает не более 2 requests/minute и 20 requests за
+  rolling 24 hours;
+- tools, grounding, context cache и batch API не используются;
+- startup требует явное `GEMINI_BILLING_TIER=free`.
+
+Model allowlist и локальные quota не могут определить billing status Google
+project. Перед реальным запросом в AI Studio проект должен показывать
+`Set up billing` (Free Tier), а не Paid/Prepay/Postpay. Только отсутствие
+подключённого billing гарантирует, что тот же model ID не будет тарифицироваться.
+
+После такой проверки live smoke запускается без сохранения ключа в Git:
+
+```bash
+GEMINI_BILLING_TIER=free \
+GEMINI_API_KEY=... \
+GEMINI_MODEL=gemini-2.5-flash-lite \
+npm run test:gemini:free-tier
+```
 
 ## Contract assumptions
 

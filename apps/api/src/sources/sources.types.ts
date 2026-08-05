@@ -22,6 +22,13 @@ export interface OpenSourceResult {
   location: string
 }
 
+export interface CachedSourceSnapshot {
+  bytes: Buffer
+  mediaType: SupportedSourceMediaType
+  sha256: string
+  cachePath: string
+}
+
 export interface PreparedSnapshot {
   bytes: Buffer
   mediaType: SupportedSourceMediaType
@@ -48,4 +55,3 @@ export interface SourceForOpen {
   cachePath: string | null
   status: SourceDocumentStatus
 }
-

@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { createHash } from 'node:crypto'
 
 import type { PlatformEnvironment } from '../config/environment'
 import {
@@ -15,15 +16,18 @@ import {
   sourcePageNotSupported,
   sourceSnapshotHashConflict,
   sourceSnapshotNotAvailable,
+  sourceSnapshotTooLarge,
 } from './sources.errors'
 import { SourcesRepository } from './sources.repository'
 import { SOURCE_STORAGE } from './storage/storage.constants'
 import type { SourceStoragePort } from './storage/storage.port'
 import type {
+  CachedSourceSnapshot,
   CacheExistingSourceSnapshotInput,
   CacheSourceResult,
   OpenSourceResult,
 } from './sources.types'
+import { storageImmutabilityViolation } from './storage/storage.errors'
 
 @Injectable()
 export class SourcesService {
@@ -130,6 +134,32 @@ export class SourcesService {
     if (page !== undefined) location.hash = `page=${page}`
     return { location: location.toString() }
   }
+
+  async readCachedSourceSnapshot(
+    sourceDocumentId: string,
+  ): Promise<CachedSourceSnapshot> {
+    const document = await this.repository.findForCache(sourceDocumentId)
+    if (!document) throw sourceDocumentNotFound()
+    if (document.cachePath === null || document.sha256 === null) {
+      throw sourceSnapshotNotAvailable()
+    }
+    const mediaType = assertPersistedCachePath({
+      cachePath: document.cachePath,
+      sha256: document.sha256,
+      mediaType: document.mediaType,
+    })
+    const downloaded = await this.storage.download(document.cachePath)
+    if (downloaded.byteLength > this.maxBytes) throw sourceSnapshotTooLarge()
+    const bytes = Buffer.from(downloaded)
+    const sha256 = createHash('sha256').update(bytes).digest('hex')
+    if (sha256 !== document.sha256) throw storageImmutabilityViolation()
+    return {
+      bytes,
+      mediaType,
+      sha256,
+      cachePath: document.cachePath,
+    }
+  }
 }
 
 function assertCacheInput(input: CacheExistingSourceSnapshotInput): void {
@@ -144,4 +174,3 @@ function assertCacheInput(input: CacheExistingSourceSnapshotInput): void {
     throw sourceDataInvalid()
   }
 }
-

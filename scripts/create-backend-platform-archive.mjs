@@ -35,6 +35,7 @@ const ALLOWED_FILES = [
   'scripts/verify-investigation-data.mjs',
   'scripts/verify-supabase-storage.mjs',
   'scripts/verify-safe-fetch.mjs',
+  'scripts/verify-kazhydromet-ingestion.mjs',
   'scripts/disposable-database-guard.mjs',
   'scripts/disposable-database-guard.test.mjs',
   'docs/backend-investigation/part-02-investigation-report.md',
@@ -109,8 +110,10 @@ export function isForbiddenArchivePath(value) {
   const filename = basename(normalized)
   if (
     filename.endsWith('.dump') ||
+    filename.endsWith('.pdf') ||
     filename.endsWith('.har') ||
-    /^(?:dns-debug|response-body|cache-dump)(?:[.-]|$)/i.test(filename)
+    /^(?:raw|source-body|downloaded-source)(?:[.-]|$)/i.test(filename) ||
+    /^(?:dns-debug|response-body|cache-dump|parser-debug)(?:[.-]|$)/i.test(filename)
   ) {
     return true
   }

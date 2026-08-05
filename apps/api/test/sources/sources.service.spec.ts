@@ -39,6 +39,7 @@ describe('SourcesService', () => {
   const attachSnapshot = jest.fn()
   const uploadImmutableSnapshot = jest.fn()
   const createSignedReadUrl = jest.fn()
+  const download = jest.fn()
   let service: SourcesService
 
   beforeAll(async () => {
@@ -46,7 +47,7 @@ describe('SourcesService', () => {
       uploadImmutableSnapshot,
       createSignedReadUrl,
       exists: jest.fn(),
-      download: jest.fn(),
+      download,
     }
     const module = await Test.createTestingModule({
       providers: [
@@ -87,6 +88,7 @@ describe('SourcesService', () => {
       },
       attached: true,
     })
+    download.mockResolvedValue(Buffer.from(bytes))
   })
 
   it('rejects a missing document before upload', async () => {
@@ -230,6 +232,26 @@ describe('SourcesService', () => {
     })
     await expect(service.openSource(document.id, 1)).rejects.toMatchObject({
       response: { code: 'SOURCE_PAGE_NOT_SUPPORTED' },
+    })
+  })
+
+  it('reads a private cached snapshot only after path, size, and SHA verification', async () => {
+    findForCache.mockResolvedValueOnce({
+      ...document, sha256: prepared.sha256, cachePath: prepared.cachePath,
+    })
+    await expect(service.readCachedSourceSnapshot(document.id)).resolves.toEqual({
+      bytes, mediaType: 'application/pdf', sha256: prepared.sha256, cachePath: prepared.cachePath,
+    })
+    expect(download).toHaveBeenCalledWith(prepared.cachePath)
+  })
+
+  it('rejects a mutated cached snapshot without returning bytes', async () => {
+    findForCache.mockResolvedValueOnce({
+      ...document, sha256: prepared.sha256, cachePath: prepared.cachePath,
+    })
+    download.mockResolvedValueOnce(Buffer.from('%PDF-mutated'))
+    await expect(service.readCachedSourceSnapshot(document.id)).rejects.toMatchObject({
+      response: { code: 'STORAGE_IMMUTABILITY_VIOLATION' },
     })
   })
 })

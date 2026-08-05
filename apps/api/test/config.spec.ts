@@ -10,6 +10,7 @@ describe('platform environment validation', () => {
     SUPABASE_URL: 'https://project.supabase.co',
     SUPABASE_SERVICE_ROLE_KEY: 'service-role-placeholder',
     SUPABASE_SOURCE_BUCKET: 'source-documents',
+    INGESTION_TOKEN: 'test-ingestion-token-at-least-32-characters',
   }
 
   it('normalizes valid platform values', () => {
@@ -42,6 +43,13 @@ describe('platform environment validation', () => {
       SAFE_FETCH_CACHE_MAX_BYTES: 33_554_432,
       SAFE_FETCH_RETRY_BASE_DELAY_MS: 250,
       SAFE_FETCH_RETRY_MAX_DELAY_MS: 5_000,
+      INGESTION_TOKEN: requiredEnvironment.INGESTION_TOKEN,
+      KAZHYDROMET_BULLETINS_URL:
+        'https://www.kazhydromet.kz/ru/ecology/ezhemesyachnyy-informacionnyy-byulleten-o-sostoyanii-okruzhayuschey-sredy',
+      KAZHYDROMET_ALLOWED_HOSTS: ['kazhydromet.kz', 'www.kazhydromet.kz'],
+      KAZHYDROMET_MAX_DOCUMENTS_PER_RUN: 3,
+      KAZHYDROMET_PDF_MAX_PAGES: 300,
+      KAZHYDROMET_PDF_MAX_TEXT_CHARS: 5_000_000,
     })
   })
 
@@ -104,6 +112,13 @@ describe('platform environment validation', () => {
       SAFE_FETCH_CACHE_MAX_BYTES: 33_554_432,
       SAFE_FETCH_RETRY_BASE_DELAY_MS: 250,
       SAFE_FETCH_RETRY_MAX_DELAY_MS: 5_000,
+      INGESTION_TOKEN: requiredEnvironment.INGESTION_TOKEN,
+      KAZHYDROMET_BULLETINS_URL:
+        'https://www.kazhydromet.kz/ru/ecology/ezhemesyachnyy-informacionnyy-byulleten-o-sostoyanii-okruzhayuschey-sredy',
+      KAZHYDROMET_ALLOWED_HOSTS: ['kazhydromet.kz', 'www.kazhydromet.kz'],
+      KAZHYDROMET_MAX_DOCUMENTS_PER_RUN: 3,
+      KAZHYDROMET_PDF_MAX_PAGES: 300,
+      KAZHYDROMET_PDF_MAX_TEXT_CHARS: 5_000_000,
     })
   })
 
@@ -232,6 +247,40 @@ describe('platform environment validation', () => {
         SAFE_FETCH_RETRY_MAX_DELAY_MS: '500',
       }),
     ).toThrow('SAFE_FETCH_RETRY_MAX_DELAY_MS')
+  })
+
+  it('validates Kazhydromet runtime configuration without exposing the token', () => {
+    expect(
+      validatePlatformEnvironment({
+        ...requiredEnvironment,
+        KAZHYDROMET_MAX_DOCUMENTS_PER_RUN: '2',
+        KAZHYDROMET_PDF_MAX_PAGES: '200',
+        KAZHYDROMET_PDF_MAX_TEXT_CHARS: '100000',
+      }),
+    ).toMatchObject({
+      KAZHYDROMET_ALLOWED_HOSTS: ['kazhydromet.kz', 'www.kazhydromet.kz'],
+      KAZHYDROMET_MAX_DOCUMENTS_PER_RUN: 2,
+      KAZHYDROMET_PDF_MAX_PAGES: 200,
+      KAZHYDROMET_PDF_MAX_TEXT_CHARS: 100_000,
+    })
+    const secret = 'x'.repeat(31)
+    try {
+      validatePlatformEnvironment({ ...requiredEnvironment, INGESTION_TOKEN: secret })
+    } catch (error) {
+      expect(String(error)).toBe('Error: Invalid platform environment: INGESTION_TOKEN')
+      expect(String(error)).not.toContain(secret)
+    }
+  })
+
+  it.each([
+    ['KAZHYDROMET_BULLETINS_URL', 'https://evil.example/bulletins'],
+    ['KAZHYDROMET_ALLOWED_HOSTS', 'www.kazhydromet.kz,evil.example:443'],
+    ['KAZHYDROMET_ALLOWED_HOSTS', 'www.kazhydromet.kz,,kazhydromet.kz'],
+    ['KAZHYDROMET_MAX_DOCUMENTS_PER_RUN', '11'],
+    ['KAZHYDROMET_PDF_MAX_PAGES', '501'],
+    ['KAZHYDROMET_PDF_MAX_TEXT_CHARS', '99999'],
+  ])('rejects invalid Kazhydromet setting %s', (key, value) => {
+    expect(() => validatePlatformEnvironment({ ...requiredEnvironment, [key]: value })).toThrow(key)
   })
 
   it.each([

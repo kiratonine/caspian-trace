@@ -106,11 +106,24 @@ function createFixtureRepository() {
   writeFixture(root, 'scripts/verify-investigation-data.mjs', 'export {}')
   writeFixture(root, 'scripts/verify-supabase-storage.mjs', 'export {}')
   writeFixture(root, 'scripts/verify-safe-fetch.mjs', 'export {}')
+  writeFixture(root, 'scripts/verify-kazhydromet-ingestion.mjs', 'export {}')
   writeFixture(
     root,
     'docs/backend-investigation/part-02-investigation-report.md',
     '# Handoff',
   )
+  writeFixture(root, 'apps/api/src/ingestion/ingestion.module.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/ingestion/ingestion.controller.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/ingestion/ingestion-token.guard.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/ingestion/kazhydromet/kazhydromet.adapter.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/ingestion/kazhydromet/pdf-text.service.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/ingestion/kazhydromet-discovery.spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/ingestion/downloaded-source.pdf', '%PDF-secret')
+  writeFixture(root, 'apps/api/test/ingestion/raw-response.html', '<html>secret</html>')
+  writeFixture(root, 'apps/api/test/ingestion/parser-debug.json', '{"text":"secret"}')
+  writeFixture(root, 'apps/api/test/kazhydromet-ingestion-db.e2e-spec.ts', 'export {}')
+  writeFixture(root, 'TODO/backend-platform-part-07-kazhydromet-ingestion.md', '# Part 07')
+  writeFixture(root, 'docs/backend-platform/part-07-kazhydromet-ingestion-report.md', '# Report')
   writeFixture(root, 'docs/backend-investigation/prisma-schema-request.md', '# Request')
   writeFixture(
     root,
@@ -235,6 +248,19 @@ test('collects only Backend 1 allowlisted files', () => {
   assert.ok(entries.includes('scripts/verify-investigation-data.mjs'))
   assert.ok(entries.includes('scripts/verify-supabase-storage.mjs'))
   assert.ok(entries.includes('scripts/verify-safe-fetch.mjs'))
+  assert.ok(entries.includes('scripts/verify-kazhydromet-ingestion.mjs'))
+  assert.ok(entries.includes('apps/api/src/ingestion/ingestion.module.ts'))
+  assert.ok(entries.includes('apps/api/src/ingestion/ingestion.controller.ts'))
+  assert.ok(entries.includes('apps/api/src/ingestion/ingestion-token.guard.ts'))
+  assert.ok(entries.includes('apps/api/src/ingestion/kazhydromet/kazhydromet.adapter.ts'))
+  assert.ok(entries.includes('apps/api/src/ingestion/kazhydromet/pdf-text.service.ts'))
+  assert.ok(entries.includes('apps/api/test/ingestion/kazhydromet-discovery.spec.ts'))
+  assert.ok(entries.includes('apps/api/test/kazhydromet-ingestion-db.e2e-spec.ts'))
+  assert.ok(entries.includes('TODO/backend-platform-part-07-kazhydromet-ingestion.md'))
+  assert.ok(entries.includes('docs/backend-platform/part-07-kazhydromet-ingestion-report.md'))
+  assert.ok(!entries.includes('apps/api/test/ingestion/downloaded-source.pdf'))
+  assert.ok(!entries.includes('apps/api/test/ingestion/raw-response.html'))
+  assert.ok(!entries.includes('apps/api/test/ingestion/parser-debug.json'))
   assert.ok(entries.includes('data/verified/manifest.json'))
   assert.ok(entries.includes('data/verified/atyrau-2025-09.json'))
   assert.ok(

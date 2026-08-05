@@ -98,6 +98,11 @@ async function startAndProbe(args, label) {
       API_PREFIX: 'api',
       WEB_ORIGIN: 'http://localhost:5173',
       HTTP_BODY_LIMIT: '1mb',
+      SUPABASE_URL: 'https://clean-start.invalid',
+      SUPABASE_SERVICE_ROLE_KEY: 'clean-start-placeholder',
+      SUPABASE_SOURCE_BUCKET: 'source-documents',
+      SOURCE_SIGNED_URL_TTL_SECONDS: '120',
+      HTTP_MAX_BYTES: '15728640',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })

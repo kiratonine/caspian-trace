@@ -5,6 +5,7 @@ import { validatePlatformEnvironment } from './config/environment'
 import { HealthModule } from './health/health.module'
 import { IncidentsModule } from './incidents/incidents.module'
 import { PrismaModule } from './prisma/prisma.module'
+import { SourcesModule } from './sources/sources.module'
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PrismaModule } from './prisma/prisma.module'
     PrismaModule,
     HealthModule,
     IncidentsModule,
+    SourcesModule,
   ],
 })
 export class AppModule {}

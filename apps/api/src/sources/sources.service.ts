@@ -1,0 +1,147 @@
+import { Inject, Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+
+import type { PlatformEnvironment } from '../config/environment'
+import {
+  assertPersistedCachePath,
+  normalizePersistedMediaType,
+  normalizeSourceMediaType,
+  prepareSourceSnapshot,
+} from './source-snapshot'
+import {
+  sourceCachePathConflict,
+  sourceDataInvalid,
+  sourceDocumentNotFound,
+  sourcePageNotSupported,
+  sourceSnapshotHashConflict,
+  sourceSnapshotNotAvailable,
+} from './sources.errors'
+import { SourcesRepository } from './sources.repository'
+import { SOURCE_STORAGE } from './storage/storage.constants'
+import type { SourceStoragePort } from './storage/storage.port'
+import type {
+  CacheExistingSourceSnapshotInput,
+  CacheSourceResult,
+  OpenSourceResult,
+} from './sources.types'
+
+@Injectable()
+export class SourcesService {
+  private readonly maxBytes: number
+  private readonly signedUrlTtlSeconds: number
+
+  constructor(
+    private readonly repository: SourcesRepository,
+    @Inject(SOURCE_STORAGE) private readonly storage: SourceStoragePort,
+    config: ConfigService<PlatformEnvironment, true>,
+  ) {
+    this.maxBytes = config.getOrThrow('HTTP_MAX_BYTES')
+    this.signedUrlTtlSeconds = config.getOrThrow(
+      'SOURCE_SIGNED_URL_TTL_SECONDS',
+    )
+  }
+
+  async cacheExistingSourceSnapshot(
+    input: CacheExistingSourceSnapshotInput,
+  ): Promise<CacheSourceResult> {
+    assertCacheInput(input)
+    const document = await this.repository.findForCache(input.sourceDocumentId)
+    if (!document) throw sourceDocumentNotFound()
+
+    const requestedMediaType = normalizeSourceMediaType(input.mediaType)
+    if (normalizePersistedMediaType(document.mediaType) !== requestedMediaType) {
+      throw sourceDataInvalid()
+    }
+    const prepared = prepareSourceSnapshot({
+      bytes: input.bytes,
+      mediaType: requestedMediaType,
+      sourceType: document.sourceType,
+      publishedPeriod: document.publishedPeriod,
+      fetchedAt: input.fetchedAt,
+      maxBytes: this.maxBytes,
+    })
+    if (document.sha256 !== null && document.sha256 !== prepared.sha256) {
+      throw sourceSnapshotHashConflict()
+    }
+    if (
+      document.cachePath !== null &&
+      document.cachePath !== prepared.cachePath
+    ) {
+      throw sourceCachePathConflict()
+    }
+
+    const stored = await this.storage.uploadImmutableSnapshot({
+      path: prepared.cachePath,
+      bytes: prepared.bytes,
+      mediaType: prepared.mediaType,
+      sha256: prepared.sha256,
+      sourceDocumentId: input.sourceDocumentId,
+    })
+    if (
+      stored.path !== prepared.cachePath ||
+      stored.sha256 !== prepared.sha256
+    ) {
+      throw sourceDataInvalid()
+    }
+
+    const attached = await this.repository.attachSnapshot({
+      sourceDocumentId: input.sourceDocumentId,
+      sha256: prepared.sha256,
+      cachePath: prepared.cachePath,
+      fetchedAt: input.fetchedAt,
+      httpStatus: input.httpStatus,
+    })
+    return {
+      sourceDocumentId: attached.document.id,
+      sha256: prepared.sha256,
+      cachePath: prepared.cachePath,
+      created: stored.created,
+      attached: attached.attached,
+      status: attached.document.status,
+    }
+  }
+
+  async openSource(id: string, page?: number): Promise<OpenSourceResult> {
+    const document = await this.repository.findForOpen(id)
+    if (!document) throw sourceDocumentNotFound()
+    if (document.cachePath === null || document.sha256 === null) {
+      throw sourceSnapshotNotAvailable()
+    }
+    const mediaType = assertPersistedCachePath({
+      cachePath: document.cachePath,
+      sha256: document.sha256,
+      mediaType: document.mediaType,
+    })
+    if (page !== undefined && mediaType !== 'application/pdf') {
+      throw sourcePageNotSupported()
+    }
+
+    const signedUrl = await this.storage.createSignedReadUrl(
+      document.cachePath,
+      this.signedUrlTtlSeconds,
+    )
+    let location: URL
+    try {
+      location = new URL(signedUrl)
+    } catch {
+      throw sourceDataInvalid()
+    }
+    if (location.protocol !== 'https:') throw sourceDataInvalid()
+    if (page !== undefined) location.hash = `page=${page}`
+    return { location: location.toString() }
+  }
+}
+
+function assertCacheInput(input: CacheExistingSourceSnapshotInput): void {
+  if (
+    input.sourceDocumentId.length === 0 ||
+    input.sourceDocumentId.trim() !== input.sourceDocumentId ||
+    !Number.isInteger(input.httpStatus) ||
+    input.httpStatus < 100 ||
+    input.httpStatus > 599 ||
+    !Number.isFinite(input.fetchedAt.getTime())
+  ) {
+    throw sourceDataInvalid()
+  }
+}
+

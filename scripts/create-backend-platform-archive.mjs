@@ -33,6 +33,7 @@ const ALLOWED_FILES = [
   'scripts/verify-prisma-clean-db.mjs',
   'scripts/verify-verified-seed.mjs',
   'scripts/verify-investigation-data.mjs',
+  'scripts/verify-supabase-storage.mjs',
   'scripts/disposable-database-guard.mjs',
   'scripts/disposable-database-guard.test.mjs',
   'docs/backend-investigation/part-02-investigation-report.md',

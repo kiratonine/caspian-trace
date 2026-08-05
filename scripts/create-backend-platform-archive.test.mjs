@@ -27,9 +27,21 @@ function createFixtureRepository() {
   writeFixture(root, 'apps/api/src/main.ts', 'export {}')
   writeFixture(root, 'apps/api/src/health/health.module.ts', 'export {}')
   writeFixture(root, 'apps/api/src/incidents/incidents.module.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/sources/sources.module.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/sources/sources.service.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/sources/sources.controller.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/sources/storage/storage.port.ts', 'export {}')
+  writeFixture(
+    root,
+    'apps/api/src/sources/storage/supabase-storage.service.ts',
+    'export {}',
+  )
   writeFixture(root, 'apps/api/test/incidents/incidents.mapper.spec.ts', 'export {}')
   writeFixture(root, 'apps/api/test/incidents/incidents.http.e2e-spec.ts', 'export {}')
   writeFixture(root, 'apps/api/test/incidents-read-db.e2e-spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/sources/sources.http.e2e-spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/sources/sources.service.spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/source-cache-db.e2e-spec.ts', 'export {}')
   writeFixture(root, 'apps/api/prisma.config.ts', 'export default {}')
   writeFixture(root, 'apps/api/prisma/seed.ts', 'export {}')
   writeFixture(root, 'apps/api/prisma/seed/verified-data.schemas.ts', 'export {}')
@@ -79,6 +91,7 @@ function createFixtureRepository() {
   writeFixture(root, 'scripts/disposable-database-guard.mjs', 'export {}')
   writeFixture(root, 'scripts/disposable-database-guard.test.mjs', 'export {}')
   writeFixture(root, 'scripts/verify-investigation-data.mjs', 'export {}')
+  writeFixture(root, 'scripts/verify-supabase-storage.mjs', 'export {}')
   writeFixture(
     root,
     'docs/backend-investigation/part-02-investigation-report.md',
@@ -115,6 +128,17 @@ function createFixtureRepository() {
     'docs/backend-platform/part-04-incidents-read-api-report.md',
     '# Incidents report',
   )
+  writeFixture(
+    root,
+    'TODO/backend-platform-part-05-supabase-storage-source-cache.md',
+    '# Part 05',
+  )
+  writeFixture(
+    root,
+    'docs/backend-platform/part-05-supabase-storage-source-cache-report.md',
+    '# Source cache report',
+  )
+  writeFixture(root, 'tmp/storage-smoke/source.txt', 'temporary bytes')
   return root
 }
 
@@ -148,9 +172,21 @@ test('collects only Backend 1 allowlisted files', () => {
   assert.ok(entries.includes('apps/api/src/main.ts'))
   assert.ok(entries.includes('apps/api/src/health/health.module.ts'))
   assert.ok(entries.includes('apps/api/src/incidents/incidents.module.ts'))
+  assert.ok(entries.includes('apps/api/src/sources/sources.module.ts'))
+  assert.ok(entries.includes('apps/api/src/sources/sources.service.ts'))
+  assert.ok(entries.includes('apps/api/src/sources/sources.controller.ts'))
+  assert.ok(entries.includes('apps/api/src/sources/storage/storage.port.ts'))
+  assert.ok(
+    entries.includes(
+      'apps/api/src/sources/storage/supabase-storage.service.ts',
+    ),
+  )
   assert.ok(entries.includes('apps/api/test/incidents/incidents.mapper.spec.ts'))
   assert.ok(entries.includes('apps/api/test/incidents/incidents.http.e2e-spec.ts'))
   assert.ok(entries.includes('apps/api/test/incidents-read-db.e2e-spec.ts'))
+  assert.ok(entries.includes('apps/api/test/sources/sources.http.e2e-spec.ts'))
+  assert.ok(entries.includes('apps/api/test/sources/sources.service.spec.ts'))
+  assert.ok(entries.includes('apps/api/test/source-cache-db.e2e-spec.ts'))
   assert.ok(entries.includes('packages/contracts/src/index.ts'))
   assert.ok(entries.includes('scripts/verify-api-clean-start.mjs'))
   assert.ok(entries.includes('scripts/verify-prisma-clean-db.mjs'))
@@ -163,6 +199,7 @@ test('collects only Backend 1 allowlisted files', () => {
   assert.ok(entries.includes('apps/api/prisma/seed/verified-seed.service.ts'))
   assert.ok(entries.includes('scripts/verify-verified-seed.mjs'))
   assert.ok(entries.includes('scripts/verify-investigation-data.mjs'))
+  assert.ok(entries.includes('scripts/verify-supabase-storage.mjs'))
   assert.ok(entries.includes('data/verified/manifest.json'))
   assert.ok(entries.includes('data/verified/atyrau-2025-09.json'))
   assert.ok(
@@ -222,6 +259,15 @@ test('collects only Backend 1 allowlisted files', () => {
       'docs/backend-platform/part-04-incidents-read-api-report.md',
     ),
   )
+  assert.ok(
+    entries.includes('TODO/backend-platform-part-05-supabase-storage-source-cache.md'),
+  )
+  assert.ok(
+    entries.includes(
+      'docs/backend-platform/part-05-supabase-storage-source-cache-report.md',
+    ),
+  )
+  assert.ok(!entries.some((entry) => entry.startsWith('tmp/')))
 })
 
 test('allows .env.example while excluding secrets and generated output', () => {

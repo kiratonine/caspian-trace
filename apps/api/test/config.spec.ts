@@ -7,6 +7,9 @@ describe('platform environment validation', () => {
   const requiredEnvironment = {
     WEB_ORIGIN: 'http://localhost:5173',
     DATABASE_URL: 'postgresql://api:secret@localhost:5432/caspian',
+    SUPABASE_URL: 'https://project.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'service-role-placeholder',
+    SUPABASE_SOURCE_BUCKET: 'source-documents',
   }
 
   it('normalizes valid platform values', () => {
@@ -27,6 +30,12 @@ describe('platform environment validation', () => {
       HTTP_BODY_LIMIT: '2mb',
       DATABASE_URL: requiredEnvironment.DATABASE_URL,
       DB_READINESS_TIMEOUT_MS: 1250,
+      SUPABASE_URL: requiredEnvironment.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY:
+        requiredEnvironment.SUPABASE_SERVICE_ROLE_KEY,
+      SUPABASE_SOURCE_BUCKET: 'source-documents',
+      SOURCE_SIGNED_URL_TTL_SECONDS: 120,
+      HTTP_MAX_BYTES: 15_728_640,
     })
   })
 
@@ -77,6 +86,12 @@ describe('platform environment validation', () => {
       HTTP_BODY_LIMIT: '1mb',
       DATABASE_URL: requiredEnvironment.DATABASE_URL,
       DB_READINESS_TIMEOUT_MS: 3000,
+      SUPABASE_URL: requiredEnvironment.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY:
+        requiredEnvironment.SUPABASE_SERVICE_ROLE_KEY,
+      SUPABASE_SOURCE_BUCKET: 'source-documents',
+      SOURCE_SIGNED_URL_TTL_SECONDS: 120,
+      HTTP_MAX_BYTES: 15_728_640,
     })
   })
 
@@ -107,16 +122,46 @@ describe('platform environment validation', () => {
     ).toThrow('DB_READINESS_TIMEOUT_MS')
   })
 
+  it('requires and normalizes Storage runtime settings', () => {
+    expect(
+      validatePlatformEnvironment({
+        ...requiredEnvironment,
+        SOURCE_SIGNED_URL_TTL_SECONDS: '30',
+        HTTP_MAX_BYTES: '1',
+      }),
+    ).toMatchObject({
+      SUPABASE_URL: requiredEnvironment.SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY:
+        requiredEnvironment.SUPABASE_SERVICE_ROLE_KEY,
+      SUPABASE_SOURCE_BUCKET: 'source-documents',
+      SOURCE_SIGNED_URL_TTL_SECONDS: 30,
+      HTTP_MAX_BYTES: 1,
+    })
+  })
+
+  it.each([
+    ['SUPABASE_URL', undefined],
+    ['SUPABASE_SERVICE_ROLE_KEY', undefined],
+    ['SUPABASE_SOURCE_BUCKET', undefined],
+    ['SUPABASE_SOURCE_BUCKET', 'Source_Documents'],
+    ['SOURCE_SIGNED_URL_TTL_SECONDS', '29'],
+    ['SOURCE_SIGNED_URL_TTL_SECONDS', '601'],
+    ['HTTP_MAX_BYTES', '15728641'],
+  ])('rejects invalid Storage setting %s=%j', (key, value) => {
+    const environment: Record<string, unknown> = { ...requiredEnvironment }
+    if (value === undefined) delete environment[key]
+    else environment[key] = value
+    expect(() => validatePlatformEnvironment(environment)).toThrow(key)
+  })
+
   it('validates future integration values separately from API startup', () => {
     expect(
       validateFutureIntegrationEnvironment({
         HTTP_TIMEOUT_MS: '12000',
-        HTTP_MAX_BYTES: '15728640',
         GDELT_CACHE_TTL_SECONDS: '1800',
       }),
     ).toEqual({
       HTTP_TIMEOUT_MS: 12000,
-      HTTP_MAX_BYTES: 15728640,
       GDELT_CACHE_TTL_SECONDS: 1800,
     })
   })

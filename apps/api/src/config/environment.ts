@@ -27,18 +27,31 @@ export const PlatformEnvironmentSchema = z
       .min(250)
       .max(10_000)
       .default(3_000),
+    SUPABASE_URL: z.url({ protocol: /^https$/ }),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+    SUPABASE_SOURCE_BUCKET: z
+      .string()
+      .regex(/^[a-z0-9][a-z0-9-]{1,62}$/),
+    SOURCE_SIGNED_URL_TTL_SECONDS: z.coerce
+      .number()
+      .int()
+      .min(30)
+      .max(600)
+      .default(120),
+    HTTP_MAX_BYTES: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(15_728_640)
+      .default(15_728_640),
   })
 
 export const FutureIntegrationEnvironmentSchema = z
   .object({
     DATABASE_URL: postgresUrlSchema.optional(),
     DIRECT_URL: postgresUrlSchema.optional(),
-    SUPABASE_URL: z.url({ protocol: /^https$/ }).optional(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-    SUPABASE_SOURCE_BUCKET: z.string().trim().min(1).optional(),
     INGESTION_TOKEN: z.string().min(32).optional(),
     HTTP_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
-    HTTP_MAX_BYTES: z.coerce.number().int().positive().optional(),
     GDELT_CACHE_TTL_SECONDS: z.coerce.number().int().nonnegative().optional(),
     LLM_PROVIDER: z.string().trim().min(1).optional(),
   })
@@ -47,12 +60,8 @@ export const FutureIntegrationEnvironmentSchema = z
 const futureIntegrationEnvironmentKeys = [
   'DATABASE_URL',
   'DIRECT_URL',
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'SUPABASE_SOURCE_BUCKET',
   'INGESTION_TOKEN',
   'HTTP_TIMEOUT_MS',
-  'HTTP_MAX_BYTES',
   'GDELT_CACHE_TTL_SECONDS',
   'LLM_PROVIDER',
 ] as const

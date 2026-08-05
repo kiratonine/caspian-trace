@@ -9,6 +9,12 @@ import {
 } from '../generated/prisma/enums'
 import { PrismaService } from '../prisma/prisma.service'
 import { kazhydrometError } from './ingestion.errors'
+import { publicIngestionError } from './ingestion.errors'
+import type {
+  ArticleExtractionResult,
+  PublicArticleDocument,
+  PublicArticleIdentityInput,
+} from './article/article.types'
 import type {
   CachedIngestionSourceDocument,
   IngestionSourceDocument,
@@ -82,6 +88,258 @@ export class IngestionRepository {
         finishedAt: input.finishedAt,
       },
       select: { id: true },
+    })
+  }
+
+  createPublicRun(input: {
+    id: string
+    adapter: typeof IngestionAdapter.GDELT | typeof IngestionAdapter.DIRECT_SOURCE
+    metadata: Prisma.InputJsonObject
+  }): Promise<unknown> {
+    return this.prisma.ingestionRun.create({
+      data: { id: input.id, adapter: input.adapter, status: IngestionRunStatus.RUNNING, metadata: input.metadata },
+      select: { id: true },
+    })
+  }
+
+  async markPublicHealthAttempt(input: {
+    sourceId: 'gdelt' | 'direct-sources'
+    displayName: string
+    at: Date
+  }): Promise<void> {
+    await this.prisma.sourceHealth.upsert({
+      where: { sourceId: input.sourceId },
+      create: {
+        sourceId: input.sourceId,
+        displayName: input.displayName,
+        status: SourceHealthStatus.NEVER_RUN,
+        lastAttemptAt: input.at,
+      },
+      update: { lastAttemptAt: input.at },
+      select: { sourceId: true },
+    })
+  }
+
+  async finalizePublicHealth(input: {
+    sourceId: 'gdelt' | 'direct-sources'
+    displayName: string
+    at: Date
+    status: SourceHealthStatus
+    lastHttpStatus: number | null
+    cacheAvailable: boolean
+    detail: string | null
+    actualError: boolean
+    success: boolean
+    metadata: Prisma.InputJsonObject
+  }): Promise<void> {
+    await this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.sourceHealth.findUnique({
+        where: { sourceId: input.sourceId },
+        select: { metadata: true, consecutiveErrors: true },
+      })
+      await transaction.sourceHealth.upsert({
+        where: { sourceId: input.sourceId },
+        create: {
+          sourceId: input.sourceId,
+          displayName: input.displayName,
+          status: input.status,
+          lastAttemptAt: input.at,
+          lastSuccessAt: input.success ? input.at : null,
+          lastHttpStatus: input.lastHttpStatus,
+          cacheAvailable: input.cacheAvailable,
+          consecutiveErrors: input.actualError ? 1 : 0,
+          detail: input.detail,
+          metadata: { ...jsonObject(current?.metadata), ...input.metadata },
+        },
+        update: {
+          displayName: input.displayName,
+          status: input.status,
+          lastAttemptAt: input.at,
+          ...(input.success ? { lastSuccessAt: input.at } : {}),
+          lastHttpStatus: input.lastHttpStatus,
+          cacheAvailable: input.cacheAvailable,
+          consecutiveErrors: input.actualError
+            ? (current?.consecutiveErrors ?? 0) + 1
+            : input.success ? 0 : current?.consecutiveErrors ?? 0,
+          detail: input.detail,
+          metadata: { ...jsonObject(current?.metadata), ...input.metadata },
+        },
+        select: { sourceId: true },
+      })
+    })
+  }
+
+  async hasAcceptedPublicRun(
+    adapter: typeof IngestionAdapter.GDELT | typeof IngestionAdapter.DIRECT_SOURCE,
+  ): Promise<boolean> {
+    const run = await this.prisma.ingestionRun.findFirst({
+      where: { adapter, acceptedCount: { gt: 0 } },
+      select: { id: true },
+    })
+    return run !== null
+  }
+
+  async ensureArticleDocument(input: PublicArticleIdentityInput): Promise<PublicArticleDocument> {
+    const select = {
+      id: true, canonicalUrl: true, publisher: true, title: true, publishedAt: true,
+      sha256: true, cachePath: true, originalUrl: true, mediaType: true, sourceType: true,
+    } as const satisfies Prisma.SourceDocumentSelect
+    const existing = await this.prisma.sourceDocument.findFirst({
+      where: { canonicalUrl: input.canonicalUrl, sha256: input.sha256 },
+      select,
+    })
+    if (existing) {
+      assertArticleIdentity(existing, input)
+      await this.mergeArticleDiscovery(existing.id, input.metadata)
+      return articleDocument(existing)
+    }
+    const byId = await this.prisma.sourceDocument.findUnique({ where: { id: input.id }, select })
+    if (byId) {
+      assertArticleIdentity(byId, input)
+      await this.mergeArticleDiscovery(byId.id, input.metadata)
+      return articleDocument(byId)
+    }
+    try {
+      const created = await this.prisma.sourceDocument.create({
+        data: {
+          id: input.id,
+          originalUrl: input.originalUrl,
+          canonicalUrl: input.canonicalUrl,
+          publisher: input.publisher,
+          title: input.title,
+          sourceType: 'public_article',
+          mediaType: 'text/html',
+          publishedAt: null,
+          publishedPeriod: null,
+          fetchedAt: null,
+          sha256: input.sha256,
+          cachePath: null,
+          httpStatus: null,
+          status: SourceDocumentStatus.UNVERIFIED,
+          extractionMetadata: input.metadata as Prisma.InputJsonObject,
+        },
+        select,
+      })
+      return articleDocument(created)
+    } catch (error) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error
+      const converged = await this.prisma.sourceDocument.findFirst({
+        where: { OR: [{ id: input.id }, { canonicalUrl: input.canonicalUrl, sha256: input.sha256 }] },
+        select,
+      })
+      if (!converged) throw error
+      assertArticleIdentity(converged, input)
+      await this.mergeArticleDiscovery(converged.id, input.metadata)
+      return articleDocument(converged)
+    }
+  }
+
+  async persistArticleExtraction(input: {
+    sourceDocumentId: string
+    extraction: ArticleExtractionResult
+    parsedAt: Date
+  }): Promise<PublicArticleDocument> {
+    return this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.sourceDocument.findUnique({
+        where: { id: input.sourceDocumentId },
+        select: {
+          id: true, canonicalUrl: true, publisher: true, title: true, publishedAt: true,
+          sha256: true, cachePath: true, extractionMetadata: true,
+        },
+      })
+      if (!current) throw publicIngestionError('PUBLIC_ARTICLE_SOURCE_CONFLICT', 'Public article document is unavailable')
+      const root = jsonObject(current.extractionMetadata)
+      const article = jsonObjectValue(root.publicArticle)
+      if (typeof article.textSha256 === 'string' && article.textSha256 !== input.extraction.textSha256) {
+        throw publicIngestionError('PUBLIC_ARTICLE_METADATA_CONFLICT', 'Public article extraction metadata conflicts')
+      }
+      if (
+        current.publishedAt !== null && input.extraction.publishedAt !== null &&
+        current.publishedAt.toISOString() !== input.extraction.publishedAt
+      ) throw publicIngestionError('PUBLIC_ARTICLE_METADATA_CONFLICT', 'Public article publication time conflicts')
+      if (
+        article.parserStatus === 'succeeded' && input.extraction.title !== null &&
+        typeof article.extractedTitle === 'string' && article.extractedTitle !== input.extraction.title
+      ) throw publicIngestionError('PUBLIC_ARTICLE_METADATA_CONFLICT', 'Public article title conflicts')
+
+      const publishedAt = input.extraction.publishedAt === null ? current.publishedAt : new Date(input.extraction.publishedAt)
+      const updated = await transaction.sourceDocument.update({
+        where: { id: input.sourceDocumentId },
+        data: {
+          ...(input.extraction.title !== null ? { title: input.extraction.title } : {}),
+          publishedAt,
+          publishedPeriod: publishedAt ? publishedAt.toISOString().slice(0, 7) : null,
+          extractionMetadata: {
+            ...root,
+            publicArticle: {
+              ...article,
+              parserVersion: 1,
+              parserStatus: 'succeeded',
+              titleMode: input.extraction.titleMode,
+              publishedAtMode: input.extraction.publishedAtMode,
+              ...(input.extraction.title !== null ? { extractedTitle: input.extraction.title } : {}),
+              textSha256: input.extraction.textSha256,
+              textChars: input.extraction.textChars,
+              matchedGeographyKeywords: input.extraction.matchedGeographyKeywords,
+              matchedRequestedRegions: mergeStringArrays(
+                article.matchedRequestedRegions,
+                input.extraction.matchedRequestedRegions,
+              ),
+              matchedPollutionKeywords: input.extraction.matchedPollutionKeywords,
+              relevant: article.relevant === true || input.extraction.relevant,
+              lastParsedAt: input.parsedAt.toISOString(),
+            },
+          },
+        },
+        select: { id: true, canonicalUrl: true, publisher: true, title: true, publishedAt: true, sha256: true, cachePath: true },
+      })
+      return updated
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable, maxWait: 5_000, timeout: 10_000 })
+  }
+
+  async markArticleParserFailure(sourceDocumentId: string, parsedAt: Date): Promise<void> {
+    await this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.sourceDocument.findUnique({
+        where: { id: sourceDocumentId }, select: { extractionMetadata: true },
+      })
+      if (!current) return
+      const root = jsonObject(current.extractionMetadata)
+      const article = jsonObjectValue(root.publicArticle)
+      if (article.parserStatus === 'succeeded') return
+      await transaction.sourceDocument.update({
+        where: { id: sourceDocumentId },
+        data: { extractionMetadata: {
+          ...root,
+          publicArticle: { ...article, parserVersion: 1, parserStatus: 'failed', lastParsedAt: parsedAt.toISOString() },
+        } },
+        select: { id: true },
+      })
+    })
+  }
+
+  private async mergeArticleDiscovery(sourceDocumentId: string, metadata: Record<string, unknown>): Promise<void> {
+    await this.prisma.$transaction(async (transaction) => {
+      const current = await transaction.sourceDocument.findUnique({
+        where: { id: sourceDocumentId }, select: { extractionMetadata: true },
+      })
+      if (!current) throw publicIngestionError('PUBLIC_ARTICLE_SOURCE_CONFLICT', 'Public article document is unavailable')
+      const root = jsonObject(current.extractionMetadata)
+      const existing = jsonObjectValue(root.publicArticle)
+      const incomingRoot = jsonObjectValue(metadata)
+      const incoming = jsonObjectValue(incomingRoot.publicArticle)
+      const merged = {
+        ...existing,
+        ...incoming,
+        discoveryModes: mergeStringArrays(existing.discoveryModes, incoming.discoveryModes),
+        ingestionRunIds: mergeStringArrays(existing.ingestionRunIds, incoming.ingestionRunIds),
+        requestedRegions: mergeStringArrays(existing.requestedRegions, incoming.requestedRegions),
+        parserStatus: existing.parserStatus === 'succeeded' ? 'succeeded' : incoming.parserStatus ?? existing.parserStatus,
+      }
+      await transaction.sourceDocument.update({
+        where: { id: sourceDocumentId },
+        data: { extractionMetadata: { ...root, publicArticle: merged } },
+        select: { id: true },
+      })
     })
   }
 
@@ -362,4 +620,43 @@ function jsonObject(value: Prisma.JsonValue | undefined): Prisma.InputJsonObject
 function jsonRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
   return value as Record<string, unknown>
+}
+
+function jsonObjectValue(value: unknown): Prisma.InputJsonObject {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return {}
+  const output: Record<string, Prisma.InputJsonValue> = {}
+  for (const [key, item] of Object.entries(value)) {
+    if (item !== null && item !== undefined) output[key] = item as Prisma.InputJsonValue
+  }
+  return output
+}
+
+function mergeStringArrays(left: unknown, right: unknown): string[] {
+  return [...new Set([
+    ...(Array.isArray(left) ? left.filter((value): value is string => typeof value === 'string') : []),
+    ...(Array.isArray(right) ? right.filter((value): value is string => typeof value === 'string') : []),
+  ])]
+}
+
+function assertArticleIdentity(
+  document: { id: string; canonicalUrl: string; sha256: string | null; mediaType: string; sourceType: string },
+  expected: PublicArticleIdentityInput,
+): void {
+  if (
+    document.id !== expected.id || document.canonicalUrl !== expected.canonicalUrl ||
+    document.sha256 !== expected.sha256 || document.mediaType !== 'text/html' ||
+    document.sourceType !== 'public_article'
+  ) throw publicIngestionError('PUBLIC_ARTICLE_SOURCE_CONFLICT', 'Public article identity conflicts with immutable provenance')
+}
+
+function articleDocument(document: {
+  id: string
+  canonicalUrl: string
+  publisher: string
+  title: string
+  publishedAt: Date | null
+  sha256: string | null
+  cachePath: string | null
+}): PublicArticleDocument {
+  return document
 }

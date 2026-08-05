@@ -56,7 +56,7 @@ export class SourcesService {
     if (normalizePersistedMediaType(document.mediaType) !== requestedMediaType) {
       throw sourceDataInvalid()
     }
-    const prepared = prepareSourceSnapshot({
+    const preparedSnapshot = prepareSourceSnapshot({
       bytes: input.bytes,
       mediaType: requestedMediaType,
       sourceType: document.sourceType,
@@ -64,41 +64,53 @@ export class SourcesService {
       fetchedAt: input.fetchedAt,
       maxBytes: this.maxBytes,
     })
-    if (document.sha256 !== null && document.sha256 !== prepared.sha256) {
+    if (document.sha256 !== null && document.sha256 !== preparedSnapshot.sha256) {
       throw sourceSnapshotHashConflict()
     }
-    if (
-      document.cachePath !== null &&
-      document.cachePath !== prepared.cachePath
-    ) {
-      throw sourceCachePathConflict()
+    let cachePath = preparedSnapshot.cachePath
+    if (document.cachePath !== null && document.sha256 !== null) {
+      if (!document.cachePath.startsWith(`${document.sourceType}/`)) {
+        throw sourceCachePathConflict()
+      }
+      let persistedMediaType: ReturnType<typeof assertPersistedCachePath>
+      try {
+        persistedMediaType = assertPersistedCachePath({
+          cachePath: document.cachePath,
+          sha256: document.sha256,
+          mediaType: document.mediaType,
+        })
+      } catch {
+        throw sourceCachePathConflict()
+      }
+      if (persistedMediaType !== requestedMediaType) throw sourceDataInvalid()
+      cachePath = document.cachePath
     }
 
     const stored = await this.storage.uploadImmutableSnapshot({
-      path: prepared.cachePath,
-      bytes: prepared.bytes,
-      mediaType: prepared.mediaType,
-      sha256: prepared.sha256,
+      path: cachePath,
+      bytes: preparedSnapshot.bytes,
+      mediaType: preparedSnapshot.mediaType,
+      sha256: preparedSnapshot.sha256,
       sourceDocumentId: input.sourceDocumentId,
     })
     if (
-      stored.path !== prepared.cachePath ||
-      stored.sha256 !== prepared.sha256
+      stored.path !== cachePath ||
+      stored.sha256 !== preparedSnapshot.sha256
     ) {
       throw sourceDataInvalid()
     }
 
     const attached = await this.repository.attachSnapshot({
       sourceDocumentId: input.sourceDocumentId,
-      sha256: prepared.sha256,
-      cachePath: prepared.cachePath,
+      sha256: preparedSnapshot.sha256,
+      cachePath,
       fetchedAt: input.fetchedAt,
       httpStatus: input.httpStatus,
     })
     return {
       sourceDocumentId: attached.document.id,
-      sha256: prepared.sha256,
-      cachePath: prepared.cachePath,
+      sha256: preparedSnapshot.sha256,
+      cachePath,
       created: stored.created,
       attached: attached.attached,
       status: attached.document.status,

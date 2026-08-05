@@ -12,6 +12,7 @@ const verifiedSeedOnly = process.argv.includes('--verified-seed-only')
 const incidentsOnly = process.argv.includes('--incidents-only')
 const sourcesOnly = process.argv.includes('--sources-only')
 const kazhydrometOnly = process.argv.includes('--kazhydromet-only')
+const gdeltOnly = process.argv.includes('--gdelt-only')
 const externalDatabaseUrl = process.env.PRISMA_CLEAN_DATABASE_URL
 const externalDirectUrl =
   process.env.PRISMA_CLEAN_DIRECT_URL ?? externalDatabaseUrl
@@ -109,6 +110,11 @@ function verify(databaseUrl, directUrl) {
     return
   }
 
+  if (gdeltOnly) {
+    run(npmCommand, ['run', 'test:e2e:gdelt:db', '-w', 'api'], { env })
+    return
+  }
+
   if (!apiCleanOnly) {
     run(npmCommand, ['run', 'test:e2e:db'], { env })
   }
@@ -143,6 +149,8 @@ try {
           ? 'part05'
           : kazhydrometOnly
             ? 'part07'
+          : gdeltOnly
+            ? 'part08'
           : 'part02'
     containerName = `caspian-trace-${part}-${process.pid}-${Date.now()}`
     const password = randomBytes(24).toString('base64url')
@@ -181,6 +189,8 @@ try {
       ? 'Clean migration and source cache DB e2e passed'
       : kazhydrometOnly
       ? 'Clean migration and Kazhydromet ingestion DB e2e passed'
+      : gdeltOnly
+      ? 'Clean migration and GDELT/direct ingestion DB e2e passed'
       : apiCleanOnly
       ? 'API clean build/start passed against disposable PostgreSQL'
       : 'Clean migration, status, DB e2e, and API clean start passed',

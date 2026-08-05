@@ -148,6 +148,40 @@ describe('SourcesService', () => {
     })
   })
 
+  it('keeps a validated immutable path when publication metadata appears later', async () => {
+    const fetchedPath = prepareSourceSnapshot({
+      bytes,
+      mediaType: 'application/pdf',
+      sourceType: document.sourceType,
+      publishedPeriod: null,
+      fetchedAt,
+      maxBytes: 15_728_640,
+    }).cachePath
+    findForCache.mockResolvedValueOnce({
+      ...document,
+      sha256: prepared.sha256,
+      cachePath: fetchedPath,
+    })
+    uploadImmutableSnapshot.mockResolvedValueOnce({
+      path: fetchedPath,
+      sha256: prepared.sha256,
+      created: false,
+    })
+    attachSnapshot.mockResolvedValueOnce({
+      document: { ...document, sha256: prepared.sha256, cachePath: fetchedPath },
+      attached: false,
+    })
+
+    await expect(cache(service)).resolves.toMatchObject({
+      cachePath: fetchedPath,
+      created: false,
+      attached: false,
+    })
+    expect(uploadImmutableSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({ path: fetchedPath, sha256: prepared.sha256 }),
+    )
+  })
+
   it('blocks a conflicting persisted cache path before upload', async () => {
     findForCache.mockResolvedValueOnce({
       ...document,

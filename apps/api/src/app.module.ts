@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module'
 import { SafeFetchModule } from './common/http/safe-fetch.module'
 import { SourcesModule } from './sources/sources.module'
 import { IngestionModule } from './ingestion/ingestion.module'
+import { LiveModule } from './live/live.module'
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { IngestionModule } from './ingestion/ingestion.module'
     SourcesModule,
     SafeFetchModule,
     IngestionModule,
+    LiveModule,
   ],
 })
 export class AppModule {}

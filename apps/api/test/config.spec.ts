@@ -50,6 +50,19 @@ describe('platform environment validation', () => {
       KAZHYDROMET_MAX_DOCUMENTS_PER_RUN: 3,
       KAZHYDROMET_PDF_MAX_PAGES: 300,
       KAZHYDROMET_PDF_MAX_TEXT_CHARS: 5_000_000,
+      GDELT_ENDPOINT_URL: 'https://api.gdeltproject.org/api/v2/doc/doc',
+      GDELT_ALLOWED_HOSTS: ['api.gdeltproject.org'],
+      GDELT_CACHE_TTL_SECONDS: 1800,
+      GDELT_STALE_IF_ERROR_SECONDS: 86400,
+      GDELT_MAX_RECORDS: 25,
+      GDELT_MAX_ARTICLES_PER_RUN: 10,
+      GDELT_MAX_WINDOW_DAYS: 31,
+      DIRECT_SOURCE_ALLOWED_HOSTS: defaultDirectHosts,
+      DIRECT_SOURCE_FALLBACK_URLS: defaultDirectUrls,
+      DIRECT_SOURCE_MAX_ARTICLES_PER_RUN: 10,
+      DIRECT_SOURCE_MAX_ARTICLES_PER_DOMAIN: 2,
+      DIRECT_SOURCE_HTML_MAX_BYTES: 2_097_152,
+      DIRECT_SOURCE_TEXT_MAX_CHARS: 100_000,
     })
   })
 
@@ -119,6 +132,19 @@ describe('platform environment validation', () => {
       KAZHYDROMET_MAX_DOCUMENTS_PER_RUN: 3,
       KAZHYDROMET_PDF_MAX_PAGES: 300,
       KAZHYDROMET_PDF_MAX_TEXT_CHARS: 5_000_000,
+      GDELT_ENDPOINT_URL: 'https://api.gdeltproject.org/api/v2/doc/doc',
+      GDELT_ALLOWED_HOSTS: ['api.gdeltproject.org'],
+      GDELT_CACHE_TTL_SECONDS: 1800,
+      GDELT_STALE_IF_ERROR_SECONDS: 86400,
+      GDELT_MAX_RECORDS: 25,
+      GDELT_MAX_ARTICLES_PER_RUN: 10,
+      GDELT_MAX_WINDOW_DAYS: 31,
+      DIRECT_SOURCE_ALLOWED_HOSTS: defaultDirectHosts,
+      DIRECT_SOURCE_FALLBACK_URLS: defaultDirectUrls,
+      DIRECT_SOURCE_MAX_ARTICLES_PER_RUN: 10,
+      DIRECT_SOURCE_MAX_ARTICLES_PER_DOMAIN: 2,
+      DIRECT_SOURCE_HTML_MAX_BYTES: 2_097_152,
+      DIRECT_SOURCE_TEXT_MAX_CHARS: 100_000,
     })
   })
 
@@ -154,7 +180,8 @@ describe('platform environment validation', () => {
       validatePlatformEnvironment({
         ...requiredEnvironment,
         SOURCE_SIGNED_URL_TTL_SECONDS: '30',
-        HTTP_MAX_BYTES: '1',
+        HTTP_MAX_BYTES: '131072',
+        DIRECT_SOURCE_HTML_MAX_BYTES: '131072',
       }),
     ).toMatchObject({
       SUPABASE_URL: requiredEnvironment.SUPABASE_URL,
@@ -162,7 +189,7 @@ describe('platform environment validation', () => {
         requiredEnvironment.SUPABASE_SERVICE_ROLE_KEY,
       SUPABASE_SOURCE_BUCKET: 'source-documents',
       SOURCE_SIGNED_URL_TTL_SECONDS: 30,
-      HTTP_MAX_BYTES: 1,
+      HTTP_MAX_BYTES: 131_072,
     })
   })
 
@@ -184,10 +211,10 @@ describe('platform environment validation', () => {
   it('validates future integration values separately from API startup', () => {
     expect(
       validateFutureIntegrationEnvironment({
-        GDELT_CACHE_TTL_SECONDS: '1800',
+        LLM_PROVIDER: 'disabled',
       }),
     ).toEqual({
-      GDELT_CACHE_TTL_SECONDS: 1800,
+      LLM_PROVIDER: 'disabled',
     })
   })
 
@@ -199,9 +226,9 @@ describe('platform environment validation', () => {
         USER: 'api',
         WSL_DISTRO_NAME: 'Ubuntu',
         WSL_INTEROP: '/run/WSL/interop',
-        GDELT_CACHE_TTL_SECONDS: '1200',
+        LLM_PROVIDER: 'disabled',
       }),
-    ).toEqual({ GDELT_CACHE_TTL_SECONDS: 1200 })
+    ).toEqual({ LLM_PROVIDER: 'disabled' })
   })
 
   it('normalizes SafeFetch platform settings', () => {
@@ -283,6 +310,36 @@ describe('platform environment validation', () => {
     expect(() => validatePlatformEnvironment({ ...requiredEnvironment, [key]: value })).toThrow(key)
   })
 
+  it('validates GDELT/direct source defaults and cross-field bounds', () => {
+    expect(validatePlatformEnvironment(requiredEnvironment)).toMatchObject({
+      GDELT_MAX_RECORDS: 25,
+      GDELT_CACHE_TTL_SECONDS: 1_800,
+      DIRECT_SOURCE_MAX_ARTICLES_PER_DOMAIN: 2,
+    })
+  })
+
+  it.each([
+    ['GDELT_ENDPOINT_URL', 'https://evil.example/api/v2/doc/doc'],
+    ['GDELT_ENDPOINT_URL', 'http://api.gdeltproject.org/api/v2/doc/doc'],
+    ['GDELT_ALLOWED_HOSTS', 'api.gdeltproject.org,api.gdeltproject.org'],
+    ['GDELT_ALLOWED_HOSTS', '*.gdeltproject.org'],
+    ['GDELT_CACHE_TTL_SECONDS', '1799'],
+    ['GDELT_STALE_IF_ERROR_SECONDS', '1800', { GDELT_CACHE_TTL_SECONDS: '3600' }],
+    ['DIRECT_SOURCE_ALLOWED_HOSTS', 'evil.example'],
+    ['DIRECT_SOURCE_ALLOWED_HOSTS', '*.azh.kz'],
+    ['DIRECT_SOURCE_FALLBACK_URLS', 'https://evil.example/article'],
+    ['DIRECT_SOURCE_FALLBACK_URLS', 'https://user:pass@azh.kz/article'],
+    ['DIRECT_SOURCE_FALLBACK_URLS', 'https://azh.kz/article#fragment'],
+    ['DIRECT_SOURCE_MAX_ARTICLES_PER_DOMAIN', '3', { DIRECT_SOURCE_MAX_ARTICLES_PER_RUN: '2' }],
+    ['DIRECT_SOURCE_HTML_MAX_BYTES', '2097152', { HTTP_MAX_BYTES: '1048576' }],
+  ])('rejects invalid public ingestion setting %s=%s', (
+    key: string,
+    value: string,
+    extra: Record<string, string> = {},
+  ) => {
+    expect(() => validatePlatformEnvironment({ ...requiredEnvironment, ...extra, [key]: value })).toThrow(key)
+  })
+
   it.each([
     ['DATABASE_URL', 'mysql://localhost/caspian'],
     ['DIRECT_URL', 'https://database.example.com'],
@@ -292,3 +349,16 @@ describe('platform environment validation', () => {
     ).toThrow()
   })
 })
+
+const defaultDirectHosts = [
+  'kazhydromet.kz', 'www.kazhydromet.kz', 'inform.kz', 'www.inform.kz', 'gov.kz', 'www.gov.kz',
+  'azh.kz', 'www.azh.kz', 'atpress.kz', 'www.atpress.kz', 'lada.kz', 'www.lada.kz',
+  'inaktau.kz', 'www.inaktau.kz', 'tumba.kz', 'www.tumba.kz', 'mangystaumedia.kz',
+  'www.mangystaumedia.kz', 'uralskweek.kz', 'www.uralskweek.kz', 'mgorod.kz', 'www.mgorod.kz',
+  'diapazon.kz', 'www.diapazon.kz', 'zakon.kz', 'www.zakon.kz',
+]
+const defaultDirectUrls = [
+  'https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html',
+  'https://www.inform.kz/ru/v-stochnih-vodah-atirau-obnaruzheni-ostatki-nefteproduktov-adef40',
+  'https://azh.kz/ru/news/view/120575',
+]

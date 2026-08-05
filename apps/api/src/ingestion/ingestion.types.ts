@@ -1,5 +1,6 @@
 import type { SourceDocumentStatus } from '../generated/prisma/enums'
 import type { Prisma } from '../generated/prisma/client'
+import type { ArticleDocumentResult } from './article/article.types'
 
 export const KAZHYDROMET_REGIONS = ['atyrau', 'mangystau'] as const
 export type KazhydrometRegion = (typeof KAZHYDROMET_REGIONS)[number]
@@ -66,4 +67,38 @@ export interface CachedIngestionSourceDocument extends IngestionSourceDocument {
 export interface PersistedPagesResult {
   pageCount: number
   createdCount: number
+}
+
+export interface NormalizedGdeltRequest {
+  from: Date
+  to: Date
+  regions: KazhydrometRegion[]
+  maxRecords: number
+  maxArticles: number
+  includeDirectFallback: boolean
+}
+
+export type PublicRunStatus = 'succeeded' | 'partial' | 'failed' | 'rate_limited'
+
+export interface GdeltIngestionResponse {
+  status: PublicRunStatus
+  gdelt: {
+    runId: string
+    status: PublicRunStatus
+    sourceStatus: 'healthy' | 'degraded' | 'rate_limited' | null
+    cacheStatus: 'miss' | 'fresh' | 'stale' | null
+    discoveredCount: number
+    allowedCandidateCount: number
+    acceptedCount: number
+    rejectedCount: number
+  }
+  directFallback: {
+    used: boolean
+    runId: string | null
+    status: PublicRunStatus | null
+    attemptedCount: number
+    acceptedCount: number
+    rejectedCount: number
+  }
+  documents: ArticleDocumentResult[]
 }

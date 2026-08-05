@@ -36,6 +36,7 @@ const ALLOWED_FILES = [
   'scripts/verify-supabase-storage.mjs',
   'scripts/verify-safe-fetch.mjs',
   'scripts/verify-kazhydromet-ingestion.mjs',
+  'scripts/verify-gdelt-ingestion.mjs',
   'scripts/disposable-database-guard.mjs',
   'scripts/disposable-database-guard.test.mjs',
   'docs/backend-investigation/part-02-investigation-report.md',
@@ -52,6 +53,7 @@ const ALLOWED_DIRECTORIES = [
   'apps/api/src/incidents',
   'apps/api/src/sources',
   'apps/api/src/ingestion',
+  'apps/api/src/live',
   'apps/api/src/common/http',
   'apps/api/test',
   'packages/contracts',
@@ -108,12 +110,17 @@ export function isForbiddenArchivePath(value) {
   if (normalized.endsWith('.log') || basename(normalized) === '.DS_Store') return true
 
   const filename = basename(normalized)
+  const publicSourceDump =
+    /^(?:gdelt-(?:raw|response|payload)|article-(?:body|text|snapshot|raw))(?:[.-]|$)/i.test(filename) &&
+    !/\.(?:ts|mjs|md)$/i.test(filename)
   if (
     filename.endsWith('.dump') ||
     filename.endsWith('.pdf') ||
     filename.endsWith('.har') ||
+    filename.endsWith('.html') ||
     /^(?:raw|source-body|downloaded-source)(?:[.-]|$)/i.test(filename) ||
-    /^(?:dns-debug|response-body|cache-dump|parser-debug)(?:[.-]|$)/i.test(filename)
+    /^(?:dns-debug|response-body|cache-dump|parser-debug)(?:[.-]|$)/i.test(filename) ||
+    publicSourceDump
   ) {
     return true
   }

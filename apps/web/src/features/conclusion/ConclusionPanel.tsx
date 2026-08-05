@@ -1,10 +1,15 @@
-import { useMemo, type ReactNode } from "react"
-import { FileText } from "lucide-react"
+import { useMemo, useState, type ReactNode } from "react"
+import { ChevronRight, FileText } from "lucide-react"
 import { Link } from "react-router-dom"
 
 import type { IncidentDetail } from "@/api/contracts"
 import { EvidenceLevelBadge } from "@/components/common"
 import { buttonVariants } from "@/components/ui/button"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DOSSIER_LINK_LABEL, DOSSIER_OPEN_ACTION } from "@/constants/dossier"
@@ -27,6 +32,7 @@ import {
 } from "@/features/replay/replay-frame"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
 import { useVerdictChange } from "@/hooks/use-verdict-change"
+import { cn } from "@/lib/utils"
 import type { Investigation } from "@/types"
 import { SourcesList } from "./SourcesList"
 import { StatementList } from "./StatementList"
@@ -109,21 +115,101 @@ export function ConclusionPanelContent({
   replayFrame = null,
 }: ConclusionPanelContentProps) {
   const model = useMemo(() => buildPanelModel(detail), [detail])
+  // Что зритель открыл руками. `undefined` = решает автоматика, поэтому
+  // раскрытый блок остаётся раскрытым и при смене события.
+  const [manualOpen, setManualOpen] = useState<
+    Partial<Record<ConclusionSectionId, boolean>>
+  >({})
 
   return (
     <ol className="flex flex-col p-4">
-      {CONCLUSION_SECTIONS.map((section, index) => (
-        <SectionItem key={section.id} index={index} title={section.title}>
+      {CONCLUSION_SECTIONS.map((section, index) => {
+        const body = (
           <SectionBody
             sectionId={section.id}
             investigation={detail.investigation}
             model={model}
             replayFrame={replayFrame}
           />
-        </SectionItem>
-      ))}
+        )
+
+        // Блоки 1–2 (вывод и уровень) открыты всегда: это и есть заявление
+        // панели. Блоки 3–6 — обоснование, оно раскрывается по требованию.
+        if (!COLLAPSIBLE_SECTIONS.has(section.id)) {
+          return (
+            <SectionItem key={section.id} index={index} title={section.title}>
+              {body}
+            </SectionItem>
+          )
+        }
+
+        const count = sectionCount(
+          section.id,
+          detail.investigation,
+          model,
+          replayFrame
+        )
+
+        return (
+          <CollapsibleSectionItem
+            key={section.id}
+            index={index}
+            title={section.title}
+            count={count}
+            // Во время реплея блок раскрывается сам, как только в нём
+            // появляется содержимое: иначе главный эффект демо — «факт
+            // возник на шаге» — остался бы за закрытой строкой.
+            open={
+              manualOpen[section.id] ??
+              (replayFrame !== null && count !== null && count > 0)
+            }
+            onOpenChange={(open) =>
+              setManualOpen((current) => ({ ...current, [section.id]: open }))
+            }
+          >
+            {body}
+          </CollapsibleSectionItem>
+        )
+      })}
     </ol>
   )
+}
+
+// Свёрнутыми могут быть только блоки-обоснования; порядок и состав 1–6
+// (CONCLUSION_SECTIONS) при этом не меняются — заголовки видны все.
+const COLLAPSIBLE_SECTIONS = new Set<ConclusionSectionId>([
+  "supportedFacts",
+  "contradictedHypotheses",
+  "unknowns",
+  "sources",
+])
+
+/**
+ * Число в заголовке свёрнутого блока: сколько внутри утверждений, пробелов
+ * или документов. Во время реплея, пока правило не применено, вместо нуля
+ * стоит прочерк — «ещё не наступило» и «пусто» это разные вещи.
+ */
+function sectionCount(
+  sectionId: ConclusionSectionId,
+  investigation: Investigation,
+  model: PanelModel,
+  replayFrame: ReplayFrame | null
+): number | null {
+  if (replayFrame && !replayFrame.inferenceReached && sectionId !== "sources") {
+    return null
+  }
+  switch (sectionId) {
+    case "supportedFacts":
+      return model.supportedFacts.length
+    case "contradictedHypotheses":
+      return model.contradictedHypotheses.length
+    case "unknowns":
+      return investigation.unknowns.length
+    case "sources":
+      return model.sources.length
+    default:
+      return 0
+  }
 }
 
 type SectionBodyProps = {
@@ -145,8 +231,10 @@ function SectionBody({
         return <ReplayPendingNote />
       }
       // Во время реплея вывод — дословный текст payload шага conclusion.
+      // Единственный текст панели крупнее базового: у экрана должно быть одно
+      // главное, и это оно.
       return (
-        <p className="text-sm leading-relaxed text-pretty">
+        <p className="text-base leading-snug text-pretty">
           {replayFrame?.conclusionText ?? investigation.conclusion}
         </p>
       )
@@ -220,12 +308,62 @@ function SectionItem({ index, title, children }: SectionItemProps) {
   return (
     <li className="mt-4 flex flex-col gap-2 border-t pt-4 first:mt-0 first:border-t-0 first:pt-0">
       <h3 className="flex items-baseline gap-2 text-sm font-medium">
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {index + 1}
-        </span>
+        <SectionNumber index={index} />
         {title}
       </h3>
       {children}
+    </li>
+  )
+}
+
+function SectionNumber({ index }: { index: number }) {
+  return (
+    <span className="text-xs text-muted-foreground tabular-nums">
+      {index + 1}
+    </span>
+  )
+}
+
+type CollapsibleSectionItemProps = SectionItemProps & {
+  /** Сколько единиц внутри; null — реплей до шага применения правила. */
+  count: number | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+/**
+ * Блок-обоснование: заголовок с номером и количеством виден всегда, содержимое
+ * раскрывается по требованию. Свернуть — не то же самое, что скрыть: состав
+ * панели (ТЗ §13, порядок 1–6) читается по заголовкам, а «Что не подтверждается
+ * · 2» говорит зрителю не меньше, чем два абзаца, — но не занимает экран.
+ */
+function CollapsibleSectionItem({
+  index,
+  title,
+  count,
+  open,
+  onOpenChange,
+  children,
+}: CollapsibleSectionItemProps) {
+  return (
+    <li className="mt-4 border-t pt-4">
+      <Collapsible open={open} onOpenChange={onOpenChange}>
+        <CollapsibleTrigger className="flex w-full items-baseline gap-2 text-left text-sm font-medium hover:text-muted-foreground">
+          <SectionNumber index={index} />
+          <span className="flex-1">{title}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {count ?? "—"}
+          </span>
+          <ChevronRight
+            aria-hidden
+            className={cn(
+              "size-3.5 shrink-0 self-center text-muted-foreground transition-transform",
+              open && "rotate-90"
+            )}
+          />
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">{children}</CollapsibleContent>
+      </Collapsible>
     </li>
   )
 }

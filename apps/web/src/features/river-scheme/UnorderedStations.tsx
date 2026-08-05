@@ -22,7 +22,10 @@ export function UnorderedStations({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="flex items-start gap-2 border border-dashed p-3 text-xs text-pretty text-muted-foreground">
+      {/* Не рамка, а рельс слева — как у ленты коридора: пунктирный
+          прямоугольник посреди колонки читался как ещё один элемент схемы,
+          хотя это примечание к ней. */}
+      <p className="flex items-start gap-2 border-l-2 py-1 pl-3 text-xs text-pretty text-muted-foreground">
         <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
         {SCHEME_UNORDERED_NOTE}
       </p>

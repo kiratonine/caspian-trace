@@ -13,3 +13,7 @@ export const FEED_NO_INCIDENTS = "Событий в данных пока нет
 // Подписи дат сигнала — строчными: встраиваются в середину строки метаданных.
 export const FEED_SIGNAL_OBSERVED_PREFIX = "наблюдалось"
 export const FEED_SIGNAL_REPORTED_PREFIX = "сообщено"
+
+// Раскрытие подробностей сигнала. Перечисляет содержимое, а не зовёт
+// «подробнее»: зритель должен понимать, что за строкой, ещё до клика.
+export const FEED_SIGNAL_DETAILS_LABEL = "цитата, место и источник"

@@ -34,6 +34,7 @@ const ALLOWED_FILES = [
   'scripts/verify-verified-seed.mjs',
   'scripts/verify-investigation-data.mjs',
   'scripts/verify-supabase-storage.mjs',
+  'scripts/verify-safe-fetch.mjs',
   'scripts/disposable-database-guard.mjs',
   'scripts/disposable-database-guard.test.mjs',
   'docs/backend-investigation/part-02-investigation-report.md',
@@ -106,6 +107,13 @@ export function isForbiddenArchivePath(value) {
   if (normalized.endsWith('.log') || basename(normalized) === '.DS_Store') return true
 
   const filename = basename(normalized)
+  if (
+    filename.endsWith('.dump') ||
+    filename.endsWith('.har') ||
+    /^(?:dns-debug|response-body|cache-dump)(?:[.-]|$)/i.test(filename)
+  ) {
+    return true
+  }
   if (filename === '.env.example') return false
   return filename === '.env' || filename.startsWith('.env.')
 }

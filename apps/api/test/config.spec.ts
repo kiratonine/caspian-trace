@@ -35,7 +35,13 @@ describe('platform environment validation', () => {
         requiredEnvironment.SUPABASE_SERVICE_ROLE_KEY,
       SUPABASE_SOURCE_BUCKET: 'source-documents',
       SOURCE_SIGNED_URL_TTL_SECONDS: 120,
+      HTTP_TIMEOUT_MS: 10_000,
       HTTP_MAX_BYTES: 15_728_640,
+      SAFE_FETCH_USER_AGENT: 'caspian-trace/1.0',
+      SAFE_FETCH_CACHE_MAX_ENTRIES: 32,
+      SAFE_FETCH_CACHE_MAX_BYTES: 33_554_432,
+      SAFE_FETCH_RETRY_BASE_DELAY_MS: 250,
+      SAFE_FETCH_RETRY_MAX_DELAY_MS: 5_000,
     })
   })
 
@@ -91,7 +97,13 @@ describe('platform environment validation', () => {
         requiredEnvironment.SUPABASE_SERVICE_ROLE_KEY,
       SUPABASE_SOURCE_BUCKET: 'source-documents',
       SOURCE_SIGNED_URL_TTL_SECONDS: 120,
+      HTTP_TIMEOUT_MS: 10_000,
       HTTP_MAX_BYTES: 15_728_640,
+      SAFE_FETCH_USER_AGENT: 'caspian-trace/1.0',
+      SAFE_FETCH_CACHE_MAX_ENTRIES: 32,
+      SAFE_FETCH_CACHE_MAX_BYTES: 33_554_432,
+      SAFE_FETCH_RETRY_BASE_DELAY_MS: 250,
+      SAFE_FETCH_RETRY_MAX_DELAY_MS: 5_000,
     })
   })
 
@@ -157,11 +169,9 @@ describe('platform environment validation', () => {
   it('validates future integration values separately from API startup', () => {
     expect(
       validateFutureIntegrationEnvironment({
-        HTTP_TIMEOUT_MS: '12000',
         GDELT_CACHE_TTL_SECONDS: '1800',
       }),
     ).toEqual({
-      HTTP_TIMEOUT_MS: 12000,
       GDELT_CACHE_TTL_SECONDS: 1800,
     })
   })
@@ -174,9 +184,54 @@ describe('platform environment validation', () => {
         USER: 'api',
         WSL_DISTRO_NAME: 'Ubuntu',
         WSL_INTEROP: '/run/WSL/interop',
-        HTTP_TIMEOUT_MS: '12000',
+        GDELT_CACHE_TTL_SECONDS: '1200',
       }),
-    ).toEqual({ HTTP_TIMEOUT_MS: 12000 })
+    ).toEqual({ GDELT_CACHE_TTL_SECONDS: 1200 })
+  })
+
+  it('normalizes SafeFetch platform settings', () => {
+    expect(
+      validatePlatformEnvironment({
+        ...requiredEnvironment,
+        HTTP_TIMEOUT_MS: '250',
+        SAFE_FETCH_USER_AGENT: 'caspian-trace-test/1.0',
+        SAFE_FETCH_CACHE_MAX_ENTRIES: '8',
+        SAFE_FETCH_CACHE_MAX_BYTES: '1048576',
+        SAFE_FETCH_RETRY_BASE_DELAY_MS: '100',
+        SAFE_FETCH_RETRY_MAX_DELAY_MS: '250',
+      }),
+    ).toMatchObject({
+      HTTP_TIMEOUT_MS: 250,
+      SAFE_FETCH_USER_AGENT: 'caspian-trace-test/1.0',
+      SAFE_FETCH_CACHE_MAX_ENTRIES: 8,
+      SAFE_FETCH_CACHE_MAX_BYTES: 1_048_576,
+      SAFE_FETCH_RETRY_BASE_DELAY_MS: 100,
+      SAFE_FETCH_RETRY_MAX_DELAY_MS: 250,
+    })
+  })
+
+  it.each([
+    ['HTTP_TIMEOUT_MS', '249'],
+    ['HTTP_TIMEOUT_MS', '30001'],
+    ['SAFE_FETCH_USER_AGENT', 'bad\nagent'],
+    ['SAFE_FETCH_CACHE_MAX_ENTRIES', '129'],
+    ['SAFE_FETCH_CACHE_MAX_BYTES', '1048575'],
+    ['SAFE_FETCH_RETRY_BASE_DELAY_MS', '9'],
+    ['SAFE_FETCH_RETRY_MAX_DELAY_MS', '99'],
+  ])('rejects invalid SafeFetch setting %s=%j', (key, value) => {
+    expect(() =>
+      validatePlatformEnvironment({ ...requiredEnvironment, [key]: value }),
+    ).toThrow(key)
+  })
+
+  it('requires retry maximum delay to cover the base delay', () => {
+    expect(() =>
+      validatePlatformEnvironment({
+        ...requiredEnvironment,
+        SAFE_FETCH_RETRY_BASE_DELAY_MS: '1000',
+        SAFE_FETCH_RETRY_MAX_DELAY_MS: '500',
+      }),
+    ).toThrow('SAFE_FETCH_RETRY_MAX_DELAY_MS')
   })
 
   it.each([

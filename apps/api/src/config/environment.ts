@@ -38,12 +38,61 @@ export const PlatformEnvironmentSchema = z
       .min(30)
       .max(600)
       .default(120),
+    HTTP_TIMEOUT_MS: z.coerce
+      .number()
+      .int()
+      .min(250)
+      .max(30_000)
+      .default(10_000),
     HTTP_MAX_BYTES: z.coerce
       .number()
       .int()
       .min(1)
       .max(15_728_640)
       .default(15_728_640),
+    SAFE_FETCH_USER_AGENT: z
+      .string()
+      .min(1)
+      .max(160)
+      .regex(/^[\x20-\x7e]+$/)
+      .refine((value) => value.trim().length > 0)
+      .default('caspian-trace/1.0'),
+    SAFE_FETCH_CACHE_MAX_ENTRIES: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(128)
+      .default(32),
+    SAFE_FETCH_CACHE_MAX_BYTES: z.coerce
+      .number()
+      .int()
+      .min(1_048_576)
+      .max(67_108_864)
+      .default(33_554_432),
+    SAFE_FETCH_RETRY_BASE_DELAY_MS: z.coerce
+      .number()
+      .int()
+      .min(10)
+      .max(2_000)
+      .default(250),
+    SAFE_FETCH_RETRY_MAX_DELAY_MS: z.coerce
+      .number()
+      .int()
+      .min(100)
+      .max(10_000)
+      .default(5_000),
+  })
+  .superRefine((environment, context) => {
+    if (
+      environment.SAFE_FETCH_RETRY_MAX_DELAY_MS <
+      environment.SAFE_FETCH_RETRY_BASE_DELAY_MS
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['SAFE_FETCH_RETRY_MAX_DELAY_MS'],
+        message: 'Retry maximum must be at least the base delay',
+      })
+    }
   })
 
 export const FutureIntegrationEnvironmentSchema = z
@@ -51,7 +100,6 @@ export const FutureIntegrationEnvironmentSchema = z
     DATABASE_URL: postgresUrlSchema.optional(),
     DIRECT_URL: postgresUrlSchema.optional(),
     INGESTION_TOKEN: z.string().min(32).optional(),
-    HTTP_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
     GDELT_CACHE_TTL_SECONDS: z.coerce.number().int().nonnegative().optional(),
     LLM_PROVIDER: z.string().trim().min(1).optional(),
   })
@@ -61,7 +109,6 @@ const futureIntegrationEnvironmentKeys = [
   'DATABASE_URL',
   'DIRECT_URL',
   'INGESTION_TOKEN',
-  'HTTP_TIMEOUT_MS',
   'GDELT_CACHE_TTL_SECONDS',
   'LLM_PROVIDER',
 ] as const

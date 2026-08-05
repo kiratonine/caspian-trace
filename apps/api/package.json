@@ -17,6 +17,7 @@
     "lint": "eslint \"{src,test,prisma}/**/*.ts\"",
     "pretest": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",
     "test": "jest --runInBand --testPathIgnorePatterns=\\.e2e-spec\\.ts$",
+    "test:safe-fetch": "jest --runInBand --testMatch=\"**/safe-fetch/**/*.spec.ts\"",
     "pretest:watch": "npm run build -w @caspian-trace/contracts",
     "test:watch": "jest --watch --testPathIgnorePatterns=\\.e2e-spec\\.ts$",
     "pretest:e2e": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",

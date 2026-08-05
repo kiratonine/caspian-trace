@@ -103,6 +103,12 @@ async function startAndProbe(args, label) {
       SUPABASE_SOURCE_BUCKET: 'source-documents',
       SOURCE_SIGNED_URL_TTL_SECONDS: '120',
       HTTP_MAX_BYTES: '15728640',
+      HTTP_TIMEOUT_MS: '10000',
+      SAFE_FETCH_USER_AGENT: 'caspian-trace-clean-start/1.0',
+      SAFE_FETCH_CACHE_MAX_ENTRIES: '4',
+      SAFE_FETCH_CACHE_MAX_BYTES: '1048576',
+      SAFE_FETCH_RETRY_BASE_DELAY_MS: '10',
+      SAFE_FETCH_RETRY_MAX_DELAY_MS: '100',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   })

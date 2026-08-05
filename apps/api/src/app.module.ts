@@ -5,6 +5,7 @@ import { validatePlatformEnvironment } from './config/environment'
 import { HealthModule } from './health/health.module'
 import { IncidentsModule } from './incidents/incidents.module'
 import { PrismaModule } from './prisma/prisma.module'
+import { SafeFetchModule } from './common/http/safe-fetch.module'
 import { SourcesModule } from './sources/sources.module'
 
 @Module({
@@ -18,6 +19,7 @@ import { SourcesModule } from './sources/sources.module'
     HealthModule,
     IncidentsModule,
     SourcesModule,
+    SafeFetchModule,
   ],
 })
 export class AppModule {}

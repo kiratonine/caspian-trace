@@ -31,6 +31,13 @@ function createFixtureRepository() {
   writeFixture(root, 'apps/api/src/sources/sources.service.ts', 'export {}')
   writeFixture(root, 'apps/api/src/sources/sources.controller.ts', 'export {}')
   writeFixture(root, 'apps/api/src/sources/storage/storage.port.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/common/http/safe-fetch.module.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/common/http/safe-fetch/safe-fetch.service.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/common/http/safe-fetch/safe-url.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/common/http/safe-fetch/public-ip.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/common/http/safe-fetch/node-dns-resolver.service.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/common/http/safe-fetch/node-https-transport.service.ts', 'export {}')
+  writeFixture(root, 'apps/api/src/common/http/safe-fetch/response-cache.ts', 'export {}')
   writeFixture(
     root,
     'apps/api/src/sources/storage/supabase-storage.service.ts',
@@ -42,6 +49,12 @@ function createFixtureRepository() {
   writeFixture(root, 'apps/api/test/sources/sources.http.e2e-spec.ts', 'export {}')
   writeFixture(root, 'apps/api/test/sources/sources.service.spec.ts', 'export {}')
   writeFixture(root, 'apps/api/test/source-cache-db.e2e-spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/safe-fetch/safe-url.spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/safe-fetch/public-ip.spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/safe-fetch/node-https-transport.spec.ts', 'export {}')
+  writeFixture(root, 'apps/api/test/safe-fetch/response-body.dump', 'secret body')
+  writeFixture(root, 'apps/api/test/safe-fetch/dns-debug.json', '{}')
+  writeFixture(root, 'apps/api/test/safe-fetch/cache-dump.bin', 'cached bytes')
   writeFixture(root, 'apps/api/prisma.config.ts', 'export default {}')
   writeFixture(root, 'apps/api/prisma/seed.ts', 'export {}')
   writeFixture(root, 'apps/api/prisma/seed/verified-data.schemas.ts', 'export {}')
@@ -92,6 +105,7 @@ function createFixtureRepository() {
   writeFixture(root, 'scripts/disposable-database-guard.test.mjs', 'export {}')
   writeFixture(root, 'scripts/verify-investigation-data.mjs', 'export {}')
   writeFixture(root, 'scripts/verify-supabase-storage.mjs', 'export {}')
+  writeFixture(root, 'scripts/verify-safe-fetch.mjs', 'export {}')
   writeFixture(
     root,
     'docs/backend-investigation/part-02-investigation-report.md',
@@ -138,6 +152,16 @@ function createFixtureRepository() {
     'docs/backend-platform/part-05-supabase-storage-source-cache-report.md',
     '# Source cache report',
   )
+  writeFixture(
+    root,
+    'TODO/backend-platform-part-06-safe-fetch.md',
+    '# Part 06',
+  )
+  writeFixture(
+    root,
+    'docs/backend-platform/part-06-safe-fetch-report.md',
+    '# SafeFetch report',
+  )
   writeFixture(root, 'tmp/storage-smoke/source.txt', 'temporary bytes')
   return root
 }
@@ -176,6 +200,13 @@ test('collects only Backend 1 allowlisted files', () => {
   assert.ok(entries.includes('apps/api/src/sources/sources.service.ts'))
   assert.ok(entries.includes('apps/api/src/sources/sources.controller.ts'))
   assert.ok(entries.includes('apps/api/src/sources/storage/storage.port.ts'))
+  assert.ok(entries.includes('apps/api/src/common/http/safe-fetch.module.ts'))
+  assert.ok(entries.includes('apps/api/src/common/http/safe-fetch/safe-fetch.service.ts'))
+  assert.ok(entries.includes('apps/api/src/common/http/safe-fetch/safe-url.ts'))
+  assert.ok(entries.includes('apps/api/src/common/http/safe-fetch/public-ip.ts'))
+  assert.ok(entries.includes('apps/api/src/common/http/safe-fetch/node-dns-resolver.service.ts'))
+  assert.ok(entries.includes('apps/api/src/common/http/safe-fetch/node-https-transport.service.ts'))
+  assert.ok(entries.includes('apps/api/src/common/http/safe-fetch/response-cache.ts'))
   assert.ok(
     entries.includes(
       'apps/api/src/sources/storage/supabase-storage.service.ts',
@@ -187,6 +218,9 @@ test('collects only Backend 1 allowlisted files', () => {
   assert.ok(entries.includes('apps/api/test/sources/sources.http.e2e-spec.ts'))
   assert.ok(entries.includes('apps/api/test/sources/sources.service.spec.ts'))
   assert.ok(entries.includes('apps/api/test/source-cache-db.e2e-spec.ts'))
+  assert.ok(entries.includes('apps/api/test/safe-fetch/safe-url.spec.ts'))
+  assert.ok(entries.includes('apps/api/test/safe-fetch/public-ip.spec.ts'))
+  assert.ok(entries.includes('apps/api/test/safe-fetch/node-https-transport.spec.ts'))
   assert.ok(entries.includes('packages/contracts/src/index.ts'))
   assert.ok(entries.includes('scripts/verify-api-clean-start.mjs'))
   assert.ok(entries.includes('scripts/verify-prisma-clean-db.mjs'))
@@ -200,6 +234,7 @@ test('collects only Backend 1 allowlisted files', () => {
   assert.ok(entries.includes('scripts/verify-verified-seed.mjs'))
   assert.ok(entries.includes('scripts/verify-investigation-data.mjs'))
   assert.ok(entries.includes('scripts/verify-supabase-storage.mjs'))
+  assert.ok(entries.includes('scripts/verify-safe-fetch.mjs'))
   assert.ok(entries.includes('data/verified/manifest.json'))
   assert.ok(entries.includes('data/verified/atyrau-2025-09.json'))
   assert.ok(
@@ -267,6 +302,13 @@ test('collects only Backend 1 allowlisted files', () => {
       'docs/backend-platform/part-05-supabase-storage-source-cache-report.md',
     ),
   )
+  assert.ok(entries.includes('TODO/backend-platform-part-06-safe-fetch.md'))
+  assert.ok(
+    entries.includes('docs/backend-platform/part-06-safe-fetch-report.md'),
+  )
+  assert.ok(!entries.includes('apps/api/test/safe-fetch/response-body.dump'))
+  assert.ok(!entries.includes('apps/api/test/safe-fetch/dns-debug.json'))
+  assert.ok(!entries.includes('apps/api/test/safe-fetch/cache-dump.bin'))
   assert.ok(!entries.some((entry) => entry.startsWith('tmp/')))
 })
 

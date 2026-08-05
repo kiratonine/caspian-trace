@@ -25,6 +25,10 @@ import {
   GeminiProcessQuota,
   isGeminiFreeTierEligibleModel,
 } from './free-tier-policy'
+import {
+  GEMINI_RESPONSE_JSON_SCHEMAS,
+  type GeminiResponseJsonSchema,
+} from './gemini-response-schemas'
 
 @Injectable()
 export class GeminiLlmProvider implements LlmProvider {
@@ -46,7 +50,12 @@ export class GeminiLlmProvider implements LlmProvider {
   }
 
   extractIncidentSignal(input: SourceTextInput): Promise<ExtractedSignal | null> {
-    return this.generate(LLM_PROMPTS.incidentSignal, input, ExtractedSignalSchema)
+    return this.generate(
+      LLM_PROMPTS.incidentSignal,
+      input,
+      ExtractedSignalSchema,
+      GEMINI_RESPONSE_JSON_SCHEMAS.incidentSignal,
+    )
   }
 
   extractMeasurementCandidates(input: SourceTextInput): Promise<MeasurementCandidate[]> {
@@ -54,21 +63,33 @@ export class GeminiLlmProvider implements LlmProvider {
       LLM_PROMPTS.measurementCandidates,
       input,
       MeasurementCandidatesSchema,
+      GEMINI_RESPONSE_JSON_SCHEMAS.measurementCandidates,
     )
   }
 
   classifyPossibleDuplicate(input: DuplicateInput): Promise<DuplicateAssessment> {
-    return this.generate(LLM_PROMPTS.duplicate, input, DuplicateAssessmentSchema)
+    return this.generate(
+      LLM_PROMPTS.duplicate,
+      input,
+      DuplicateAssessmentSchema,
+      GEMINI_RESPONSE_JSON_SCHEMAS.duplicate,
+    )
   }
 
   explainFacts(input: ExplanationInput): Promise<GeneratedExplanation | null> {
-    return this.generate(LLM_PROMPTS.explanation, input, GeneratedExplanationSchema)
+    return this.generate(
+      LLM_PROMPTS.explanation,
+      input,
+      GeneratedExplanationSchema,
+      GEMINI_RESPONSE_JSON_SCHEMAS.explanation,
+    )
   }
 
   private async generate<T>(
     instruction: string,
     input: unknown,
     schema: { parse(value: unknown): T },
+    responseJsonSchema: GeminiResponseJsonSchema,
   ): Promise<T> {
     if (this.apiKey === undefined || this.apiKey.length === 0) {
       throw new ServiceUnavailableException({
@@ -101,7 +122,7 @@ export class GeminiLlmProvider implements LlmProvider {
             ],
             generationConfig: {
               responseMimeType: 'application/json',
-              temperature: 0,
+              responseJsonSchema,
               maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
             },
           }),

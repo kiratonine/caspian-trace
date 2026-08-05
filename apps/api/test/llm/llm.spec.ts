@@ -144,7 +144,7 @@ describe('LLM validation boundary', () => {
         new GeminiLlmProvider(
           new ConfigService({
             GEMINI_API_KEY: 'test-key',
-            GEMINI_MODEL: 'gemini-2.5-flash-lite',
+            GEMINI_MODEL: 'gemini-3.5-flash-lite',
             HTTP_TIMEOUT_MS: 1_000,
           }),
         ).extractIncidentSignal({ sourceText: 'зелёная вода' }),
@@ -165,7 +165,19 @@ describe('LLM validation boundary', () => {
         generationConfig: {
           maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
           responseMimeType: 'application/json',
-          temperature: 0,
+          responseJsonSchema: {
+            type: 'object',
+            required: [
+              'observedAt',
+              'observedPeriod',
+              'locationText',
+              'phenomenon',
+              'excerpt',
+              'evidenceQuotes',
+              'confidence',
+            ],
+            additionalProperties: false,
+          },
         },
       })
     } finally {
@@ -191,7 +203,7 @@ describe('LLM validation boundary', () => {
       const provider = new GeminiLlmProvider(
         new ConfigService({
           GEMINI_API_KEY: 'test-key',
-          GEMINI_MODEL: 'gemini-2.5-flash-lite',
+          GEMINI_MODEL: 'gemini-3.5-flash-lite',
         }),
       )
       await expect(

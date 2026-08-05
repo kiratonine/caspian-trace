@@ -52,7 +52,7 @@ LLM_PROVIDER=disabled
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=...
 GEMINI_BILLING_TIER=free
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
 Без ключа система воспроизводит все core/evidence/replay/export результаты.
@@ -62,11 +62,13 @@ evidence/replay/export endpoints читают только сохранённы�
 
 Gemini работает fail-closed по free-tier policy:
 
-- разрешены только `gemini-2.5-flash-lite` и `gemini-2.5-flash`;
+- разрешены только стабильные модели с документированным Free Tier:
+  `gemini-3.5-flash-lite` и `gemini-3.1-flash-lite`;
 - prompt ограничен 32 KiB, output — 512 tokens;
 - один API instance допускает не более 2 requests/minute и 20 requests за
   rolling 24 hours;
 - tools, grounding, context cache и batch API не используются;
+- JSON output ограничен нативной `responseJsonSchema` и повторно проверяется Zod;
 - startup требует явное `GEMINI_BILLING_TIER=free`.
 
 Model allowlist и локальные quota не могут определить billing status Google
@@ -79,9 +81,12 @@ project. Перед реальным запросом в AI Studio проект 
 ```bash
 GEMINI_BILLING_TIER=free \
 GEMINI_API_KEY=... \
-GEMINI_MODEL=gemini-2.5-flash-lite \
+GEMINI_MODEL=gemini-3.5-flash-lite \
 npm run test:gemini:free-tier
 ```
+
+Live smoke подтверждён 2026-08-05 на `gemini-3.5-flash-lite`: Gemini вернул
+один measurement candidate, прошедший JSON Schema, Zod и provenance-проверки.
 
 ## Contract assumptions
 

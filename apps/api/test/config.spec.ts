@@ -155,13 +155,13 @@ describe('platform environment validation', () => {
       validateFutureIntegrationEnvironment({
         LLM_PROVIDER: 'gemini',
         GEMINI_API_KEY: 'test-key',
-        GEMINI_MODEL: 'gemini-2.5-flash-lite',
+        GEMINI_MODEL: 'gemini-3.5-flash-lite',
         GEMINI_BILLING_TIER: 'free',
       }),
     ).toEqual({
       LLM_PROVIDER: 'gemini',
       GEMINI_API_KEY: 'test-key',
-      GEMINI_MODEL: 'gemini-2.5-flash-lite',
+      GEMINI_MODEL: 'gemini-3.5-flash-lite',
       GEMINI_BILLING_TIER: 'free',
     })
     expect(() =>
@@ -176,7 +176,7 @@ describe('platform environment validation', () => {
       validateFutureIntegrationEnvironment({
         LLM_PROVIDER: 'gemini',
         GEMINI_API_KEY: 'test-key',
-        GEMINI_MODEL: 'gemini-2.5-flash-lite',
+        GEMINI_MODEL: 'gemini-3.5-flash-lite',
       }),
     ).toThrow()
   })

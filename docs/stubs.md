@@ -17,8 +17,8 @@
 
 | Файл | Функция | Эндпоинт | Кто отдаёт | Статус |
 |---|---|---|---|---|
-| `src/api/incidents.ts` | `fetchIncidents` | `GET /api/incidents` | full-stack 1 | ветка api написана, эндпоинта нет |
-| `src/api/incidents.ts` | `fetchIncidentDetail` | `GET /api/incidents/:id` | full-stack 1 | ветка api написана, эндпоинта нет |
+| `src/api/incidents.ts` | `fetchIncidents` | `GET /api/incidents` | full-stack 1 | эндпоинт написан в `feat/backend-platform`, ветка не влита (см. ниже); реальный ответ — `200 []` |
+| `src/api/incidents.ts` | `fetchIncidentDetail` | `GET /api/incidents/:id` | full-stack 1 | то же; `:id` — это `Investigation.id` текущего снапшота |
 | `src/api/replays.ts` | `startReplay` | `POST /api/replays/:id/start` | full-stack 2 | **эндпоинт поднят** (сессия 14); в seed сценарий повторяет его ответ |
 | `src/api/investigations.ts` | `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | full-stack 2 | **эндпоинт поднят** (сессия 14); UI пока не потребляет — см. ниже |
 | `src/api/live-status.ts` | `fetchLiveStatus` | `GET /api/live/status` | full-stack 1 | ветка api написана, эндпоинта нет; UI сделан (F6, сессия 15) |
@@ -31,9 +31,14 @@
 пользователю, поэтому `fetchInvestigationEvidence` в него не входит.
 **Правя эту таблицу, правьте и `constants/stubs.ts`.**
 
-Три эндпоинта Backend 2 уже отвечают, но `VITE_DATA_MODE=api` включать рано:
-списковый `GET /api/incidents` и `GET /api/incidents/:id` не подняты, а без них
-в api-режиме нет ни ленты, ни состава события. Переключение — этап F3/F5.
+Три эндпоинта Backend 2 уже отвечают, но `VITE_DATA_MODE=api` включать по-прежнему
+рано, и с сессии 17 причина другая. Лента и detail **написаны** (Backend 1,
+part-04), однако их ветка `feat/backend-platform` в `frontend` не влита: она
+конфликтует не с нами, а с веткой Backend 2 по схеме БД и миграциям (вопрос 25),
+и сводить её должны они. Даже после слияния api-режим даст пустой экран:
+строгий seed стоит на подписи человека (`requiredHumanReviewers: 2`, сейчас
+`0/2`), current-снапшотов расследований в общей базе нет, и реальный ответ
+эндпоинта — `200 []`. То есть F3/F5 ждёт теперь не кода, а данных.
 
 `fetchInvestigationEvidence` намеренно не подмешивается в detail: граф несёт
 только измерения и документы, на которых стоят утверждения (сентябрь — 4 створа
@@ -66,8 +71,9 @@ Seed-данные проверяются теми же схемами, что и
   (сентябрь) и 24 (май). Вопрос 8 закрыт: майские числа тоже ведут на `#page=`;
 - `qualityClass: null` — класса качества в таблицах ТЗ §5 нет;
 - сентябрь: L2, коридор открыт вверх, **ноль** утверждений `supports` и два
-  `contradicts` — дословно `september-golden.json` (ruleset 1.1.0). Май (L3)
-  и Актау (L0) — из `may-golden.json` / `aktau-golden.json`;
+  `contradicts` — дословно `september-golden.json` (ruleset 1.2.0 с сессии 17;
+  сам состав утверждений сменой версии не поехал). Май (L3) и Актау (L0) —
+  из `may-golden.json` / `aktau-golden.json`;
 - `Investigation.unknowns` сентября — один пробел из golden плюс один наш:
   у ядра во входе четыре створа, у нас в событии семь, и трём порядок нечем
   подтвердить. Это состояние наших данных, а не оценка ядра;

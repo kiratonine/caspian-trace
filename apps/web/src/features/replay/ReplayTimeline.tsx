@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Pause, Play, Square } from "lucide-react"
 
@@ -44,6 +44,16 @@ function labelAlignment(index: number, count: number) {
   return "-translate-x-1/2 text-center"
 }
 
+type DragState = {
+  pointerId: number
+  /** Реплей играл до захвата — после отпускания продолжаем с нового шага. */
+  resume: boolean
+  /** Последний применённый жестом шаг: кадр перерисуется позже, чем придёт move. */
+  lastIndex: number
+  /** Шаг менялся перетаскиванием: следующий click — хвост того же жеста. */
+  moved: boolean
+}
+
 export function ReplayTimeline() {
   const { selectedIncidentId } = useSelectedIncidentDetail()
   const scenarioQuery = useQuery({
@@ -63,6 +73,10 @@ export function ReplayTimeline() {
   useReplayPlayback()
   const positionMs = useReplayPositionMs()
   const frame = useReplayFrame(selectedIncidentId)
+
+  const trackRef = useRef<HTMLDivElement>(null)
+  const dragRef = useRef<DragState | null>(null)
+  const suppressMarkerClickRef = useRef(false)
 
   // Реплей не переживает смену выбранного события: сценарий другого события
   // на экране нового — рассинхрон всех трёх колонок.
@@ -148,13 +162,85 @@ export function ReplayTimeline() {
     }
   }
 
-  const handleMarkerClick = (index: number) => {
+  const goToStep = (index: number) => {
     if (activeScenario) {
       seekToStep(index)
     } else if (availableScenario) {
-      // Клик по маркеру без запущенного реплея — старт на этом шаге без
-      // воспроизведения: ручной режим для демо.
+      // Шаг выбран без запущенного реплея — старт на нём без воспроизведения:
+      // ручной режим для демо.
       start(availableScenario, { stepIndex: index, autoplay: false })
+    }
+  }
+
+  const handleMarkerClick = (index: number) => {
+    // Клик, завершающий перетаскивание, шаг уже не меняет: иначе отпускание
+    // над чужим маркером отбрасывало бы реплей назад.
+    if (suppressMarkerClickRef.current) {
+      suppressMarkerClickRef.current = false
+      return
+    }
+    goToStep(index)
+  }
+
+  // Плейхед тянется по шкале с прилипанием к ближайшему шагу: между шагами
+  // показывать нечего — шкала это хронология доказательств, а не прогресс-бар.
+  const stepIndexFromClientX = (clientX: number) => {
+    const rect = trackRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0) return null
+    const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1)
+    const positionMs = ratio * totalMs
+    let nearestIndex = 0
+    let nearestDistance = Number.POSITIVE_INFINITY
+    steps.forEach((step, index) => {
+      const distance = Math.abs(step.offsetMs - positionMs)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearestIndex = index
+      }
+    })
+    return nearestIndex
+  }
+
+  const handleTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!canReplay || event.button !== 0) return
+    const index = stepIndexFromClientX(event.clientX)
+    if (index === null) return
+    dragRef.current = {
+      pointerId: event.pointerId,
+      resume: status === "playing",
+      lastIndex: index,
+      moved: false,
+    }
+    suppressMarkerClickRef.current = false
+    event.currentTarget.setPointerCapture(event.pointerId)
+    // На время жеста часы стоят: иначе таймер шага продолжал бы двигать
+    // реплей под курсором и спорить с рукой.
+    if (status === "playing") pause()
+    goToStep(index)
+  }
+
+  const handleTrackPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const index = stepIndexFromClientX(event.clientX)
+    if (index === null || index === drag.lastIndex) return
+    drag.lastIndex = index
+    drag.moved = true
+    goToStep(index)
+  }
+
+  const handleTrackPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    dragRef.current = null
+    suppressMarkerClickRef.current = drag.moved
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    // Реплей, дотянутый до последнего шага, повтором с начала не отвечает:
+    // play() на finished — это «запустить заново», а руку просили о другом.
+    if (drag.resume && useReplayStore.getState().status !== "finished") {
+      play()
     }
   }
 
@@ -213,7 +299,19 @@ export function ReplayTimeline() {
             REPLAY_KEYBOARD_HINT
           )}
         </p>
-        <div className="relative h-9 min-w-0">
+        {/* touch-none: на планшете вертикальный свайп по шкале иначе уводит
+            страницу, а не ведёт плейхед. */}
+        <div
+          ref={trackRef}
+          onPointerDown={handleTrackPointerDown}
+          onPointerMove={handleTrackPointerMove}
+          onPointerUp={handleTrackPointerEnd}
+          onPointerCancel={handleTrackPointerEnd}
+          className={cn(
+            "relative h-9 min-w-0 touch-none",
+            canReplay && "cursor-pointer"
+          )}
+        >
           <div className="absolute inset-x-0 top-2.25 h-px bg-border" />
           {progress !== null && (
             <>

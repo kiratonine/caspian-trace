@@ -248,3 +248,20 @@
     @apply font-sans;
   }
 }
+
+/* Системная настройка «меньше движения» (этап F1). Гасятся только украшения:
+   всплытие поповера и тултипа, пульс скелетона, раскрытие блоков панели,
+   плавные переходы цвета. Сам реплей остаётся — это содержание доказательства,
+   а не анимация; непрерывное движение плейхеда убирает useReplayPositionMs,
+   и он переставляется по шагам. Нулевая, а не отменённая длительность —
+   иначе анимации Base UI, ждущие animationend, не досчитались бы события. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

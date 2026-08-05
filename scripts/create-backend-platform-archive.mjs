@@ -31,6 +31,12 @@ const ALLOWED_FILES = [
   'scripts/create-backend-platform-archive.test.mjs',
   'scripts/verify-api-clean-start.mjs',
   'scripts/verify-prisma-clean-db.mjs',
+  'scripts/verify-verified-seed.mjs',
+  'scripts/verify-investigation-data.mjs',
+  'scripts/disposable-database-guard.mjs',
+  'scripts/disposable-database-guard.test.mjs',
+  'docs/backend-investigation/part-02-investigation-report.md',
+  'docs/backend-investigation/prisma-schema-request.md',
   '.github/workflows/ci.yml',
   'supabase/config.toml',
 ]
@@ -47,6 +53,7 @@ const ALLOWED_DIRECTORIES = [
   'apps/api/test',
   'packages/contracts',
   'docs/backend-platform',
+  'data/verified',
 ]
 
 const FORBIDDEN_PREFIXES = [
@@ -60,7 +67,6 @@ const FORBIDDEN_PREFIXES = [
   'tmp',
   'apps/web',
   'packages/investigation-core',
-  'data/verified',
   'apps/api/src/generated',
   'apps/api/prisma/generated',
   'apps/api/src/investigations',
@@ -69,7 +75,12 @@ const FORBIDDEN_PREFIXES = [
   'apps/api/src/llm',
 ]
 
-const FORBIDDEN_SEGMENTS = new Set(['node_modules', 'dist', 'coverage'])
+const FORBIDDEN_SEGMENTS = new Set([
+  'node_modules',
+  'dist',
+  'coverage',
+  'temp-fixtures',
+])
 
 export function normalizeArchivePath(value) {
   return value.replaceAll('\\', '/').replace(/^\.\//, '')

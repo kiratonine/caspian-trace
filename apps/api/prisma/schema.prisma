@@ -46,6 +46,11 @@ enum StationRelationKind {
   SAME_REACH
 }
 
+enum StationRelationEvidenceBasis {
+  OFFICIAL_PAIRED_ABOVE_BELOW_LABELS
+  OFFICIAL_MONITORING_TABLE_SEQUENCE_AND_STATION_LABELS
+}
+
 enum IncidentStatus {
   OPEN
   ARCHIVED
@@ -128,6 +133,7 @@ model SourceDocument {
   pages                   SourcePage[]
   locatedStations         Station[]                 @relation("StationLocationSource")
   stationRelations        StationRelation[]
+  stationRelationEvidence StationRelationEvidence[]
   measurements            Measurement[]
   incidentSignals         IncidentSignal[]
   locatedCandidateObjects CandidateObject[]         @relation("CandidateGeometrySource")
@@ -179,20 +185,40 @@ model Station {
 }
 
 model StationRelation {
-  id                 String              @id @db.Text
-  fromStationId      String              @map("from_station_id") @db.Text
-  toStationId        String              @map("to_station_id") @db.Text
+  id                 String                    @id @db.Text
+  fromStationId      String                    @map("from_station_id") @db.Text
+  toStationId        String                    @map("to_station_id") @db.Text
   kind               StationRelationKind
-  sourceDocumentId   String              @map("source_document_id") @db.Text
-  verificationStatus VerificationStatus  @map("verification_status")
-  notes              String?             @db.Text
-  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
-  fromStation        Station             @relation("StationRelationFrom", fields: [fromStationId], references: [id], onDelete: Cascade)
-  toStation          Station             @relation("StationRelationTo", fields: [toStationId], references: [id], onDelete: Cascade)
-  sourceDocument     SourceDocument      @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+  sourceDocumentId   String?                   @map("source_document_id") @db.Text
+  verificationStatus VerificationStatus        @map("verification_status")
+  notes              String?                   @db.Text
+  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  fromStation        Station                   @relation("StationRelationFrom", fields: [fromStationId], references: [id], onDelete: Cascade)
+  toStation          Station                   @relation("StationRelationTo", fields: [toStationId], references: [id], onDelete: Cascade)
+  sourceDocument     SourceDocument?           @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+  evidence           StationRelationEvidence[]
 
   @@unique([fromStationId, toStationId, kind])
   @@map("station_relations")
+}
+
+model StationRelationEvidence {
+  id                 String                       @id @db.Text
+  stationRelationId  String                       @map("station_relation_id") @db.Text
+  sourceDocumentId   String                       @map("source_document_id") @db.Text
+  sourcePage         Int?                         @map("source_page")
+  basis              StationRelationEvidenceBasis
+  sourceExcerpt      String                       @map("source_excerpt") @db.Text
+  checkedBy          Json                         @map("checked_by")
+  checkedAt          String                       @map("checked_at") @db.Text
+  verificationStatus VerificationStatus           @map("verification_status")
+  createdAt          DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
+  stationRelation    StationRelation              @relation(fields: [stationRelationId], references: [id], onDelete: Cascade)
+  sourceDocument     SourceDocument               @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+
+  @@unique([stationRelationId, sourceDocumentId, basis, sourcePage], map: "station_relation_evidence_edge_document_basis_page_key")
+  @@index([sourceDocumentId])
+  @@map("station_relation_evidence")
 }
 
 model Measurement {

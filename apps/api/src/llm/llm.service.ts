@@ -31,6 +31,9 @@ export class LlmService {
     if (raw === null) return null
     const result = ExtractedSignalSchema.parse(raw)
     validateQuotes(input.sourceText, result.evidenceQuotes)
+    if (!input.sourceText.includes(result.excerpt)) {
+      throw new Error('LLM_EXCERPT_NOT_FOUND')
+    }
     if (!result.evidenceQuotes.some((quote) => result.excerpt.includes(quote))) {
       throw new Error('LLM_EXCERPT_NOT_SUPPORTED_BY_QUOTE')
     }
@@ -102,30 +105,30 @@ function validateTemporalPrecision(
   }
   if (observedPeriod !== null) {
     const [year, month] = observedPeriod.split('-')
-    const monthName = month === undefined ? undefined : RUSSIAN_MONTHS[month]
+    const monthPattern = month === undefined ? undefined : RUSSIAN_MONTH_PATTERNS[month]
     if (
       year === undefined || month === undefined ||
       (!sourceText.includes(observedPeriod) &&
         !sourceText.includes(`${month}.${year}`) &&
-        (monthName === undefined ||
-          !new RegExp(`${monthName}\\p{L}*\\s+${year}`, 'iu').test(sourceText)))
+        (monthPattern === undefined ||
+          !new RegExp(`${monthPattern}\\s+${year}`, 'iu').test(sourceText)))
     ) {
       throw new Error('LLM_DATE_PRECISION_UNSUPPORTED')
     }
   }
 }
 
-const RUSSIAN_MONTHS: Readonly<Record<string, string>> = {
-  '01': 'январ',
-  '02': 'феврал',
-  '03': 'март',
-  '04': 'апрел',
-  '05': 'ма',
-  '06': 'июн',
-  '07': 'июл',
-  '08': 'август',
-  '09': 'сентябр',
-  '10': 'октябр',
-  '11': 'ноябр',
-  '12': 'декабр',
+const RUSSIAN_MONTH_PATTERNS: Readonly<Record<string, string>> = {
+  '01': 'январ\\p{L}*',
+  '02': 'феврал\\p{L}*',
+  '03': 'март\\p{L}*',
+  '04': 'апрел\\p{L}*',
+  '05': 'ма(?:й|я|е|ю)',
+  '06': 'июн\\p{L}*',
+  '07': 'июл\\p{L}*',
+  '08': 'август\\p{L}*',
+  '09': 'сентябр\\p{L}*',
+  '10': 'октябр\\p{L}*',
+  '11': 'ноябр\\p{L}*',
+  '12': 'декабр\\p{L}*',
 }

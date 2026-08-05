@@ -28,6 +28,44 @@ describe('LLM validation boundary', () => {
       .rejects.toThrow('LLM_QUOTE_NOT_FOUND')
   })
 
+  it('rejects an excerpt that adds text outside the exact source', async () => {
+    const service = new LlmService(providerWith({
+      extractIncidentSignal: () => Promise.resolve({
+        observedAt: null,
+        observedPeriod: null,
+        locationText: 'Атырау',
+        phenomenon: 'color_change',
+        excerpt: 'зелёная вода и дополнительное неподтверждённое описание',
+        evidenceQuotes: ['зелёная вода'],
+        confidence: 0.9,
+      }),
+    }))
+
+    await expect(
+      service.extractIncidentSignal({ sourceText: 'Отмечена зелёная вода.' }),
+    ).rejects.toThrow('LLM_EXCERPT_NOT_FOUND')
+  })
+
+  it('does not accept March text as evidence for a May period', async () => {
+    const service = new LlmService(providerWith({
+      extractIncidentSignal: () => Promise.resolve({
+        observedAt: null,
+        observedPeriod: '2025-05',
+        locationText: 'Атырау',
+        phenomenon: 'color_change',
+        excerpt: 'зелёная вода',
+        evidenceQuotes: ['зелёная вода'],
+        confidence: 0.9,
+      }),
+    }))
+
+    await expect(
+      service.extractIncidentSignal({
+        sourceText: 'В марте 2025 отмечена зелёная вода.',
+      }),
+    ).rejects.toThrow('LLM_DATE_PRECISION_UNSUPPORTED')
+  })
+
   it('rejects a new number and accusatory wording in explanations', async () => {
     const numeric = new LlmService(providerWith({
       explainFacts: () => Promise.resolve({ text: 'Значение выросло до 0,7.' }),

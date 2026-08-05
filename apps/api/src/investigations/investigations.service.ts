@@ -41,15 +41,17 @@ export class InvestigationsService {
   }
 
   async getEvidenceGraph(investigationId: string): Promise<EvidenceGraph> {
-    return toEvidenceGraph(await this.recompute(investigationId))
+    return toEvidenceGraph(await this.getStored(investigationId))
   }
 
   async getCurrentResult(investigationId: string): Promise<InvestigationResult> {
-    return (await this.recompute(investigationId)).result
+    return (await this.getStored(investigationId)).result
   }
 
   async getStored(investigationId: string): Promise<StoredInvestigation> {
-    return this.recompute(investigationId)
+    const current = await this.resultWriter.findCurrent(investigationId)
+    if (current === null) throw investigationNotFound(investigationId)
+    return current
   }
 }
 

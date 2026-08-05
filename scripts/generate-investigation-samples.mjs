@@ -21,6 +21,7 @@ const investigations = new InvestigationsService(repository, repository)
 const replays = new ReplaysService(investigations, new ReplaysRepository())
 const exporter = new ExportService(investigations)
 
+await investigations.recompute(id)
 const evidence = await investigations.getEvidenceGraph(id)
 const replay = await replays.start(id)
 const dossier = await exporter.buildDossierModel(id)

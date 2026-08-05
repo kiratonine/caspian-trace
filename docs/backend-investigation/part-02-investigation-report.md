@@ -24,9 +24,10 @@
   имеют отдельные verified fixtures с PDF-страницей, основанием и выдержкой;
   relation без полной provenance, существующего официального source document
   и runtime-valid references core игнорирует как непроверенную.
-- Ruleset `1.1.0` канонизирует вход перед hash/evaluation, создаёт уникальные
-  evidence IDs для каждой пары измерений и не связывает corridor с
-  противоречием из другого компонента графа.
+- Ruleset `1.2.0` канонизирует вход перед hash/evaluation, создаёт уникальные
+  evidence IDs для каждой пары измерений, не связывает corridor с
+  противоречием из другого компонента графа и не выбирает максимум между
+  несопоставимыми unit/matrix/period.
 - Replay не создаёт L1-шаги из непроверенных источников/измерений; Gemini key
   передаётся заголовком, запрос ограничен timeout, а startup валидирует все
   integration env variables.
@@ -54,7 +55,9 @@ GEMINI_MODEL=gemini-2.5-flash
 ```
 
 Без ключа система воспроизводит все core/evidence/replay/export результаты.
-LLM не повышает evidence level и не создаёт rule-engine statements.
+LLM не повышает evidence level и не создаёт rule-engine statements. Публичные
+evidence/replay/export endpoints читают только сохранённый current snapshot;
+вычисление и versioned write выполняет защищённый admin recompute.
 
 ## Contract assumptions
 
@@ -82,6 +85,9 @@ LLM не повышает evidence level и не создаёт rule-engine stat
 - InvestigationUnknown и ObjectDisposition;
 - переключение предыдущего `isCurrent=false` и создание нового current;
 - unique/idempotency boundary по investigation/inputHash/rulesetVersion.
+
+Rule `code` является классификатором, а не уникальным идентификатором: одна
+версия может содержать несколько statements одного code для разных интервалов.
 
 Feature-код не создаёт второй PrismaClient. Недостающие unique/provenance
 ограничения добавлены отдельной migration поверх утверждённой platform schema.

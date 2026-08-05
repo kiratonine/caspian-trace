@@ -12,6 +12,7 @@ describe('ReplaysService', () => {
     const inputs = new FileInvestigationRepository()
     const investigations = new InvestigationsService(inputs, inputs)
     const replays = new ReplaysService(investigations, new ReplaysRepository())
+    await investigations.recompute('inv-atyrau-2025-09')
 
     const first = ReplayScenarioSchema.parse(
       await replays.start('inv-atyrau-2025-09'),

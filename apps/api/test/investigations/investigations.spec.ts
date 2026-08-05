@@ -34,6 +34,34 @@ describe('InvestigationsService', () => {
     ).toBe(true)
   })
 
+  it('serves the current snapshot without loading input or saving a version', async () => {
+    const repository = new FileInvestigationRepository()
+    const service = new InvestigationsService(repository, repository)
+    const current = await service.recompute('inv-atyrau-2025-09')
+    const loadInput = jest.spyOn(repository, 'loadInput')
+    const saveVersioned = jest.spyOn(repository, 'saveVersioned')
+
+    await expect(service.getStored('inv-atyrau-2025-09')).resolves.toEqual(current)
+    await expect(service.getCurrentResult('inv-atyrau-2025-09')).resolves.toEqual(
+      current.result,
+    )
+    await expect(service.getEvidenceGraph('inv-atyrau-2025-09')).resolves.toMatchObject({
+      investigationId: 'inv-atyrau-2025-09',
+    })
+    expect(loadInput).not.toHaveBeenCalled()
+    expect(saveVersioned).not.toHaveBeenCalled()
+  })
+
+  it('does not implicitly create a result from a fixture on a public read', async () => {
+    const repository = new FileInvestigationRepository()
+    const service = new InvestigationsService(repository, repository)
+
+    await expect(service.getStored('inv-atyrau-2025-09')).rejects.toMatchObject({
+      status: 404,
+    })
+    await expect(repository.findCurrent('inv-atyrau-2025-09')).resolves.toBeNull()
+  })
+
   it('creates a new version when the input changes', async () => {
     const fixtureRepository = new FileInvestigationRepository()
     const initial = await fixtureRepository.loadInput('inv-atyrau-2025-05')

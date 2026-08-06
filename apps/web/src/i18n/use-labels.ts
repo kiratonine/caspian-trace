@@ -17,5 +17,6 @@ export function useMatrixLabel(): (matrix: string) => string {
 
 export function usePhenomenonLabel(): (phenomenon: string) => string {
   const { t } = useTranslation()
-  return (phenomenon) => t(`phenomena.${phenomenon}`, { defaultValue: phenomenon })
+  return (phenomenon) =>
+    t(`phenomena.${phenomenon}`, { defaultValue: phenomenon })
 }

@@ -2,8 +2,15 @@ import i18next from "i18next"
 import { initReactI18next } from "react-i18next"
 
 import { DEFAULT_LOCALE, LOCALES } from "./config"
-import { LOCALE_STORAGE_KEY, resolveInitialLocale } from "./resolve-initial-locale"
+import {
+  LOCALE_STORAGE_KEY,
+  resolveInitialLocale,
+} from "./resolve-initial-locale"
+import { az } from "./resources/az"
+import { fa } from "./resources/fa"
+import { kk } from "./resources/kk"
 import { ru } from "./resources/ru"
+import { tk } from "./resources/tk"
 
 const initialLocale = resolveInitialLocale({
   search: window.location.search,
@@ -17,6 +24,10 @@ const initialLocale = resolveInitialLocale({
 void i18next.use(initReactI18next).init({
   resources: {
     ru: { translation: ru },
+    kk: { translation: kk },
+    az: { translation: az },
+    fa: { translation: fa },
+    tk: { translation: tk },
   },
   lng: initialLocale,
   fallbackLng: DEFAULT_LOCALE,

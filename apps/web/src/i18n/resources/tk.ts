@@ -1,0 +1,312 @@
+import type { TranslationResource } from "./types"
+
+// Türkmençe — latyn elipbiýi (1993-nji ýyldan bäri Türkmenistanda resmi ýazuw).
+//
+// Юридически чувствительные строки: «barlanmaly desga» — нейтральный залог,
+// никаких слов со значением «günäkär» / «bozujy» / «hapalaýjy».
+// Имена собственные («Caspian Trace», названия юрлиц) не переводятся.
+export const tk = {
+  app: {
+    name: "Caspian Trace",
+    tagline:
+      "Açyk maglumatlar boýunça hapalanmagyň gelip çykyşy baradaky çaklamalary barlamak",
+    legalDisclaimer:
+      "Hapalanmagyň çeşmesi anyklanylmady. Ady agzalan ähli desgalar — barlanmaly desgalardyr; material hiç kimiň günäkärdigi barada tassyklama saklamaýar. Netijeler açyk çeşmeler boýunça kesgitli düzgünler bilen düzüldi we täze maglumatlar ýüze çykanda üýtgäp biler.",
+    objectForReview: "barlanmaly desga",
+    dataLoadError: "Waka maglumatlaryny ýükläp bolmady.",
+  },
+  insufficientData: {
+    title: "Maglumat ýeterlik däl",
+    explanation:
+      "Bu ýalňyşlyk däl: netije barlap boljak faktlar bilen tassyklanýança çap edilmeýär.",
+    reasonsLabel: "Näme ýetmeýär",
+  },
+  language: {
+    label: "Interfeýsiň dili",
+  },
+  panel: {
+    section: {
+      conclusion: { title: "Netije" },
+      evidenceLevel: { title: "Subutnama derejesi" },
+      supportedFacts: { title: "Näme anyklanyldy" },
+      contradictedHypotheses: { title: "Näme tassyklanmaýar" },
+      unknowns: { title: "Näme näbelli" },
+      sources: { title: "Çeşmeler" },
+    },
+    noFacts: "Hasaplaýyş özeni tassyklaýjy tassyklama çykarmady.",
+    noRejected:
+      "Häzirlikçe hiç bir anyk çaklama faktlar bilen aradan aýrylmady.",
+    noUnknowns: "Maglumatlardaky boşluklar sanalmady.",
+    noSources: "Çeşme resminamalary goşulmady.",
+  },
+  evidence: {
+    L0: {
+      label: "Barlanmadyk signal",
+      description:
+        "Bir neşir ýa-da köpçülikleýin habar bar. Barlaghana tassyklamasy ýok.",
+    },
+    L1: {
+      label: "Waka tassyklandy",
+      description:
+        "Waka iki garaşsyz çeşmede beýan edildi, resmi çeşme bar ýa-da nusga almagyň netijeleri çap edildi.",
+    },
+    L2: {
+      label: "Çeşme bölege çenli anyklanyldy",
+      description:
+        "Fiziki taýdan mümkin bölek kesgitlenildi; iň azyndan bir geografik çaklama maglumatyň ýoklugy bilen däl, fakt bilen aradan aýryldy.",
+    },
+    L3: {
+      label: "Geçelge barlaghana maglumatlary bilen goldanýar",
+      description:
+        "Bir senede we deňeşdirip boljak birliklerde goňşy kesimleriň arasynda jübüt ölçegler bar. Bu günäkäriň anyklanandygyny aňlatmaýar.",
+    },
+  },
+  feed: {
+    signalsHeading: "Signallar",
+    noSignals: "Waka hiç bir köpçülikleýin signal baglanyşdyrylmady.",
+    noIncidents: "Maglumatlarda häzirlikçe waka ýok.",
+    signalObservedPrefix: "syn edildi",
+    signalReportedPrefix: "habar berildi",
+    signalDetailsLabel: "sitata, ýer we çeşme",
+  },
+  comparison: {
+    switcherLabel: "Şu bölegiň syn döwürleri",
+    verdictChangeTitle: "Netije üýtgedi",
+    verdictChangeBefore: "Öňki",
+    verdictChangeExplanation:
+      "Netije anyk ölçegleriň faktlaryndan gelip çykýar: başga döwür — kesimlerde " +
+      "başga bahalar, şonuň üçin subutnama derejesi-de, haýsy çaklamalary aradan " +
+      "aýyrmagyň mümkindigi-de üýtgeýär. Bu barlanýan desgalara gaýtadan baha " +
+      "bermek däldir.",
+    verdictChangeDismiss: "Deňeşdirmäni gizle",
+  },
+  scheme: {
+    upstreamHint: "ýokarda — akym boýunça ýokarda",
+    unconfirmedOrderHint: "kesimleriň tertibi tassyklanmady",
+    partialOrderHint: "tertip ähli kesimler üçin tassyklanmady",
+    unorderedNote:
+      "Kesimleriň akym boýunça tertibi elde tassyklanmady, şonuň üçin shema nokatlary tertipleşdirmeýär: setirleriň yzygiderliligi derýanyň akymyny görkezmeýär.",
+    unorderedLabel: "bu kesimleriň tertibi tassyklanmady",
+    corridorLabel: "çak edilýän geçelge",
+    corridorOpenUpNote: "akym boýunça ýokary açyk",
+    corridorBoundLabel: "geçelgäniň serhedi",
+    corridorUpperBoundTooltip: "Çak edilýän geçelgäniň ýokarky serhedi.",
+    corridorLowerBoundTooltip: "Çak edilýän geçelgäniň aşaky serhedi.",
+    corridorOpenUpTooltip:
+      "Çak edilýän geçelge akym boýunça ýokary açyk: çeşmäni şu kesimden ýokarda gözlemeli.",
+    noValueLabel: "baha ýok",
+  },
+  map: {
+    placeholderChip: "demo-koordinatlar",
+    placeholderWarning:
+      "Kartadaky koordinatlar görkeziş häsiýetlidir: maglumatlarda kesimleriň tassyklanan koordinatlary ýok. Kesimleriň akym boýunça aşak tertibi resminamalar bilen tassyklandy, nokatlaryň ýerdäki ýerleşişi — ýok.",
+    unplacedChip: "ýerleşişi tassyklanmady",
+    corridorOpenUpstreamLabel: "bölek akym boýunça ýokary açyk",
+    unplacedNote:
+      "Bu kesimler we desgalar üçin akym zynjyryndaky ýer resminamalar bilen tassyklanmady, şonuň üçin olar kartada ýerleşdirilmedi.",
+    candidateLabel: "barlanmaly desga",
+    verdictCorridorPrefix: "Bölek:",
+    verdictOpenUpstreamPrefix: "kesimden ýokarda",
+    verdictBetweenPrefix: "kesimleriň arasynda",
+    verdictExcludedPrefix: "Faktlar bilen aradan aýryldy:",
+    verdictDossierLink: "Dosýe",
+    measurementsTrigger: "Ölçegler",
+    objectOutsideCorridor: "bölekden daşarda",
+    objectInsideCorridor: "bölegiň çäginde",
+    objectPlacementBasis: {
+      "obj-atyrau-su-arnasy":
+        "Ýerleşişi koordinatlardan däl, Gazgidrometiň býulleteniniň kesim atlaryndan çykaryldy («akdyryşdan 0,5 km ýokarda» we «akdyryşdan 0,5 km aşakda», 22-nji sah.): desganyň koordinatlary berilmedi.",
+    },
+  },
+  units: {
+    "mg/dm3": "mg/dm³",
+    "mg/kg": "mg/kg",
+    percent: "%",
+  },
+  matrix: {
+    water: "suw",
+    surface_water: "ýerüsti suw",
+    sediment: "düýp çökündileri",
+  },
+  regions: {
+    atyrau: "Atyrau welaýaty",
+    mangystau: "Mangystau welaýaty",
+  },
+  phenomena: {
+    oil_film: "nebit gatlagy",
+    color_change: "suwuň reňkiniň üýtgemegi",
+    odor: "ys",
+    fish_kill: "balyklaryň gyrylmagy",
+    wastewater: "akdyrylýan suwlar",
+    other: "başga hadysa",
+    verificationStatus: {
+      unverified: "Tassyklanmady",
+      corroborated: "Garaşsyz çeşmeler bilen tassyklandy",
+      official: "Resmi çeşme",
+      conflicting: "Çeşmeler biri-birine garşy gelýär",
+    },
+  },
+  dossier: {
+    kicker: "Derňew dosýesi",
+    linkLabel: "Dosýe",
+    openAction: "Dosýäni aç",
+    section: {
+      header: "Sözbaşy we döredilen senesi",
+      disclaimer: "Hukuk bellikleri",
+      conclusion: "Jemleýji beýannama",
+      evidenceLevel: "Subutnama derejesi",
+      signals: "Signallaryň hronologiýasy",
+      measurements: "Ölçegler",
+      supportedFacts: "Näme anyklanyldy",
+      contradictedHypotheses: "Wakany düşündirmeýän çaklamalar",
+      unknowns: "Näme näbelli",
+      candidateObjects: "Barlanmaly desgalar",
+      sources: "Çeşmeler",
+      provenance: "Düzgünleriň wersiýasy we giriş maglumatlarynyň heşi",
+    },
+    printAction: "Çap et / PDF sakla",
+    jsonAction: "JSON ýükle",
+    jsonError: "JSON taýýarlap bolmady.",
+    backAction: "Derňew ekranyna",
+    regionLabel: "Welaýat",
+    periodLabel: "Syn döwri",
+    updatedAtLabel: "Netije täzelendi",
+    generatedAtLabel: "Dosýe düzüldi",
+    legalTitle: "Hukuk bellikleri",
+    corridorLabel: "Bölek",
+    corridorOpenUpPrefix: "Kesimden akym boýunça ýokary açyk",
+    corridorBetweenPrefix: "Kesimleriň arasynda",
+    corridorNone: "Bölegiň serhetleri kesgitlenmedi.",
+    noMapNote:
+      "Kesimleriň koordinatlary tassyklanmady, şonuň üçin dosýede karta getirilmeýär: bölek serhet kesimleriniň atlary bilen berildi.",
+    noSignals: "Waka hiç bir köpçülikleýin signal baglanyşdyrylmady.",
+    noMeasurements: "Waka hiç bir ölçeg goşulmady.",
+    noObjects: "Bölegiň çäginde barlanmaly desgalar sanalmady.",
+    timelineObserved: "Syn edildi",
+    timelineReported: "Habar berildi",
+    measurementColumns: {
+      station: "Kesim",
+      indicator: "Görkeziji",
+      matrix: "Gurşaw",
+      sampledAt: "Nusga alnan sene",
+      value: "Baha",
+      source: "Çeşme",
+    },
+    measurementSharedPrefix: "Ähli setirlerde",
+    noDate: "sene görkezilmedi",
+    completeness: {
+      confirmed: "çeşmelerde göni agzalýar",
+      partial: "çeşmelerdäki maglumatlar doly däl",
+    },
+    objectBasisLabel: "Esaslar",
+    objectNoBasis: "Esas resminamalary goşulmady.",
+    sourcePagePrefix: "sah.",
+    shaLabel: "SHA-256",
+    shaNotComputed: "hasaplanmady",
+    rulesetLabel: "Düzgünleriň wersiýasy",
+    inputHashLabel: "Giriş maglumatlarynyň heşi",
+    rulesetMissing: "hasaplaýyş özeni tarapyndan berilmedi",
+    inputHashMissing: "hasaplaýyş özeni tarapyndan berilmedi",
+    provenanceNote:
+      "Düzgünleriň wersiýasy we giriş maglumatlarynyň heşi hasaplamany gaýtalap, " +
+      "şol bir netijäni almaga mümkinçilik berýär. Olary hasaplaýyş özeni hasaplaýar; " +
+      "özen bahalary bermeýänçä, dosýe bu barada göni habar berýär, ynandyryjy " +
+      "görünýän bahalary ornuna goýmaýar.",
+  },
+  replay: {
+    stepType: {
+      signal: "Köpçülikleýin signal",
+      corroboration: "Wakanyň tassyklanmagy",
+      measurement: "Barlaghana bahalary",
+      inference: "Düzgüniň ulanylmagy",
+      conclusion: "Netije",
+    },
+    playLabel: "Repleýi başlat",
+    resumeLabel: "Repleýi dowam etdir",
+    restartLabel: "Repleýi täzeden başlat",
+    pauseLabel: "Arakesme",
+    exitLabel: "Repleýi tamamla",
+    keyboardHint: "Repleý: boşluk — başlatmak we arakesme, ←/→ — ädimme-ädim",
+    unavailable: "Bu waka üçin repleý ssenarisi häzirlikçe elýeterli däl.",
+    pending: "Repleýiň indiki ädimleriniň birinde peýda bolar.",
+    stepAriaLabel: "«{{step}}» ädimine geç",
+    measurementSummaryOne: "1 kesim boýunça barlaghana bahasy ýüklendi",
+    measurementSummaryOther:
+      "{{count}} kesim boýunça barlaghana bahalary ýüklendi",
+  },
+  liveStatus: {
+    sourceHealth: {
+      healthy: {
+        label: "Jogap berýär",
+        shortLabel: "jogap berýär",
+        description: "Soňky soralyş ýalňyşsyz geçdi.",
+      },
+      never_run: {
+        label: "Hiç haçan soralmady",
+        shortLabel: "soralmady",
+        description:
+          "Çeşme konfigurasiýada beýan edildi, ýöne oňa entek ýüz tutulmady.",
+      },
+      degraded: {
+        label: "Arakesmeler bilen jogap berýär",
+        shortLabel: "arakesmeler bilen",
+        description:
+          "Soraglaryň bir bölegi ýalňyşlyk bilen tamamlanýar: çeşmäniň maglumatlary doly bolmazlygy mümkin.",
+      },
+      rate_limited: {
+        label: "Soraglaryň ýygylygynyň çäklendirmesi",
+        shortLabel: "sorag çäklendirmesi",
+        description:
+          "Çeşme çäklendirme boýunça hyzmatdan wagtlaýyn ýüz öwürýär: täzelenme yza süýşürildi.",
+      },
+      failed: {
+        label: "Elýeterli däl",
+        shortLabel: "elýeterli däl",
+        description: "Soňky soralyş ýalňyşlyk bilen tamamlandy.",
+      },
+    },
+    triggerLabel: "Çeşmeler",
+    title: "Maglumatlaryň ýagdaýy",
+    sourcesTitle: "Daşarky çeşmeler",
+    disclaimer:
+      "Elýeterli däl çeşme — bu maglumatlardaky boşlukdyr, wakanyň ýoklugy däl: " +
+      "ekran diňe eýýäm barlananyny görkezýär.",
+    lastSuccessLabel: "Soňky üstünlikli soralyş",
+    neverSucceeded: "üstünlikli soralyş bolmady",
+    cacheAvailable: "soňky jogabyň keşi bar",
+    cacheMissing: "keş ýok",
+    allHealthy: "hemmesi jogap berýär",
+    empty:
+      "Çeşmeleriň sanawy boş: soramaga zat ýok, bu-da maglumatlaryň ýagdaýydyr.",
+    loading: "ýagdaý anyklanylýar",
+    error: "çeşmeleriň ýagdaýy alynmady",
+  },
+  stubs: {
+    source: {
+      incidents: {
+        screenArea: "Wakalar lentasy, derýanyň shemasy, sag panel, dosýe",
+      },
+      replay: { screenArea: "Repleý ssenarisi" },
+      export: { screenArea: "JSON formatyndaky dosýe" },
+      "live-status": { screenArea: "Çeşmeleriň ýagdaýy (şu sanaw)" },
+    },
+    mapCoordsDisclaimerTitle: "Kartadaky koordinatlar",
+    mapCoordsDisclaimer:
+      "Görkeziş häsiýetlidir. Maglumatlarda kesimleriň tassyklanan koordinatlary " +
+      "ýok: kesimleriň akym boýunça aşak tertibi resminamalar bilen tassyklandy, " +
+      "nokatlaryň ýerdäki ýerleşişi — ýok. Zynjyrdaky ýeri tassyklanmadyk kesimler " +
+      "we desgalar karta asla çykarylmaýar.",
+    badgeLabel: "maket",
+    dataModeTitle: "Maglumat režimi",
+    dataModeSeedSummary:
+      "Maglumatlar API-den däl, ýygnamadaky barlanan faýldan okalýar: bekend entek birikdirilmedi.",
+    dataModeSeedExplanation:
+      "Sanlar welin oýlanyp tapylmady: bahalar, sahypalar we SHA-256 — " +
+      "Gazgidrometiň býulletenlerinden. Maket — bu eltip bermegiň usuly, " +
+      "maglumatyň çeşmesi däl.",
+    dataModeApiSummary:
+      "Maglumatlar API-den okalýar. Her endpointiň jogaby ulgamyň serhedinde şertnama shemasy bilen barlanýar.",
+    endpointReady: "endpoint göterildi",
+    endpointMissing: "endpoint entek ýok",
+  },
+} as const satisfies TranslationResource

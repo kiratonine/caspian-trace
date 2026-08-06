@@ -31,7 +31,9 @@ export function normalizeLanguageTag(tag: string | null): string | null {
  * на события не обрастают вторым параметром рядом с ?incident=.
  */
 export function resolveInitialLocale(env: LocaleEnvironment): Locale {
-  const fromUrl = normalizeLanguageTag(new URLSearchParams(env.search).get(LOCALE_SEARCH_PARAM))
+  const fromUrl = normalizeLanguageTag(
+    new URLSearchParams(env.search).get(LOCALE_SEARCH_PARAM)
+  )
   if (isLocale(fromUrl)) return fromUrl
 
   const fromStorage = normalizeLanguageTag(env.stored)

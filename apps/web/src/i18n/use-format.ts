@@ -21,8 +21,9 @@ export function useFormat() {
       formatMonth: (isoMonth: string) => format.formatMonth(isoMonth, locale),
       formatSampledDate: (m: Parameters<typeof format.formatSampledDate>[0]) =>
         format.formatSampledDate(m, locale),
-      formatObservedDate: (s: Parameters<typeof format.formatObservedDate>[0]) =>
-        format.formatObservedDate(s, locale),
+      formatObservedDate: (
+        s: Parameters<typeof format.formatObservedDate>[0]
+      ) => format.formatObservedDate(s, locale),
     }),
     [locale]
   )

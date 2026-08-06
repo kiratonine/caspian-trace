@@ -39,7 +39,7 @@ export function SignalFeed() {
       className="flex min-h-0 flex-col"
     >
       <header className="border-b px-4 py-3">
-        <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+        <h2 className="text-xs font-medium text-muted-foreground">
           Сигналы и расследования
         </h2>
       </header>
@@ -163,7 +163,7 @@ type SignalsBlockProps = {
 function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
   return (
     <div className="relative mt-1.5 flex flex-col gap-2 border-t pt-2.5">
-      <h3 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+      <h3 className="text-xs font-medium text-muted-foreground">
         {FEED_SIGNALS_HEADING}
       </h3>
       {detail ? (

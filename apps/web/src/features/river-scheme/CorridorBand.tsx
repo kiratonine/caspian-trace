@@ -30,12 +30,10 @@ const FADE_UP =
 export function CorridorBand({ openUp, children }: CorridorBandProps) {
   return (
     <div className="-mx-3">
-      <p className="flex items-center justify-end gap-1 px-3 pb-1 text-[10px] font-medium tracking-widest text-muted-foreground uppercase">
+      <p className="flex items-center justify-end gap-1 px-3 pb-1 text-[10px] font-medium text-muted-foreground">
         {openUp && <ArrowUp aria-hidden className="size-3 shrink-0" />}
         {SCHEME_CORRIDOR_LABEL}
-        {openUp && (
-          <span className="normal-case">· {SCHEME_CORRIDOR_OPEN_UP_NOTE}</span>
-        )}
+        {openUp && <span>· {SCHEME_CORRIDOR_OPEN_UP_NOTE}</span>}
       </p>
       <div className="relative px-3 pb-1">
         {/* Декоративные слои маскируются отдельно от содержимого: маска на

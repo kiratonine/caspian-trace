@@ -38,7 +38,7 @@ export function InsufficientData({
       </p>
       {reasons.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h4 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+          <h4 className="text-xs font-medium text-muted-foreground">
             {INSUFFICIENT_DATA_REASONS_LABEL}
           </h4>
           <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm">

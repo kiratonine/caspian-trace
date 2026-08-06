@@ -144,7 +144,7 @@ export function RiverSchemeContent({
 function SchemeHeader({ subtitle }: { subtitle: string | null }) {
   return (
     <header className="flex items-baseline justify-between gap-3 border-b px-4 py-3">
-      <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+      <h2 className="text-xs font-medium text-muted-foreground">
         Линейная схема реки
       </h2>
       {subtitle && (

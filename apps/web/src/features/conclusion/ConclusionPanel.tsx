@@ -60,7 +60,7 @@ export function ConclusionPanel() {
       {/* py-3 и -my-1 у ссылки: линия под шапкой обязана совпасть с соседними
           колонками, а кнопка выше строки заголовка её бы опустила. */}
       <header className="flex items-center justify-between gap-2 border-b px-4 py-3">
-        <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+        <h2 className="text-xs font-medium text-muted-foreground">
           Вывод и доказательства
         </h2>
         {/* Печатное досье — бумажная версия этой самой панели, поэтому кнопка

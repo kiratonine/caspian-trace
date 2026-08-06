@@ -43,6 +43,9 @@ export const MAP_INITIAL_ZOOM = 11.5
 
 export const MAP_FIT_PADDING = 96
 
+/** Потолок ширины подписи створа: за ним имя усекается, число — никогда. */
+export const MAP_LABEL_MAX_WIDTH = "13rem"
+
 /**
  * Кадры пунктира для анимации сноса вниз по течению. Смысл кадра — не
  * украшение: перенос идёт сверху вниз, поэтому источник ищут ВЫШЕ участка,
@@ -90,9 +93,10 @@ export const MAP_VERDICT_BETWEEN_PREFIX = "между створами"
 
 export const MAP_VERDICT_EXCLUDED_PREFIX = "Исключено фактами:"
 
-export const MAP_VERDICT_EVIDENCE_LINK = "Разбор и доказательства"
-
 export const MAP_VERDICT_DOSSIER_LINK = "Досье"
+
+/** Кнопка, открывающая список замеров поверх карты. */
+export const MAP_MEASUREMENTS_TRIGGER = "Измерения"
 
 export const MAP_OBJECT_OUTSIDE_CORRIDOR = "вне участка"
 

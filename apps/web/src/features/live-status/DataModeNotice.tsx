@@ -4,6 +4,8 @@ import {
   DATA_MODE_SEED_EXPLANATION,
   DATA_MODE_SEED_SUMMARY,
   DATA_MODE_TITLE,
+  MAP_COORDS_DISCLAIMER,
+  MAP_COORDS_DISCLAIMER_TITLE,
   STUB_DATA_SOURCES,
   STUB_ENDPOINT_MISSING,
   STUB_ENDPOINT_READY,
@@ -45,6 +47,15 @@ export function DataModeNotice({ mode }: DataModeNoticeProps) {
           </li>
         ))}
       </ul>
+      {/* Оговорка про карту стоит в этом же реестре, а не плашкой поверх неё
+          (решение владельца продукта 06.08.2026): «что на экране не из
+          проверенных данных» — один список, а не метки по всему интерфейсу. */}
+      <div className="border-t pt-1.5">
+        <p className="font-medium">{MAP_COORDS_DISCLAIMER_TITLE}</p>
+        <p className="text-pretty text-muted-foreground">
+          {MAP_COORDS_DISCLAIMER}
+        </p>
+      </div>
     </section>
   )
 }

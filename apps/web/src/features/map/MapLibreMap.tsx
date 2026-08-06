@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import type { Feature, LineString } from "geojson"
 import {
@@ -17,6 +17,7 @@ import {
   MAP_FLOW_FRAME_MS,
   MAP_INITIAL_CENTER,
   MAP_INITIAL_ZOOM,
+  MAP_LABEL_MAX_WIDTH,
   MAP_TILE_ATTRIBUTION,
   MAP_TILE_URL,
 } from "@/constants/map"
@@ -63,14 +64,7 @@ const EMPTY_LINE: Feature<LineString> = {
 
 type MarkerSlot = { key: string; element: HTMLElement }
 
-type MapLibreMapProps = {
-  model: MapModel
-  /** Метки-оговорки и заключение, лежащие поверх карты. */
-  notices?: ReactNode
-  overlay?: ReactNode
-}
-
-export function MapLibreMap({ model, notices, overlay }: MapLibreMapProps) {
+export function MapLibreMap({ model }: { model: MapModel }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const markersRef = useRef<Marker[]>([])
   // Карта живёт в state, а не в ref: в StrictMode эффект монтируется дважды,
@@ -175,6 +169,10 @@ export function MapLibreMap({ model, notices, overlay }: MapLibreMapProps) {
 
     const stations = model.nodes.map((node) => {
       const element = document.createElement("div")
+      // Ширину подписи ограничиваем здесь: маркер MapLibre позиционируется
+      // абсолютно, и без потолка длинное имя створа уезжает за край карты,
+      // унося с собой значение.
+      element.style.maxWidth = MAP_LABEL_MAX_WIDTH
       markersRef.current.push(
         new Marker({ element, anchor: "left" })
           .setLngLat(node.coords)
@@ -227,12 +225,6 @@ export function MapLibreMap({ model, notices, overlay }: MapLibreMapProps) {
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border">
       <div ref={containerRef} className="size-full" />
-      {notices}
-      {overlay && (
-        <div className="pointer-events-none absolute right-3 bottom-8 left-3 z-10 flex justify-end">
-          {overlay}
-        </div>
-      )}
       {stationSlots.map((slot) => {
         const node = model.nodes.find((n) => n.station.id === slot.key)
         return node

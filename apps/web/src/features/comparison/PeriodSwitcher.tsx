@@ -3,6 +3,7 @@ import { EvidenceLevelBadge } from "@/components/common"
 import { COMPARISON_SWITCHER_LABEL } from "@/constants/comparison"
 import { formatMonth } from "@/lib/format"
 import { cn } from "@/lib/utils"
+import { hasComparablePeriods } from "./comparison-model"
 
 type PeriodSwitcherProps = {
   periods: IncidentSummary[]
@@ -20,13 +21,10 @@ export function PeriodSwitcher({
   selectedIncidentId,
   onSelect,
 }: PeriodSwitcherProps) {
-  if (periods.length < 2) return null
+  if (!hasComparablePeriods(periods)) return null
 
   return (
-    <nav aria-label={COMPARISON_SWITCHER_LABEL} className="flex flex-col gap-1">
-      <p className="text-xs text-muted-foreground">
-        {COMPARISON_SWITCHER_LABEL}
-      </p>
+    <nav aria-label={COMPARISON_SWITCHER_LABEL}>
       <ul className="flex flex-wrap gap-2">
         {periods.map((period) => {
           const selected = period.id === selectedIncidentId

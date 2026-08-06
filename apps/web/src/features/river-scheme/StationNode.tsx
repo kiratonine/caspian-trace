@@ -23,6 +23,8 @@ type StationNodeProps = {
   corridorBound?: "upstream" | "downstream" | null
   /** Интервал открыт вверх по течению (upstreamStationId = null). */
   corridorOpenUp?: boolean
+  /** false — единицу печатает подпись столбца, а не каждое значение. */
+  showUnit?: boolean
 }
 
 function boundTooltip(
@@ -39,6 +41,7 @@ export function StationNode({
   entry,
   corridorBound = null,
   corridorOpenUp = false,
+  showUnit = true,
 }: StationNodeProps) {
   const { station, measurement, sourceDocument, valueShare } = entry
 
@@ -90,6 +93,7 @@ export function StationNode({
         <MeasurementValue
           measurement={measurement}
           sourceDocument={sourceDocument}
+          showUnit={showUnit}
           className="text-sm"
         />
       ) : (

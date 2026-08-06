@@ -6,6 +6,7 @@ type OrderedStationsProps = {
   /** Уже отсортированы по riverOrder: первый — выше всех по течению. */
   entries: StationSchemeEntry[]
   corridor: SchemeModel["corridor"]
+  showUnit?: boolean
 }
 
 /**
@@ -14,7 +15,11 @@ type OrderedStationsProps = {
  * подтверждённый порядок читается из подзаголовка схемы и из оговорки у группы
  * без ранжирования, а лишняя графика на проекторе только шумела.
  */
-export function OrderedStations({ entries, corridor }: OrderedStationsProps) {
+export function OrderedStations({
+  entries,
+  corridor,
+  showUnit = true,
+}: OrderedStationsProps) {
   const downstreamIndex = corridor
     ? entries.findIndex((e) => e.station.id === corridor.downstreamStationId)
     : -1
@@ -31,7 +36,7 @@ export function OrderedStations({ entries, corridor }: OrderedStationsProps) {
     upstreamIndex <= downstreamIndex
 
   const row = (entry: StationSchemeEntry) => (
-    <StationNode key={entry.station.id} entry={entry} />
+    <StationNode key={entry.station.id} entry={entry} showUnit={showUnit} />
   )
 
   return (

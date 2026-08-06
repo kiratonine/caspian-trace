@@ -40,3 +40,14 @@ export function areComparable(
     a.indicator === b.indicator
   )
 }
+
+/**
+ * Переключатель периодов имеет смысл только при паре и более. Предикат
+ * общий: по нему `PeriodSwitcher` решает, показываться ли, а схема — печатать
+ * ли дату отбора (когда кнопок нет, период иначе исчез бы с экрана).
+ */
+export function hasComparablePeriods(
+  periods: readonly IncidentSummary[]
+): boolean {
+  return periods.length >= 2
+}

@@ -7,6 +7,7 @@ import type { SchemeModel, StationSchemeEntry } from "./scheme-model"
 type UnorderedStationsProps = {
   entries: StationSchemeEntry[]
   corridor: SchemeModel["corridor"]
+  showUnit?: boolean
 }
 
 /**
@@ -17,6 +18,7 @@ type UnorderedStationsProps = {
 export function UnorderedStations({
   entries,
   corridor,
+  showUnit = true,
 }: UnorderedStationsProps) {
   const openUp = corridor?.upstreamStationId == null
 
@@ -43,6 +45,7 @@ export function UnorderedStations({
               entry={entry}
               corridorBound={bound}
               corridorOpenUp={openUp}
+              showUnit={showUnit}
             />
           )
         })}

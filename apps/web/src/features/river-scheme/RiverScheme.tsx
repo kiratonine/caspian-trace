@@ -12,9 +12,13 @@ import {
   SCHEME_UPSTREAM_HINT,
 } from "@/constants/scheme"
 import { DATA_LOAD_ERROR } from "@/constants/strings"
+import { unitLabel } from "@/constants/units"
 import { InsufficientDataScreen } from "@/features/aktau/InsufficientDataScreen"
 import { PeriodSwitcher } from "@/features/comparison/PeriodSwitcher"
-import { findComparablePeriods } from "@/features/comparison/comparison-model"
+import {
+  findComparablePeriods,
+  hasComparablePeriods,
+} from "@/features/comparison/comparison-model"
 import {
   projectDetailForReplay,
   useReplayFrame,
@@ -54,6 +58,7 @@ export function RiverScheme() {
       {shownDetail ? (
         <RiverSchemeContent
           detail={shownDetail}
+          hasPeriodSwitcher={hasComparablePeriods(periods)}
           periodSwitcher={
             <PeriodSwitcher
               periods={periods}
@@ -82,12 +87,19 @@ type RiverSchemeContentProps = {
   detail: IncidentDetail
   /** Переключатель периодов участка; у события без пары его нет. */
   periodSwitcher?: ReactNode
+  /**
+   * Переключатель периодов виден — тогда период не дублируется строкой
+   * контекста. Без пары периодов дата отбора остаётся здесь: иначе она
+   * не попала бы на экран вовсе.
+   */
+  hasPeriodSwitcher?: boolean
 }
 
 /** Презентационная часть схемы — контейнер и дев-превью отдают ей готовые данные. */
 export function RiverSchemeContent({
   detail,
   periodSwitcher = null,
+  hasPeriodSwitcher = false,
 }: RiverSchemeContentProps) {
   const model = useMemo(() => buildSchemeModel(detail), [detail])
   const hasUnordered = model.unordered.length > 0
@@ -110,8 +122,13 @@ export function RiverSchemeContent({
       : SCHEME_UNCONFIRMED_ORDER_HINT
   const subtitle = [waterBody, orderHint].filter(Boolean).join(" · ") || null
   const firstMeasurement = detail.measurements[0] ?? null
-  // Дата отбора известна не всегда — тогда в подзаголовке остаётся показатель.
-  const sampledDate = firstMeasurement && formatSampledDate(firstMeasurement)
+  // Период уже стоит на активной кнопке переключателя — второй раз его здесь
+  // не печатаем. Если пары периодов нет и кнопок тоже, дата остаётся тут.
+  const sampledDate =
+    hasPeriodSwitcher || !firstMeasurement
+      ? null
+      : formatSampledDate(firstMeasurement)
+  const unit = model.commonUnit === null ? null : unitLabel(model.commonUnit)
 
   return (
     <>
@@ -121,18 +138,21 @@ export function RiverSchemeContent({
           {periodSwitcher}
           <p className="text-xs text-muted-foreground">
             {detail.investigation.indicator}
+            {unit && `, ${unit}`}
             {sampledDate && ` · ${sampledDate}`}
           </p>
           {model.ordered.length > 0 && (
             <OrderedStations
               entries={model.ordered}
               corridor={model.corridor}
+              showUnit={model.commonUnit === null}
             />
           )}
           {hasUnordered && (
             <UnorderedStations
               entries={model.unordered}
               corridor={model.corridor}
+              showUnit={model.commonUnit === null}
             />
           )}
         </div>

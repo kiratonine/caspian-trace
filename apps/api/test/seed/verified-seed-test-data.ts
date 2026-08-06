@@ -47,6 +47,57 @@ export function completeHumanReview(directory: string): void {
   setHumanReview(directory, ['reviewer-alpha', 'reviewer-beta'])
 }
 
+export function setPendingHumanReview(
+  directory: string,
+): void {
+  const manifest = readFixture<{
+    reviewPolicy: {
+      requiredHumanReviewers: number
+      completedHumanReviewers: number
+      status: string
+    }
+    fixtures: Array<{
+      path: string
+    }>
+  }>(directory, 'manifest.json')
+
+  for (const entry of manifest.fixtures) {
+    mutateFixture<{
+      measurements?: Array<{
+        checkedBy: string[]
+      }>
+      relations?: Array<{
+        checkedBy: string[]
+      }>
+    }>(
+      directory,
+      entry.path,
+      (fixture) => {
+        for (
+          const item
+          of fixture.measurements ??
+          fixture.relations ??
+          []
+        ) {
+          item.checkedBy = [
+            'codex-automated-source-verification',
+          ]
+        }
+      },
+    )
+  }
+
+  manifest.reviewPolicy.requiredHumanReviewers = 2
+  manifest.reviewPolicy.completedHumanReviewers = 0
+  manifest.reviewPolicy.status = 'pending'
+
+  writeFixture(
+    directory,
+    'manifest.json',
+    manifest,
+  )
+}
+
 export function setHumanReview(
   directory: string,
   reviewers: string[],

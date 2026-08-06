@@ -213,16 +213,58 @@ async function persistSourceDocument(
   assertEqual(existing.originalUrl, source.url, `${source.id} original URL`)
   assertEqual(existing.canonicalUrl, source.url, `${source.id} canonical URL`)
   assertEqual(existing.publisher, source.publisher, `${source.id} publisher`)
-  assertEqual(existing.sha256, source.sha256, `${source.id} SHA-256`)
-  assertEqual(existing.cachePath, source.cachePath, `${source.id} cache path`)
+  assertExpectedNullable(
+    existing.sha256,
+    source.sha256,
+    `${source.id} SHA-256`,
+  )
+
+  assertExpectedNullable(
+    existing.cachePath,
+    source.cachePath,
+    `${source.id} cache path`,
+  )
+
+  assertExpectedDate(
+    existing.publishedAt,
+    source.publishedAt,
+    `${source.id} publishedAt`,
+  )
+
+  assertExpectedDate(
+    existing.fetchedAt,
+    source.fetchedAt,
+    `${source.id} fetchedAt`,
+  )
   assertEqual(
     normalizeMediaType(existing.mediaType),
     source.contentType,
     `${source.id} media type`,
   )
-  assertEqual(existing.status, status, `${source.id} status`)
-  assertDate(existing.publishedAt, source.publishedAt, `${source.id} publishedAt`)
-  assertDate(existing.fetchedAt, source.fetchedAt, `${source.id} fetchedAt`)
+
+  function assertExpectedNullable<T>(
+    actual: T | null,
+    expected: T | null,
+    label: string,
+  ): void {
+    if (expected === null) {
+      return
+    }
+
+    assertEqual(actual, expected, label)
+  }
+
+  function assertExpectedDate(
+    actual: Date | null,
+    expected: string | null,
+    label: string,
+  ): void {
+    if (expected === null) {
+      return
+    }
+
+    assertDate(actual, expected, label)
+  }
 
   await transaction.sourceDocument.update({
     where: { id: source.id },

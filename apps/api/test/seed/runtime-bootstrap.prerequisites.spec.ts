@@ -15,6 +15,7 @@ import {
 import {
     buildRuntimeBootstrapPlan,
     type RuntimeBootstrapPlan,
+    type RuntimeBootstrapRelationPlan,
 } from '../../prisma/seed/runtime-bootstrap.plan'
 import {
     verifyRuntimeBootstrapPrerequisites,
@@ -40,7 +41,8 @@ interface FakePrerequisiteRows {
         id: string
         kind: typeof StationRelationKind.UPSTREAM_OF
         verificationStatus:
-        typeof VerificationStatus.OFFICIAL
+        | typeof VerificationStatus.OFFICIAL
+        | typeof VerificationStatus.CORROBORATED
     }>
     relationEvidence: Array<{
         id: string
@@ -48,7 +50,8 @@ interface FakePrerequisiteRows {
         sourceDocumentId: string
         sourcePage: number | null
         verificationStatus:
-        typeof VerificationStatus.OFFICIAL
+        | typeof VerificationStatus.OFFICIAL
+        | typeof VerificationStatus.CORROBORATED
     }>
     measurements: Array<{
         id: string
@@ -85,7 +88,7 @@ describe(
             )
         })
 
-        it('accepts complete official verified data', async () => {
+        it('accepts exact verified-seed trust statuses', async () => {
             const summary =
                 await verifyRuntimeBootstrapPrerequisites(
                     fakeTransaction(
@@ -144,6 +147,36 @@ describe(
             tampered.sourceDocuments[0]!
                 .originalUrl =
                 'https://example.invalid/conflict.pdf'
+
+            await expectRuntimeBootstrapError(
+                () =>
+                    verifyRuntimeBootstrapPrerequisites(
+                        fakeTransaction(tampered),
+                        plan,
+                    ),
+                'RUNTIME_BOOTSTRAP_PREREQUISITE_CONFLICT',
+            )
+        })
+
+        it('rejects a corroborated sequence edge promoted to official', async () => {
+            const tampered =
+                structuredClone(rows)
+
+            const sequence =
+                tampered.stationRelations.find(
+                    ({ verificationStatus }) =>
+                        verificationStatus ===
+                        VerificationStatus.CORROBORATED,
+                )
+
+            if (sequence === undefined) {
+                throw new Error(
+                    'Expected a corroborated sequence relation',
+                )
+            }
+
+            sequence.verificationStatus =
+                VerificationStatus.OFFICIAL
 
             await expectRuntimeBootstrapError(
                 () =>
@@ -228,7 +261,12 @@ function buildFakeRows(
                         relation.provenance
                             .sourcePage,
                     verificationStatus:
-                        VerificationStatus.OFFICIAL,
+                        expectedRelationStatus(
+                            requiredRelationPlan(
+                                plan,
+                                stationRelationId,
+                            ),
+                        ),
                 },
             )
         }
@@ -244,13 +282,18 @@ function buildFakeRows(
         stationRelations:
             plan.requiredVerifiedData
                 .stationRelationIds
-                .map((id) => ({
-                    id,
-                    kind:
-                        StationRelationKind.UPSTREAM_OF,
-                    verificationStatus:
-                        VerificationStatus.OFFICIAL,
-                })),
+                .map((id) => {
+                    const relation =
+                        requiredRelationPlan(plan, id)
+
+                    return {
+                        id,
+                        kind:
+                            StationRelationKind.UPSTREAM_OF,
+                        verificationStatus:
+                            expectedRelationStatus(relation),
+                    }
+                }),
         relationEvidence: [
             ...evidenceById.values(),
         ].sort(
@@ -269,6 +312,35 @@ function buildFakeRows(
                 })),
     }
 }
+
+function requiredRelationPlan(
+    plan: RuntimeBootstrapPlan,
+    relationId: string,
+): RuntimeBootstrapRelationPlan {
+    const relation = plan.relations.find(
+        ({ id }) => id === relationId,
+    )
+
+    if (relation === undefined) {
+        throw new Error(
+            `Missing relation plan: ${relationId}`,
+        )
+    }
+
+    return relation
+}
+
+function expectedRelationStatus(
+    relation: RuntimeBootstrapRelationPlan,
+):
+    | typeof VerificationStatus.OFFICIAL
+    | typeof VerificationStatus.CORROBORATED {
+    return relation.comparisonPair
+        ? VerificationStatus.OFFICIAL
+        : VerificationStatus.CORROBORATED
+}
+
+
 
 function fakeTransaction(
     rows: FakePrerequisiteRows,

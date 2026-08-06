@@ -51,7 +51,9 @@
     "prisma:format": "prisma format",
     "prisma:validate": "prisma validate",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:migrate:status": "prisma migrate status"
+    "prisma:migrate:status": "prisma migrate status",
+    "preprisma:bootstrap:investigations": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate && node -e \"require('node:fs').rmSync('dist-bootstrap',{recursive:true,force:true})\" && tsc -p tsconfig.bootstrap.json",
+    "prisma:bootstrap:investigations": "node dist-bootstrap/prisma/bootstrap-investigations.js"
   },
   "jest": {
     "moduleFileExtensions": [

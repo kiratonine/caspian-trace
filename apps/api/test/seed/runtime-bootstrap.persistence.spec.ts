@@ -35,10 +35,14 @@ describe('persistRuntimeBootstrapPlan', () => {
                 sourceType: 'official_report',
                 mediaType: 'application/pdf',
                 publishedAt: null,
-                fetchedAt: null,
                 sha256: 'a'.repeat(64),
-                cachePath: null,
-                status: SourceDocumentStatus.UNVERIFIED,
+                fetchedAt:
+                  new Date(
+                    '2026-08-06T12:00:00.000Z',
+                  ),
+                cachePath:
+                  'sources/doc-official/snapshot.pdf',
+                status: SourceDocumentStatus.VERIFIED,
                 extractionMetadata: {
                   provenance: 'verified_manifest',
                 },
@@ -336,6 +340,39 @@ function plan(): RuntimeBootstrapPlan {
               {
                 candidateObjectId: 'candidate-test',
                 evidenceDocumentIds: ['doc-official'],
+              },
+            ],
+            sourceDocumentFacts: [
+              {
+                id: 'doc-official',
+                title: 'Runtime official title',
+                publisher: 'Official Publisher',
+                url:
+                  'https://example.kz/report.pdf',
+                official: true,
+                verified: true,
+                publishedAt: null,
+                fetchedAt: null,
+                contentType: 'pdf',
+                sha256: 'a'.repeat(64),
+                cachePath: null,
+                status: 'unverified',
+              },
+              {
+                id: 'doc-media',
+                title: 'Media title',
+                publisher: 'Media Publisher',
+                url:
+                  'https://example.kz/article',
+                official: false,
+                verified: true,
+                publishedAt:
+                  '2025-09-09T10:16:00.000Z',
+                fetchedAt: null,
+                contentType: 'html',
+                sha256: null,
+                cachePath: null,
+                status: 'unverified',
               },
             ],
             fixtureInputHash: 'b'.repeat(64),

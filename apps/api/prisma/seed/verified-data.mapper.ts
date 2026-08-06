@@ -8,7 +8,7 @@ import {
 } from '../../src/generated/prisma/enums'
 import { Prisma } from '../../src/generated/prisma/client'
 
-import { relationCanBeVerified } from './verified-data.policy'
+import { relationVerificationStatus } from './verified-data.policy'
 import { schemaError } from './verified-seed.errors'
 import type { LoadedVerifiedData } from './verified-seed.types'
 
@@ -80,8 +80,8 @@ export interface MappedMeasurement {
   sourceExcerpt: string
   extractionMode: typeof ExtractionMode.VERIFIED_SEED
   verificationStatus:
-    | typeof VerificationStatus.OFFICIAL
-    | typeof VerificationStatus.UNVERIFIED
+  | typeof VerificationStatus.OFFICIAL
+  | typeof VerificationStatus.UNVERIFIED
   metadata: Prisma.InputJsonObject
 }
 
@@ -92,8 +92,9 @@ export interface MappedRelation {
   kind: typeof StationRelationKind.UPSTREAM_OF
   sourceDocumentId: null
   verificationStatus:
-    | typeof VerificationStatus.OFFICIAL
-    | typeof VerificationStatus.UNVERIFIED
+  | typeof VerificationStatus.OFFICIAL
+  | typeof VerificationStatus.CORROBORATED
+  | typeof VerificationStatus.UNVERIFIED
   notes: null
 }
 
@@ -107,8 +108,9 @@ export interface MappedRelationEvidence {
   checkedBy: string[]
   checkedAt: string
   verificationStatus:
-    | typeof VerificationStatus.OFFICIAL
-    | typeof VerificationStatus.UNVERIFIED
+  | typeof VerificationStatus.OFFICIAL
+  | typeof VerificationStatus.CORROBORATED
+  | typeof VerificationStatus.UNVERIFIED
 }
 
 export interface MappedVerifiedData {
@@ -234,29 +236,35 @@ export function mapVerifiedData(
         sourceExcerpt: item.sourceExcerpt,
         checkedBy: item.checkedBy,
         checkedAt: item.checkedAt,
-        verificationStatus: relationCanBeVerified(
+        verificationStatus: relationVerificationStatus(
           item,
           data.humanReview,
           stationLabels,
-        )
-          ? VerificationStatus.OFFICIAL
-          : VerificationStatus.UNVERIFIED,
+        ),
       }),
     )
     relationEvidence.push(...mappedEvidence)
-    const verified = mappedEvidence.some(
-      ({ verificationStatus }) =>
-        verificationStatus === VerificationStatus.OFFICIAL,
-    )
+    const verificationStatus =
+      mappedEvidence.some(
+        (item) =>
+          item.verificationStatus ===
+          VerificationStatus.OFFICIAL,
+      )
+        ? VerificationStatus.OFFICIAL
+        : mappedEvidence.some(
+          (item) =>
+            item.verificationStatus ===
+            VerificationStatus.CORROBORATED,
+        )
+          ? VerificationStatus.CORROBORATED
+          : VerificationStatus.UNVERIFIED
     relations.push({
       id: stationRelationId,
       fromStationId: primary.upstreamStationId,
       toStationId: primary.downstreamStationId,
       kind: StationRelationKind.UPSTREAM_OF,
       sourceDocumentId: null,
-      verificationStatus: verified
-        ? VerificationStatus.OFFICIAL
-        : VerificationStatus.UNVERIFIED,
+      verificationStatus,
       notes: null,
     })
   }

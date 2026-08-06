@@ -108,6 +108,7 @@ export async function verifyRuntimeBootstrapPrerequisites(
 
     verifyStationRelations(
         stationRelations,
+        plan.relations,
     )
 
     const relationEvidence =
@@ -262,8 +263,25 @@ function verifyStationRelations(
         kind: string
         verificationStatus: string
     }[],
+    relationPlans:
+        readonly RuntimeBootstrapRelationPlan[],
 ): void {
+    const expectedById = new Map(
+        relationPlans.map((relation) => [
+            relation.id,
+            relation,
+        ]),
+    )
+
     for (const row of rows) {
+        const expected = expectedById.get(row.id)
+
+        if (expected === undefined) {
+            throw conflict(
+                `Missing relation plan for ${row.id}`,
+            )
+        }
+
         assertEqual(
             row.kind,
             StationRelationKind.UPSTREAM_OF,
@@ -272,10 +290,22 @@ function verifyStationRelations(
 
         assertEqual(
             row.verificationStatus,
-            VerificationStatus.OFFICIAL,
+            expectedRelationVerificationStatus(
+                expected,
+            ),
             `station relation ${row.id} verification status`,
         )
     }
+}
+
+function expectedRelationVerificationStatus(
+    relation: RuntimeBootstrapRelationPlan,
+):
+    | typeof VerificationStatus.OFFICIAL
+    | typeof VerificationStatus.CORROBORATED {
+    return relation.comparisonPair
+        ? VerificationStatus.OFFICIAL
+        : VerificationStatus.CORROBORATED
 }
 
 function verifyRelationEvidence(
@@ -334,7 +364,9 @@ function verifyRelationEvidence(
 
         assertEqual(
             row.verificationStatus,
-            VerificationStatus.OFFICIAL,
+            expectedRelationVerificationStatus(
+                expectedRelation,
+            ),
             `relation evidence ${row.id} verification status`,
         )
 

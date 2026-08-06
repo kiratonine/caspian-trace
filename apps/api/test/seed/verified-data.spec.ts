@@ -33,6 +33,7 @@ import {
   mutateFixture,
   removeVerifiedData,
   reverseManifestFixtures,
+  setPendingHumanReview,
   setHumanReview,
 } from './verified-seed-test-data'
 
@@ -442,9 +443,14 @@ describe('human review gate', () => {
     expect(isHumanReviewer('real-reviewer')).toBe(true)
   })
 
-  it('recalculates the current handoff as 0/2 pending', async () => {
+  it('recalculates the current handoff as 2/2 complete', async () => {
     const data = await loadVerifiedData()
-    expect(data.humanReview).toEqual({ required: 2, completed: 0, complete: false })
+
+    expect(data.humanReview).toEqual({
+      required: 2,
+      completed: 2,
+      complete: true,
+    })
   })
 
   it.each([
@@ -461,7 +467,7 @@ describe('human review gate', () => {
   it('rejects a manifest that lies about the completed count', async () => {
     const directory = fixtureDirectory()
     mutateFixture<Manifest>(directory, 'manifest.json', (manifest) => {
-      manifest.reviewPolicy.completedHumanReviewers = 2
+      manifest.reviewPolicy.completedHumanReviewers = 1
     })
     await expect(loadVerifiedData(directory)).rejects.toMatchObject({
       code: 'VERIFIED_DATA_HUMAN_REVIEW_INVALID',
@@ -470,38 +476,85 @@ describe('human review gate', () => {
 
   it('rejects complete status without enough reviewers', async () => {
     const directory = fixtureDirectory()
-    mutateFixture<Manifest>(directory, 'manifest.json', (manifest) => {
-      manifest.reviewPolicy.status = 'complete'
-    })
-    await expect(loadVerifiedData(directory)).rejects.toMatchObject({
-      code: 'VERIFIED_DATA_HUMAN_REVIEW_INVALID',
+
+    setPendingHumanReview(directory)
+
+    mutateFixture<Manifest>(
+      directory,
+      'manifest.json',
+      (manifest) => {
+        manifest.reviewPolicy.status = 'complete'
+      },
+    )
+
+    await expect(
+      loadVerifiedData(directory),
+    ).rejects.toMatchObject({
+      code:
+        'VERIFIED_DATA_HUMAN_REVIEW_INVALID',
     })
   })
 
   it('strict seed rejects pending review before transaction access', async () => {
-    class NoTransactionClient implements VerifiedSeedClient {
+    class NoTransactionClient
+      implements VerifiedSeedClient {
       called = false
 
       $transaction<T>(
-        operation: (transaction: Prisma.TransactionClient) => Promise<T>,
-        options: { maxWait: number; timeout: number },
+        operation: (
+          transaction: Prisma.TransactionClient,
+        ) => Promise<T>,
+        options: {
+          maxWait: number
+          timeout: number
+        },
       ): Promise<T> {
         void operation
         void options
+
         this.called = true
-        return Promise.reject(new Error('Database must not be reached'))
+
+        return Promise.reject(
+          new Error(
+            'Database must not be reached',
+          ),
+        )
       }
     }
-    const client = new NoTransactionClient()
-    await expect(seedVerifiedData(client, await loadVerifiedData())).rejects.toMatchObject({
-      code: 'VERIFIED_DATA_HUMAN_REVIEW_INCOMPLETE',
+
+    const directory = fixtureDirectory()
+
+    setPendingHumanReview(directory)
+
+    const client =
+      new NoTransactionClient()
+
+    const data =
+      await loadVerifiedData(directory)
+
+    await expect(
+      seedVerifiedData(client, data),
+    ).rejects.toMatchObject({
+      code:
+        'VERIFIED_DATA_HUMAN_REVIEW_INCOMPLETE',
     })
+
     expect(client.called).toBe(false)
   })
 
   it('validate-only loader accepts structurally valid pending handoff', async () => {
-    await expect(loadVerifiedData()).resolves.toMatchObject({
-      humanReview: { complete: false },
+    const directory = fixtureDirectory()
+
+    setPendingHumanReview(directory)
+
+    await expect(
+      loadVerifiedData(directory),
+    ).resolves.toMatchObject({
+      humanReview: {
+        required: 2,
+        completed: 0,
+        complete: false,
+      },
     })
   })
 
@@ -610,36 +663,106 @@ describe('verified data mapping and relation trust policy', () => {
   })
 
   it('does not verify any pending measurement or relation', async () => {
-    const mapped = mapVerifiedData(await loadVerifiedData())
-    expect(mapped.measurements.every(({ verificationStatus }) => verificationStatus === VerificationStatus.UNVERIFIED)).toBe(true)
-    expect(mapped.relations.every(({ verificationStatus }) => verificationStatus === VerificationStatus.UNVERIFIED)).toBe(true)
-  })
-
-  it('verifies paired labels only after complete review and keeps sequence edges pending', async () => {
     const directory = fixtureDirectory()
-    completeHumanReview(directory)
-    const mapped = mapVerifiedData(await loadVerifiedData(directory))
-    const statuses = mapped.relationEvidence.map(({ id, verificationStatus }) => ({ id, verificationStatus }))
-    expect(statuses).toContainEqual({
-      id: 'rel-sep-asa-pair',
-      verificationStatus: VerificationStatus.OFFICIAL,
-    })
-    expect(statuses).toContainEqual({
-      id: 'rel-sep-city-to-asa-above',
-      verificationStatus: VerificationStatus.UNVERIFIED,
-    })
-    expect(mapped.relations).toHaveLength(3)
+
+    setPendingHumanReview(directory)
+
+    const mapped =
+      mapVerifiedData(
+        await loadVerifiedData(directory),
+      )
+
     expect(
-      mapped.relations.every(
-        ({ sourceDocumentId, notes }) =>
-          sourceDocumentId === null && notes === null,
+      mapped.measurements.every(
+        ({ verificationStatus }) =>
+          verificationStatus ===
+          VerificationStatus.UNVERIFIED,
       ),
     ).toBe(true)
+
+    expect(
+      mapped.relations.every(
+        ({ verificationStatus }) =>
+          verificationStatus ===
+          VerificationStatus.UNVERIFIED,
+      ),
+    ).toBe(true)
+
+    expect(
+      mapped.relationEvidence.every(
+        ({ verificationStatus }) =>
+          verificationStatus ===
+          VerificationStatus.UNVERIFIED,
+      ),
+    ).toBe(true)
+  })
+
+  it('marks paired labels official and reviewed sequence edges corroborated', async () => {
+    const directory = fixtureDirectory()
+    completeHumanReview(directory)
+
+    const mapped = mapVerifiedData(
+      await loadVerifiedData(directory),
+    )
+
+    const statuses =
+      mapped.relationEvidence.map(
+        ({ id, verificationStatus }) => ({
+          id,
+          verificationStatus,
+        }),
+      )
+
+    expect(statuses).toContainEqual({
+      id: 'rel-sep-asa-pair',
+      verificationStatus:
+        VerificationStatus.OFFICIAL,
+    })
+
+    expect(statuses).toContainEqual({
+      id: 'rel-sep-city-to-asa-above',
+      verificationStatus:
+        VerificationStatus.CORROBORATED,
+    })
+
+    expect(statuses).toContainEqual({
+      id: 'rel-sep-asa-below-to-city-below',
+      verificationStatus:
+        VerificationStatus.CORROBORATED,
+    })
+
+    expect(mapped.relations).toHaveLength(3)
     expect(mapped.relationEvidence).toHaveLength(4)
+
     expect(
       mapped.relationEvidence.filter(
         ({ verificationStatus }) =>
-          verificationStatus === VerificationStatus.OFFICIAL,
+          verificationStatus ===
+          VerificationStatus.OFFICIAL,
+      ),
+    ).toHaveLength(2)
+
+    expect(
+      mapped.relationEvidence.filter(
+        ({ verificationStatus }) =>
+          verificationStatus ===
+          VerificationStatus.CORROBORATED,
+      ),
+    ).toHaveLength(2)
+
+    expect(
+      mapped.relations.filter(
+        ({ verificationStatus }) =>
+          verificationStatus ===
+          VerificationStatus.OFFICIAL,
+      ),
+    ).toHaveLength(1)
+
+    expect(
+      mapped.relations.filter(
+        ({ verificationStatus }) =>
+          verificationStatus ===
+          VerificationStatus.CORROBORATED,
       ),
     ).toHaveLength(2)
   })

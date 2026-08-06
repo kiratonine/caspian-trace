@@ -59,10 +59,13 @@ export async function seedVerifiedData(
         if (outcome.unchanged) relations.evidenceUnchanged += 1
         if (outcome.promoted) relations.evidencePromoted += 1
         if (outcome.reviewUpdated) relations.evidenceReviewUpdated += 1
-        if (evidence.verificationStatus === VerificationStatus.OFFICIAL) {
-          relations.verifiedEvidence += 1
-        } else {
+        if (
+          evidence.verificationStatus ===
+          VerificationStatus.UNVERIFIED
+        ) {
           relations.pendingEvidence += 1
+        } else {
+          relations.verifiedEvidence += 1
         }
       }
       for (const measurement of mapped.measurements) {
@@ -228,14 +231,19 @@ async function seedRelation(
     return
   }
   if (
-    expected.verificationStatus === VerificationStatus.OFFICIAL &&
-    (existing.verificationStatus === VerificationStatus.UNVERIFIED ||
-      existing.verificationStatus === VerificationStatus.CORROBORATED)
+    canPromoteVerificationStatus(
+      existing.verificationStatus,
+      expected.verificationStatus,
+    )
   ) {
     await transaction.stationRelation.update({
       where: { id: expected.id },
-      data: { verificationStatus: VerificationStatus.OFFICIAL },
+      data: {
+        verificationStatus:
+          expected.verificationStatus,
+      },
     })
+
     summary.promoted += 1
     return
   }
@@ -301,18 +309,21 @@ async function seedRelationEvidence(
     }
   }
   if (
-    expected.verificationStatus === VerificationStatus.OFFICIAL &&
-    (existing.verificationStatus === VerificationStatus.UNVERIFIED ||
-      existing.verificationStatus === VerificationStatus.CORROBORATED)
+    canPromoteVerificationStatus(
+      existing.verificationStatus,
+      expected.verificationStatus,
+    )
   ) {
     await transaction.stationRelationEvidence.update({
       where: { id: expected.id },
       data: {
         checkedBy: review.checkedBy,
         checkedAt: review.checkedAt,
-        verificationStatus: VerificationStatus.OFFICIAL,
+        verificationStatus:
+          expected.verificationStatus,
       },
     })
+
     return {
       created: false,
       unchanged: false,
@@ -321,6 +332,40 @@ async function seedRelationEvidence(
     }
   }
   throw conflict('relation evidence verification status')
+}
+
+function canPromoteVerificationStatus(
+  existing: string,
+  expected: string,
+): boolean {
+  if (
+    existing === VerificationStatus.CONFLICTING ||
+    expected === VerificationStatus.CONFLICTING
+  ) {
+    return false
+  }
+
+  return (
+    verificationStatusRank(expected) >
+    verificationStatusRank(existing)
+  )
+}
+
+function verificationStatusRank(
+  status: string,
+): number {
+  switch (status) {
+    case VerificationStatus.UNVERIFIED:
+      return 0
+    case VerificationStatus.CORROBORATED:
+      return 1
+    case VerificationStatus.OFFICIAL:
+      return 2
+    case VerificationStatus.CONFLICTING:
+      return -1
+    default:
+      return -1
+  }
 }
 
 async function seedMeasurement(

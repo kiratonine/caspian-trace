@@ -16,6 +16,10 @@ import type {
 type SourceFact =
     InvestigationInput['sourceDocuments'][number]
 
+
+export type RuntimeBootstrapScopedSourceFactPlan =
+    SourceFact
+
 type SignalFact =
     InvestigationInput['signals'][number]
 
@@ -48,6 +52,8 @@ export interface RuntimeBootstrapIncidentPlan {
             RuntimeBootstrapScopedRelationFactPlan[]
             candidateObjectFacts:
             RuntimeBootstrapScopedCandidateFactPlan[]
+            sourceDocumentFacts:
+            RuntimeBootstrapScopedSourceFactPlan[]
             fixtureInputHash: string
             rulesetVersion: string
             signalAbsenceReason: string | null
@@ -422,6 +428,10 @@ function buildIncidentPlan(
                     ],
                 stationRelationFacts,
                 candidateObjectFacts,
+                sourceDocumentFacts:
+                    structuredClone(
+                        input.sourceDocuments,
+                    ),
                 fixtureInputHash:
                     handoff.expectedResult
                         .fixtureInputHash,

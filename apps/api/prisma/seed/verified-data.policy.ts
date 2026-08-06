@@ -92,6 +92,31 @@ export function assertHumanReviewComplete(review: HumanReviewSummary): void {
   }
 }
 
+export function relationVerificationStatus(
+  relation: VerifiedStationRelation,
+  review: HumanReviewSummary,
+  stationLabels: ReadonlyMap<string, string>,
+): 'OFFICIAL' | 'CORROBORATED' | 'UNVERIFIED' {
+  if (!review.complete) {
+    return 'UNVERIFIED'
+  }
+
+  if (
+    relation.basis ===
+    'official_paired_above_below_labels'
+  ) {
+    return relationCanBeVerified(
+      relation,
+      review,
+      stationLabels,
+    )
+      ? 'OFFICIAL'
+      : 'UNVERIFIED'
+  }
+
+  return 'CORROBORATED'
+}
+
 export function relationCanBeVerified(
   relation: VerifiedStationRelation,
   review: HumanReviewSummary,
@@ -104,8 +129,8 @@ export function relationCanBeVerified(
   const downstream = stationLabels.get(relation.downstreamStationId)?.toLowerCase()
   return Boolean(
     upstream?.includes('выше') &&
-      downstream?.includes('ниже') &&
-      sharedDischargeLabel(upstream, downstream),
+    downstream?.includes('ниже') &&
+    sharedDischargeLabel(upstream, downstream),
   )
 }
 
@@ -117,15 +142,23 @@ function sharedDischargeLabel(upstream: string, downstream: string): boolean {
     upstreamIndex >= 0 &&
     downstreamIndex >= 0 &&
     upstream.slice(upstreamIndex + marker.length) ===
-      downstream.slice(downstreamIndex + marker.length)
+    downstream.slice(downstreamIndex + marker.length)
   )
 }
 
 export function relationStatusForBasis(
   basis: RelationBasis,
   eligible: boolean,
-): 'OFFICIAL' | 'UNVERIFIED' {
-  return basis === 'official_paired_above_below_labels' && eligible
+):
+  | 'OFFICIAL'
+  | 'CORROBORATED'
+  | 'UNVERIFIED' {
+  if (!eligible) {
+    return 'UNVERIFIED'
+  }
+
+  return basis ===
+    'official_paired_above_below_labels'
     ? 'OFFICIAL'
-    : 'UNVERIFIED'
+    : 'CORROBORATED'
 }

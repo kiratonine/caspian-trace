@@ -79,6 +79,13 @@ let PrismaInvestigationRepository = class PrismaInvestigationRepository {
         });
         if (!containsExactlyScopedIds(sources, scopes.sourceDocumentIds))
             return null;
+        const sourceById = new Map(sources.map((source) => [source.id, source]));
+        if (scopes.sourceDocumentFacts.some((fact) => {
+            const source = sourceById.get(fact.id);
+            return source === undefined || !matchesScopedSourceDocument(source, fact);
+        })) {
+            return null;
+        }
         const sourceIds = new Set(scopes.sourceDocumentIds);
         const stationIds = new Set(scopes.stationIds);
         const relationById = new Map(relations.map((relation) => [relation.id, relation]));
@@ -172,7 +179,7 @@ let PrismaInvestigationRepository = class PrismaInvestigationRepository {
                     verified: isVerified(measurement.verificationStatus),
                 })),
                 candidateObjects,
-                sourceDocuments: sources.map(mapSourceDocument),
+                sourceDocuments: scopes.sourceDocumentFacts,
             });
         }
         catch {
@@ -615,6 +622,21 @@ function mapSourceDocument(source) {
         status: source.status.toLowerCase(),
     };
 }
+function matchesScopedSourceDocument(source, fact) {
+    const mapped = mapSourceDocument(source);
+    return (mapped.id === fact.id &&
+        mapped.url === fact.url &&
+        mapped.publisher === fact.publisher &&
+        mapped.contentType === fact.contentType &&
+        (fact.sha256 === null || mapped.sha256 === fact.sha256) &&
+        (fact.cachePath === null || mapped.cachePath === fact.cachePath) &&
+        matchesScopedDate(mapped.fetchedAt, fact.fetchedAt) &&
+        matchesScopedDate(mapped.publishedAt, fact.publishedAt));
+}
+function matchesScopedDate(value, fact) {
+    return fact === null || (value !== null &&
+        new Date(value).getTime() === new Date(fact).getTime());
+}
 function readStoredSnapshot(record) {
     const metadata = asRecord(record.metadata);
     if (!isRecord(metadata.input) || !isRecord(metadata.result))
@@ -718,10 +740,13 @@ function readRuntimeBootstrapScopes(metadata) {
     }
     const stationRelationFacts = readScopedStationRelationFacts(metadata.runtimeBootstrap.stationRelationFacts);
     const candidateObjectFacts = readScopedCandidateObjectFacts(metadata.runtimeBootstrap.candidateObjectFacts);
+    const sourceDocumentFacts = readScopedSourceDocumentFacts(metadata.runtimeBootstrap.sourceDocumentFacts);
     if (stationRelationFacts === null ||
         candidateObjectFacts === null ||
+        sourceDocumentFacts === null ||
         !containsExactlyScopedIds(stationRelationFacts.map(({ relationId }) => ({ id: relationId })), stationRelationIds) ||
-        !containsExactlyScopedIds(candidateObjectFacts.map(({ candidateObjectId }) => ({ id: candidateObjectId })), candidateObjectIds)) {
+        !containsExactlyScopedIds(candidateObjectFacts.map(({ candidateObjectId }) => ({ id: candidateObjectId })), candidateObjectIds) ||
+        !containsExactlyScopedIds(sourceDocumentFacts, sourceDocumentIds)) {
         return null;
     }
     return {
@@ -730,9 +755,33 @@ function readRuntimeBootstrapScopes(metadata) {
         measurementIds,
         candidateObjectIds,
         sourceDocumentIds,
+        sourceDocumentFacts,
         stationRelationFacts,
         candidateObjectFacts,
     };
+}
+function readScopedSourceDocumentFacts(value) {
+    if (!Array.isArray(value))
+        return null;
+    try {
+        return (0, investigation_input_schema_1.parseInvestigationInput)({
+            incident: {
+                id: 'runtime-bootstrap-source-document-facts',
+                title: 'Runtime bootstrap source document facts',
+                region: 'atyrau',
+                indicator: 'runtime-bootstrap-validation',
+            },
+            signals: [],
+            stations: [],
+            stationRelations: [],
+            measurements: [],
+            candidateObjects: [],
+            sourceDocuments: value,
+        }).sourceDocuments;
+    }
+    catch {
+        return null;
+    }
 }
 function readScopedStationRelationFacts(value) {
     if (!Array.isArray(value))

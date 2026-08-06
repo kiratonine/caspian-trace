@@ -203,6 +203,8 @@ describe('strict API boundaries', () => {
       expect(
         EvidenceStatementSchema.safeParse({
           id: `statement-${kind}`,
+          code: 'TEST_STATEMENT',
+          sortOrder: 0,
           kind,
           text: 'Проверяемое утверждение',
           measurementIds: [],
@@ -217,6 +219,8 @@ describe('strict API boundaries', () => {
     expect(
       EvidenceStatementSchema.safeParse({
         id: 'statement-with-source',
+        code: 'TEST_STATEMENT',
+        sortOrder: 0,
         kind: 'supports',
         text: 'Факт подтвержден документом',
         measurementIds: [],
@@ -230,6 +234,8 @@ describe('strict API boundaries', () => {
     expect(
       EvidenceStatementSchema.safeParse({
         id: 'statement-unknown',
+        code: 'TEST_UNKNOWN',
+        sortOrder: 0,
         kind: 'unknown',
         text: 'Данных недостаточно',
         measurementIds: [],

@@ -1,0 +1,18 @@
+{
+  "incident": {
+    "id": "inv-aktau-insufficient",
+    "title": "Актау: недостаточно данных для локализации",
+    "region": "mangystau",
+    "indicator": "нефтепродукты",
+    "unknowns": [
+      { "code": "CURRENT_FIELD_UNAVAILABLE", "text": "Оперативное поле течений недоступно." },
+      { "code": "SYNCHRONOUS_MEASUREMENTS_UNAVAILABLE", "text": "Синхронные лабораторные измерения отсутствуют." }
+    ]
+  },
+  "signals": [],
+  "stations": [],
+  "stationRelations": [],
+  "measurements": [],
+  "candidateObjects": [],
+  "sourceDocuments": []
+}

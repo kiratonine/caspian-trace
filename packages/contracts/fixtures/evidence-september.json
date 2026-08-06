@@ -3,6 +3,8 @@
   "statements": [
     {
       "id": "es-2025-09-fact-max",
+      "code": "UPSTREAM_DOWNSTREAM_CHANGE",
+      "sortOrder": 0,
       "kind": "supports",
       "text": "На створе «1 км выше Атырау» за сентябрь зафиксировано 0,234 мг/дм³ нефтепродуктов.",
       "measurementIds": ["m-2025-09-1km-above-atyrau"],

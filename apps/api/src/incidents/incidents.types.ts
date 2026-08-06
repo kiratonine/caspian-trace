@@ -143,6 +143,8 @@ export const incidentDetailSelect = {
     orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
     select: {
       id: true,
+      code: true,
+      sortOrder: true,
       kind: true,
       text: true,
       generatedBy: true,

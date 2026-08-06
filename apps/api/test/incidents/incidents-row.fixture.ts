@@ -137,6 +137,8 @@ export function makeDetailRow(): IncidentDetailRow {
     evidenceStatements: [
       {
         id: 'test-part04-statement-supports',
+        code: 'TEST_PART04_SUPPORTS',
+        sortOrder: 0,
         kind: EvidenceKind.SUPPORTS,
         text: 'Test-only stored supported fact.',
         generatedBy: EvidenceGeneratedBy.RULE_ENGINE,
@@ -152,6 +154,8 @@ export function makeDetailRow(): IncidentDetailRow {
       },
       {
         id: 'test-part04-statement-contradicts',
+        code: 'TEST_PART04_CONTRADICTS',
+        sortOrder: 1,
         kind: EvidenceKind.CONTRADICTS,
         text: 'Test-only stored contradicted hypothesis.',
         generatedBy: EvidenceGeneratedBy.HUMAN_VERIFIED,
@@ -165,6 +169,8 @@ export function makeDetailRow(): IncidentDetailRow {
       },
       {
         id: 'test-part04-statement-limits',
+        code: 'TEST_PART04_LIMITS',
+        sortOrder: 2,
         kind: EvidenceKind.LIMITS,
         text: 'Test-only stored limitation.',
         generatedBy: EvidenceGeneratedBy.HUMAN_VERIFIED,
@@ -178,6 +184,8 @@ export function makeDetailRow(): IncidentDetailRow {
       },
       {
         id: 'test-part04-statement-unknown',
+        code: 'TEST_PART04_UNKNOWN',
+        sortOrder: 3,
         kind: EvidenceKind.UNKNOWN,
         text: 'Test-only stored unknown statement.',
         generatedBy: EvidenceGeneratedBy.HUMAN_VERIFIED,

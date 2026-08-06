@@ -148,6 +148,8 @@ export const CandidateObjectSchema = z
 export const EvidenceStatementSchema = z
   .object({
     id: nonEmptyId,
+    code: z.string().trim().regex(/^[A-Z][A-Z0-9_]*$/),
+    sortOrder: z.number().int().nonnegative(),
     kind: z.enum(['supports', 'contradicts', 'limits', 'unknown']),
     text: nonEmptyText,
     measurementIds: z.array(nonEmptyId),

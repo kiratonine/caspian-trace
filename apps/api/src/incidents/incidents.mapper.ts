@@ -146,6 +146,8 @@ function mapMeasurement(row: DetailMeasurementRow): Measurement {
 function mapStatement(row: DetailStatementRow): EvidenceStatement {
   const statement: EvidenceStatement = {
     id: row.id,
+    code: requireText(row.code),
+    sortOrder: row.sortOrder,
     kind: mapEvidenceKind(row.kind),
     text: requireText(row.text),
     measurementIds: stableUnique(

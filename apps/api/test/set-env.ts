@@ -8,6 +8,7 @@ if (
 }
 
 process.env.NODE_ENV = 'test'
+process.env.LLM_PROVIDER = 'disabled'
 process.env.PORT = '3000'
 process.env.API_PREFIX = 'api'
 process.env.WEB_ORIGIN = 'http://localhost:5173'

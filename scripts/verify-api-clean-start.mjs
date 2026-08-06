@@ -94,6 +94,7 @@ async function startAndProbe(args, label) {
     env: {
       ...process.env,
       NODE_ENV: 'test',
+      LLM_PROVIDER: 'disabled',
       PORT: String(port),
       API_PREFIX: 'api',
       WEB_ORIGIN: 'http://localhost:5173',

@@ -37,6 +37,7 @@ const ALLOWED_FILES = [
   'scripts/verify-safe-fetch.mjs',
   'scripts/verify-kazhydromet-ingestion.mjs',
   'scripts/verify-gdelt-ingestion.mjs',
+  'scripts/generate-investigation-samples.mjs',
   'scripts/disposable-database-guard.mjs',
   'scripts/disposable-database-guard.test.mjs',
   'docs/backend-investigation/part-02-investigation-report.md',
@@ -55,10 +56,16 @@ const ALLOWED_DIRECTORIES = [
   'apps/api/src/ingestion',
   'apps/api/src/live',
   'apps/api/src/common/http',
+  'apps/api/src/investigations',
+  'apps/api/src/replays',
+  'apps/api/src/export',
+  'apps/api/src/llm',
   'apps/api/test',
   'packages/contracts',
+  'packages/investigation-core',
   'docs/backend-platform',
   'data/verified',
+  'data/fixtures/investigation',
 ]
 
 const FORBIDDEN_PREFIXES = [
@@ -71,13 +78,10 @@ const FORBIDDEN_PREFIXES = [
   'artifacts',
   'tmp',
   'apps/web',
-  'packages/investigation-core',
   'apps/api/src/generated',
   'apps/api/prisma/generated',
-  'apps/api/src/investigations',
-  'apps/api/src/replays',
-  'apps/api/src/export',
-  'apps/api/src/llm',
+  'apps/api/src/llm/gemini-llm.provider.ts',
+  'scripts/verify-gemini-free-tier.mjs',
 ]
 
 const FORBIDDEN_SEGMENTS = new Set([
@@ -117,7 +121,8 @@ export function isForbiddenArchivePath(value) {
     filename.endsWith('.dump') ||
     filename.endsWith('.pdf') ||
     filename.endsWith('.har') ||
-    filename.endsWith('.html') ||
+    (filename.endsWith('.html') &&
+      normalized !== 'data/fixtures/investigation/api/dossier-september.html') ||
     /^(?:raw|source-body|downloaded-source)(?:[.-]|$)/i.test(filename) ||
     /^(?:dns-debug|response-body|cache-dump|parser-debug)(?:[.-]|$)/i.test(filename) ||
     publicSourceDump
@@ -226,7 +231,7 @@ export function collectArchiveEntries(repositoryRoot) {
     (name) =>
       name.endsWith('.md') &&
       name.includes('backend-platform') &&
-      name.includes('part'),
+      (name.includes('part') || name.includes('integration')),
     entries,
   )
 

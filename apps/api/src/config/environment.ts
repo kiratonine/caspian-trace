@@ -230,6 +230,7 @@ export const PlatformEnvironmentSchema = z
     DIRECT_SOURCE_MAX_ARTICLES_PER_DOMAIN: z.coerce.number().int().min(1).max(3).default(2),
     DIRECT_SOURCE_HTML_MAX_BYTES: z.coerce.number().int().min(131_072).max(5_242_880).default(2_097_152),
     DIRECT_SOURCE_TEXT_MAX_CHARS: z.coerce.number().int().min(1_000).max(500_000).default(100_000),
+    LLM_PROVIDER: z.literal('disabled').default('disabled'),
   })
   .superRefine((environment, context) => {
     if (
@@ -285,7 +286,7 @@ export const FutureIntegrationEnvironmentSchema = z
   .object({
     DATABASE_URL: postgresUrlSchema.optional(),
     DIRECT_URL: postgresUrlSchema.optional(),
-    LLM_PROVIDER: z.string().trim().min(1).optional(),
+    LLM_PROVIDER: z.literal('disabled').optional(),
   })
   .strict()
 

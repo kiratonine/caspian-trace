@@ -34,6 +34,10 @@ import { PDFJS_LOADER, PdfTextService, loadPdfJs } from './kazhydromet/pdf-text.
     PdfTextService,
     { provide: PDFJS_LOADER, useValue: loadPdfJs },
   ],
-  exports: [KazhydrometIngestionService, GdeltIngestionService],
+  exports: [
+    IngestionTokenGuard,
+    KazhydrometIngestionService,
+    GdeltIngestionService,
+  ],
 })
 export class IngestionModule {}

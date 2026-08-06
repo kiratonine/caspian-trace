@@ -41,6 +41,7 @@ const baseEnvironment: PlatformEnvironment = {
   DIRECT_SOURCE_MAX_ARTICLES_PER_DOMAIN: 2,
   DIRECT_SOURCE_HTML_MAX_BYTES: 1_048_576,
   DIRECT_SOURCE_TEXT_MAX_CHARS: 100_000,
+  LLM_PROVIDER: 'disabled',
 }
 
 export function createSafeFetchConfig(

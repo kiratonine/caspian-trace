@@ -63,6 +63,7 @@ describe('platform environment validation', () => {
       DIRECT_SOURCE_MAX_ARTICLES_PER_DOMAIN: 2,
       DIRECT_SOURCE_HTML_MAX_BYTES: 2_097_152,
       DIRECT_SOURCE_TEXT_MAX_CHARS: 100_000,
+      LLM_PROVIDER: 'disabled',
     })
   })
 
@@ -145,6 +146,7 @@ describe('platform environment validation', () => {
       DIRECT_SOURCE_MAX_ARTICLES_PER_DOMAIN: 2,
       DIRECT_SOURCE_HTML_MAX_BYTES: 2_097_152,
       DIRECT_SOURCE_TEXT_MAX_CHARS: 100_000,
+      LLM_PROVIDER: 'disabled',
     })
   })
 
@@ -216,6 +218,13 @@ describe('platform environment validation', () => {
     ).toEqual({
       LLM_PROVIDER: 'disabled',
     })
+  })
+
+  it('fails runtime startup when an external LLM provider is requested', () => {
+    expect(() => validatePlatformEnvironment({
+      ...requiredEnvironment,
+      LLM_PROVIDER: 'gemini',
+    })).toThrow('LLM_PROVIDER')
   })
 
   it('ignores standard process environment keys', () => {

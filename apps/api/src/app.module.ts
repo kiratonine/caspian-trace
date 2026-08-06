@@ -9,6 +9,10 @@ import { SafeFetchModule } from './common/http/safe-fetch.module'
 import { SourcesModule } from './sources/sources.module'
 import { IngestionModule } from './ingestion/ingestion.module'
 import { LiveModule } from './live/live.module'
+import { ExportModule } from './export/export.module'
+import { InvestigationsModule } from './investigations/investigations.module'
+import { LlmModule } from './llm/llm.module'
+import { ReplaysModule } from './replays/replays.module'
 
 @Module({
   imports: [
@@ -24,6 +28,10 @@ import { LiveModule } from './live/live.module'
     SafeFetchModule,
     IngestionModule,
     LiveModule,
+    LlmModule,
+    InvestigationsModule,
+    ReplaysModule,
+    ExportModule,
   ],
 })
 export class AppModule {}

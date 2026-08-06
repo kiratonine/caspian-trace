@@ -192,6 +192,7 @@ model StationRelation {
   sourceDocumentId   String?                   @map("source_document_id") @db.Text
   verificationStatus VerificationStatus        @map("verification_status")
   notes              String?                   @db.Text
+  metadata           Json                      @default("{}")
   createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
   fromStation        Station                   @relation("StationRelationFrom", fields: [fromStationId], references: [id], onDelete: Cascade)
   toStation          Station                   @relation("StationRelationTo", fields: [toStationId], references: [id], onDelete: Cascade)
@@ -281,6 +282,7 @@ model Incident {
   region          Region
   indicator       String?              @db.Text
   status          IncidentStatus       @default(OPEN)
+  metadata        Json                 @default("{}")
   createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
   signals         IncidentSignalLink[]
@@ -353,6 +355,7 @@ model Investigation {
   evidenceStatements  EvidenceStatement[]
   unknowns            InvestigationUnknown[]
 
+  @@unique([incidentId, inputHash, rulesetVersion])
   @@index([incidentId, generatedAt(sort: Desc)])
   @@index([incidentId, isCurrent])
   @@map("investigations")
@@ -369,31 +372,45 @@ model InvestigationMeasurement {
 }
 
 model InvestigationCandidateObject {
-  investigationId   String               @map("investigation_id") @db.Text
-  candidateObjectId String               @map("candidate_object_id") @db.Text
-  disposition       CandidateDisposition @default(FOR_CHECK)
-  note              String?              @db.Text
-  investigation     Investigation        @relation(fields: [investigationId], references: [id], onDelete: Cascade)
-  candidateObject   CandidateObject      @relation(fields: [candidateObjectId], references: [id], onDelete: Restrict)
+  investigationId    String                                 @map("investigation_id") @db.Text
+  candidateObjectId  String                                 @map("candidate_object_id") @db.Text
+  disposition        CandidateDisposition                   @default(FOR_CHECK)
+  note               String?                                @db.Text
+  investigation      Investigation                          @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  candidateObject    CandidateObject                        @relation(fields: [candidateObjectId], references: [id], onDelete: Restrict)
+  evidenceStatements InvestigationCandidateObjectEvidence[]
 
   @@id([investigationId, candidateObjectId])
   @@map("investigation_candidate_objects")
 }
 
 model EvidenceStatement {
-  id              String                         @id @db.Text
-  investigationId String                         @map("investigation_id") @db.Text
-  kind            EvidenceKind
-  code            String                         @db.Text
-  text            String                         @db.Text
-  generatedBy     EvidenceGeneratedBy            @map("generated_by")
-  sortOrder       Int                            @default(0) @map("sort_order")
-  investigation   Investigation                  @relation(fields: [investigationId], references: [id], onDelete: Cascade)
-  measurements    EvidenceStatementMeasurement[]
-  sources         EvidenceStatementSource[]
+  id                    String                                 @id @db.Text
+  investigationId       String                                 @map("investigation_id") @db.Text
+  kind                  EvidenceKind
+  code                  String                                 @db.Text
+  text                  String                                 @db.Text
+  generatedBy           EvidenceGeneratedBy                    @map("generated_by")
+  sortOrder             Int                                    @default(0) @map("sort_order")
+  investigation         Investigation                          @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  measurements          EvidenceStatementMeasurement[]
+  sources               EvidenceStatementSource[]
+  candidateDispositions InvestigationCandidateObjectEvidence[]
 
-  @@unique([investigationId, code])
+  @@unique([investigationId, sortOrder])
+  @@index([investigationId, code])
   @@map("evidence_statements")
+}
+
+model InvestigationCandidateObjectEvidence {
+  investigationId     String                       @map("investigation_id") @db.Text
+  candidateObjectId   String                       @map("candidate_object_id") @db.Text
+  evidenceStatementId String                       @map("evidence_statement_id") @db.Text
+  disposition         InvestigationCandidateObject @relation(fields: [investigationId, candidateObjectId], references: [investigationId, candidateObjectId], onDelete: Cascade, map: "inv_candidate_evidence_disposition_fkey")
+  evidenceStatement   EvidenceStatement            @relation(fields: [evidenceStatementId], references: [id], onDelete: Cascade, map: "inv_candidate_evidence_statement_fkey")
+
+  @@id([investigationId, candidateObjectId, evidenceStatementId])
+  @@map("investigation_candidate_object_evidence")
 }
 
 model EvidenceStatementMeasurement {

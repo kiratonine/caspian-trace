@@ -5,7 +5,7 @@ import {
 } from "@/constants/dossier"
 import { PANEL_NO_SOURCES } from "@/constants/panel"
 import type { SourceEntry } from "@/features/conclusion/panel-model"
-import { formatDate } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import { hasConfirmedPage, sourceHref } from "@/lib/source"
 
 type DossierSourcesProps = {
@@ -18,6 +18,7 @@ type DossierSourcesProps = {
  * на бумаге кликнуть нельзя, а проверить документ читатель обязан.
  */
 export function DossierSources({ entries }: DossierSourcesProps) {
+  const { formatDate } = useFormat()
   if (entries.length === 0) {
     return <p className="text-muted-foreground">{PANEL_NO_SOURCES}</p>
   }

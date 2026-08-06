@@ -8,7 +8,7 @@ import {
   VERDICT_CHANGE_EXPLANATION,
   VERDICT_CHANGE_TITLE,
 } from "@/constants/comparison"
-import { formatMonth } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import type { EvidenceLevel } from "@/types"
 
 export type VerdictSide = {
@@ -70,6 +70,7 @@ type VerdictSideRowProps = {
 // Вывод обрезан до двух строк: плашка — сводка перехода, а целиком прошлый
 // текст остаётся в title (дословная формулировка с бэка не теряется).
 function VerdictSideRow({ label, side }: VerdictSideRowProps) {
+  const { formatMonth } = useFormat()
   return (
     <div className="flex flex-col gap-1">
       <p className="flex items-center gap-2 text-xs text-muted-foreground">

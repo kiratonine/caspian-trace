@@ -1,4 +1,5 @@
 import type { SourceHealthItem, SourceHealthStatus } from "@/api/contracts"
+import type { Locale } from "@/i18n/config"
 import { formatDateTime } from "@/lib/format"
 import {
   LIVE_STATUS_CACHE_AVAILABLE,
@@ -56,11 +57,11 @@ export function sortSourcesBySeverity(
 }
 
 /** «Последний успешный опрос: успешных опросов не было · кэша нет». */
-export function sourceDetailLine(source: SourceHealthItem): string {
+export function sourceDetailLine(source: SourceHealthItem, locale: Locale): string {
   const lastSuccess =
     source.lastSuccessAt === null
       ? LIVE_STATUS_NEVER_SUCCEEDED
-      : formatDateTime(source.lastSuccessAt)
+      : formatDateTime(source.lastSuccessAt, locale)
   const cache = source.cacheAvailable
     ? LIVE_STATUS_CACHE_AVAILABLE
     : LIVE_STATUS_CACHE_MISSING
@@ -85,7 +86,8 @@ export type SourceHealthGroup = {
  * это шум, а не подсказка.
  */
 export function groupSourcesBySeverity(
-  sources: readonly SourceHealthItem[]
+  sources: readonly SourceHealthItem[],
+  locale: Locale
 ): SourceHealthGroup[] {
   const groups: SourceHealthGroup[] = []
 
@@ -105,10 +107,12 @@ export function groupSourcesBySeverity(
   return groups.map((group) => {
     const [first, ...rest] = group.sources
     if (!first) return group
-    const detail = sourceDetailLine(first)
+    const detail = sourceDetailLine(first, locale)
     return {
       ...group,
-      sharedDetail: rest.every((source) => sourceDetailLine(source) === detail)
+      sharedDetail: rest.every(
+        (source) => sourceDetailLine(source, locale) === detail
+      )
         ? detail
         : null,
     }

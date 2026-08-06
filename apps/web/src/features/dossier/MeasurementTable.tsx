@@ -5,8 +5,9 @@ import {
   DOSSIER_NO_DATE,
   DOSSIER_NO_MEASUREMENTS,
 } from "@/constants/dossier"
-import { matrixLabel } from "@/constants/units"
-import { formatMeasurement, formatSampledDate } from "@/lib/format"
+import { matrixLabel, unitLabel } from "@/constants/units"
+import { useFormat } from "@/i18n/use-format"
+import { useLocale } from "@/i18n/use-locale"
 import {
   measurementSourceLabel,
   sharedMeasurementColumns,
@@ -29,11 +30,14 @@ type MeasurementTableProps = {
  * разнородное событие получит полную таблицу.
  */
 export function MeasurementTable({ rows }: MeasurementTableProps) {
+  const { formatMeasurement, formatSampledDate } = useFormat()
+  const { locale } = useLocale()
+
   if (rows.length === 0) {
     return <p className="text-muted-foreground">{DOSSIER_NO_MEASUREMENTS}</p>
   }
 
-  const shared = sharedMeasurementColumns(rows)
+  const shared = sharedMeasurementColumns(rows, locale)
   const sharedParts = [
     shared.indicator,
     shared.matrix,
@@ -120,7 +124,10 @@ export function MeasurementTable({ rows }: MeasurementTableProps) {
                     // Документа нет в ответе — число печатается без ссылки,
                     // но остаётся на своём месте в таблице.
                     <span className="font-medium tabular-nums">
-                      {formatMeasurement(measurement.value, measurement.unit)}
+                      {formatMeasurement(
+                        measurement.value,
+                        unitLabel(measurement.unit)
+                      )}
                     </span>
                   )}
                 </td>

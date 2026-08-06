@@ -7,7 +7,7 @@ import {
   phenomenonLabel,
   VERIFICATION_STATUS_META,
 } from "@/constants/phenomena"
-import { formatDateTime, formatObservedDate } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import type { DossierSignalEntry } from "./dossier-model"
 
 type SignalTimelineProps = {
@@ -20,6 +20,7 @@ type SignalTimelineProps = {
  * дата наблюдения просто не выводится, а не заменяется датой публикации.
  */
 export function SignalTimeline({ entries }: SignalTimelineProps) {
+  const { formatDateTime, formatObservedDate } = useFormat()
   if (entries.length === 0) {
     return <p className="text-muted-foreground">{DOSSIER_NO_SIGNALS}</p>
   }

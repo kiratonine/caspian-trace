@@ -1,7 +1,7 @@
 import type { IncidentSummary } from "@/api/contracts"
 import { EvidenceLevelBadge } from "@/components/common"
 import { COMPARISON_SWITCHER_LABEL } from "@/constants/comparison"
-import { formatMonth } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import { cn } from "@/lib/utils"
 import { hasComparablePeriods } from "./comparison-model"
 
@@ -21,6 +21,7 @@ export function PeriodSwitcher({
   selectedIncidentId,
   onSelect,
 }: PeriodSwitcherProps) {
+  const { formatMonth } = useFormat()
   if (!hasComparablePeriods(periods)) return null
 
   return (

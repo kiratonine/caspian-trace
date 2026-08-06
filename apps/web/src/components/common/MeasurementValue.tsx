@@ -3,11 +3,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  formatMeasurement,
-  formatNumber,
-  formatSampledDate,
-} from "@/lib/format"
+import { unitLabel } from "@/constants/units"
+import { useFormat } from "@/i18n/use-format"
 import { hasConfirmedPage, sourceHref } from "@/lib/source"
 import { cn } from "@/lib/utils"
 import type { Measurement, SourceDocument } from "@/types"
@@ -34,10 +31,11 @@ export function MeasurementValue({
   showUnit = true,
   className,
 }: MeasurementValueProps) {
+  const { formatMeasurement, formatNumber, formatSampledDate } = useFormat()
   const pageConfirmed = hasConfirmedPage(sourceDocument, measurement.sourcePage)
   // Даты может не быть вовсе — тогда в подписи её просто нет, а не пустое место.
   const sampledDate = formatSampledDate(measurement)
-  const full = formatMeasurement(measurement.value, measurement.unit)
+  const full = formatMeasurement(measurement.value, unitLabel(measurement.unit))
 
   return (
     <Tooltip>

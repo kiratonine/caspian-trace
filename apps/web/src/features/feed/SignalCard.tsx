@@ -16,7 +16,7 @@ import {
   phenomenonLabel,
   VERIFICATION_STATUS_META,
 } from "@/constants/phenomena"
-import { formatDateTime, formatObservedDate } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import { cn } from "@/lib/utils"
 import type { IncidentSignal, SourceDocument } from "@/types"
 
@@ -35,6 +35,7 @@ type SignalCardProps = {
  */
 export function SignalCard({ signal, sourceDocument }: SignalCardProps) {
   const [open, setOpen] = useState(false)
+  const { formatDateTime, formatObservedDate } = useFormat()
 
   // Дата наблюдения может быть известна с точностью до месяца или неизвестна
   // совсем — тогда строки «Наблюдалось …» в хронологии просто нет.

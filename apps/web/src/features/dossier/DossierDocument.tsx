@@ -31,7 +31,7 @@ import {
 } from "@/constants/panel"
 import { REGION_LABELS } from "@/constants/regions"
 import { StatementList } from "@/features/conclusion/StatementList"
-import { formatDateTime, formatMonth } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import { CandidateObjectList } from "./CandidateObjectList"
 import { DossierSources } from "./DossierSources"
 import { MeasurementTable } from "./MeasurementTable"
@@ -109,6 +109,7 @@ function SectionBody({
   generatedAt,
 }: SectionBodyProps) {
   const { t } = useTranslation()
+  const { formatDateTime, formatMonth } = useFormat()
   const { investigation } = detail
 
   switch (sectionId) {

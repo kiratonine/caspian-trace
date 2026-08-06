@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react"
 
-import { formatDate } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import { hasConfirmedPage, sourceHref } from "@/lib/source"
 import { cn } from "@/lib/utils"
 import type { SourceDocument } from "@/types"
@@ -21,6 +21,7 @@ export function SourceLink({
   page,
   className,
 }: SourceLinkProps) {
+  const { formatDate } = useFormat()
   const meta = [sourceDocument.publisher]
   if (hasConfirmedPage(sourceDocument, page)) {
     meta.push(`стр. ${page}`)

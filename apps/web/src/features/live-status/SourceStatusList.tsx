@@ -1,5 +1,6 @@
 import type { SourceHealthItem } from "@/api/contracts"
 import { LIVE_STATUS_EMPTY, SOURCE_HEALTH_META } from "@/constants/live-status"
+import { useLocale } from "@/i18n/use-locale"
 import { groupSourcesBySeverity, sourceDetailLine } from "./live-status-model"
 import { SourceHealthMarkIcon } from "./SourceHealthMark"
 
@@ -17,13 +18,15 @@ type SourceStatusListProps = {
 }
 
 export function SourceStatusList({ sources }: SourceStatusListProps) {
+  const { locale } = useLocale()
+
   if (sources.length === 0) {
     return <p className="text-muted-foreground">{LIVE_STATUS_EMPTY}</p>
   }
 
   return (
     <ul className="flex flex-col gap-3">
-      {groupSourcesBySeverity(sources).map((group) => {
+      {groupSourcesBySeverity(sources, locale).map((group) => {
         const meta = SOURCE_HEALTH_META[group.status]
 
         return (
@@ -41,7 +44,7 @@ export function SourceStatusList({ sources }: SourceStatusListProps) {
                     {group.sharedDetail === null && (
                       <span className="text-muted-foreground">
                         {" — "}
-                        {sourceDetailLine(source)}
+                        {sourceDetailLine(source, locale)}
                       </span>
                     )}
                   </li>

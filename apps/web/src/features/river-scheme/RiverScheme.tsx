@@ -24,7 +24,7 @@ import {
   useReplayFrame,
 } from "@/features/replay/replay-frame"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
-import { formatSampledDate } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import { OrderedStations } from "./OrderedStations"
 import { UnorderedStations } from "./UnorderedStations"
 import { buildSchemeModel } from "./scheme-model"
@@ -104,6 +104,7 @@ export function RiverSchemeContent({
   periodSwitcher = null,
   hasPeriodSwitcher = false,
 }: RiverSchemeContentProps) {
+  const { formatSampledDate } = useFormat()
   const model = useMemo(() => buildSchemeModel(detail), [detail])
   const hasUnordered = model.unordered.length > 0
 

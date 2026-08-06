@@ -6,6 +6,7 @@ import {
   type SourceEntry,
   type StatementEntry,
 } from "@/features/conclusion/panel-model"
+import type { Locale } from "@/i18n/config"
 import { formatSampledDate } from "@/lib/format"
 import { hasConfirmedPage } from "@/lib/source"
 import type {
@@ -169,12 +170,15 @@ function sharedValue(
 }
 
 export function sharedMeasurementColumns(
-  rows: DossierMeasurementRow[]
+  rows: DossierMeasurementRow[],
+  locale: Locale
 ): SharedMeasurementColumns {
   return {
     indicator: sharedValue(rows, (row) => row.measurement.indicator),
     matrix: sharedValue(rows, (row) => matrixLabel(row.measurement.matrix)),
-    sampledDate: sharedValue(rows, (row) => formatSampledDate(row.measurement)),
+    sampledDate: sharedValue(rows, (row) =>
+      formatSampledDate(row.measurement, locale)
+    ),
     source: sharedValue(rows, measurementSourceLabel),
   }
 }

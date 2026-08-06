@@ -11,6 +11,19 @@ type LocaleEnvironment = {
 }
 
 /**
+ * Приводит языковой тег к виду, сравнимому с LOCALES: нижний регистр, без
+ * региона ('kk-KZ' → 'kk', 'KK' → 'kk'). Общая для всех источников —
+ * ?lang=, localStorage, navigator.languages, i18n.language (см. use-locale.ts) —
+ * чтобы один и тот же тег не трактовался по-разному в зависимости от того,
+ * откуда он пришёл: ссылку с языком вбивают вручную и могут написать
+ * заглавными буквами, а регион у нас не хранится нигде.
+ */
+export function normalizeLanguageTag(tag: string | null): string | null {
+  if (!tag) return null
+  return tag.split("-")[0]?.toLowerCase() ?? null
+}
+
+/**
  * Приоритет: ?lang= → localStorage → язык браузера → русский.
  *
  * Параметр URL уважается при чтении, но в адрес не дописывается: ссылку
@@ -18,14 +31,14 @@ type LocaleEnvironment = {
  * на события не обрастают вторым параметром рядом с ?incident=.
  */
 export function resolveInitialLocale(env: LocaleEnvironment): Locale {
-  const fromUrl = new URLSearchParams(env.search).get(LOCALE_SEARCH_PARAM)
+  const fromUrl = normalizeLanguageTag(new URLSearchParams(env.search).get(LOCALE_SEARCH_PARAM))
   if (isLocale(fromUrl)) return fromUrl
 
-  if (isLocale(env.stored)) return env.stored
+  const fromStorage = normalizeLanguageTag(env.stored)
+  if (isLocale(fromStorage)) return fromStorage
 
   for (const language of env.navigatorLanguages) {
-    // 'kk-KZ' → 'kk'. Регион игнорируем: локаль у нас одна на язык.
-    const base = language.split("-")[0]?.toLowerCase()
+    const base = normalizeLanguageTag(language)
     if (isLocale(base)) return base
   }
 

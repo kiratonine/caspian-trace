@@ -2,7 +2,7 @@ import { useCallback } from "react"
 import { useTranslation } from "react-i18next"
 
 import { DEFAULT_LOCALE, isLocale, type Locale } from "./config"
-import { LOCALE_STORAGE_KEY } from "./resolve-initial-locale"
+import { LOCALE_STORAGE_KEY, normalizeLanguageTag } from "./resolve-initial-locale"
 
 export function useLocale(): {
   locale: Locale
@@ -11,8 +11,10 @@ export function useLocale(): {
   const { i18n } = useTranslation()
 
   // i18n.language может нести регион ('ru-RU') после смены языка браузером;
-  // наружу отдаём только известную локаль.
-  const locale = isLocale(i18n.language) ? i18n.language : DEFAULT_LOCALE
+  // наружу отдаём только известную локаль. Та же нормализация, что и
+  // в resolveInitialLocale, — иначе 'kk-KZ' молча откатился бы на русский.
+  const normalizedLanguage = normalizeLanguageTag(i18n.language)
+  const locale = isLocale(normalizedLanguage) ? normalizedLanguage : DEFAULT_LOCALE
 
   const setLocale = useCallback(
     (next: Locale) => {

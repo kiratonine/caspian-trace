@@ -15,9 +15,15 @@ import { GdeltIngestionService } from './gdelt/gdelt-ingestion.service'
 import { KazhydrometAdapter } from './kazhydromet/kazhydromet.adapter'
 import { KazhydrometIngestionService } from './kazhydromet/kazhydromet-ingestion.service'
 import { PDFJS_LOADER, PdfTextService, loadPdfJs } from './kazhydromet/pdf-text.service'
+import { LlmModule } from '../llm/llm.module'
+import { ArticleSignalEnricher } from './article/article-signal-enricher.service'
 
 @Module({
-  imports: [SafeFetchModule, SourcesModule],
+  imports: [
+    SafeFetchModule,
+    SourcesModule,
+    LlmModule,
+  ],
   controllers: [IngestionController],
   providers: [
     IngestionTokenGuard,
@@ -26,6 +32,7 @@ import { PDFJS_LOADER, PdfTextService, loadPdfJs } from './kazhydromet/pdf-text.
     KazhydrometIngestionService,
     ArticleTextService,
     ArticleIngestionService,
+    ArticleSignalEnricher,
     DirectSourceAdapter,
     DirectSourceService,
     GdeltAdapter,
@@ -38,6 +45,7 @@ import { PDFJS_LOADER, PdfTextService, loadPdfJs } from './kazhydromet/pdf-text.
     IngestionTokenGuard,
     KazhydrometIngestionService,
     GdeltIngestionService,
+    ArticleSignalEnricher,
   ],
 })
-export class IngestionModule {}
+export class IngestionModule { }

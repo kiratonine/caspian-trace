@@ -194,8 +194,10 @@ The initial Integration 01 implementation was committed and pushed to
 
 `ba739cc feat(api): integrate investigation runtime`
 
-The post-integration GDELT/direct acceptance hardening is currently
-uncommitted and will be recorded as a separate follow-up commit.
+The GDELT/direct public article acceptance hardening was committed and
+pushed to `integration/mvp` as:
+
+`6b71b80 fix(api): harden public article acceptance`
 
 No merge, rebase, force push, branch deletion, or shared database reset
 was performed.

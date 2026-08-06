@@ -20,6 +20,7 @@ describe('persistRuntimeBootstrapPlan', () => {
     const signalLinkUpsert = jest.fn(() => Promise.resolve({}))
     const candidateUpsert = jest.fn(() => Promise.resolve({}))
     const candidateSourceUpsert = jest.fn(() => Promise.resolve({}))
+    const stationUpdate = jest.fn(() => Promise.resolve({}))
 
     const transaction = {
       sourceDocument: {
@@ -63,6 +64,9 @@ describe('persistRuntimeBootstrapPlan', () => {
           }),
         ),
         update: relationUpdate,
+      },
+      station: {
+        update: stationUpdate,
       },
       incident: {
         findUnique: jest.fn(() => Promise.resolve(null)),
@@ -161,6 +165,7 @@ describe('persistRuntimeBootstrapPlan', () => {
               'station-relation:a:b:upstream-of',
             ],
             runtimeBootstrap: objectContaining({
+              stationFacts: arrayMatcher,
               stationRelationFacts: arrayMatcher,
               candidateObjectFacts: arrayMatcher,
             }),
@@ -180,6 +185,7 @@ describe('persistRuntimeBootstrapPlan', () => {
         }),
       }),
     )
+    expect(stationUpdate).not.toHaveBeenCalled()
   })
 
   it('fails closed when an official prerequisite source disappears', async () => {
@@ -318,6 +324,18 @@ function plan(): RuntimeBootstrapPlan {
               'data/fixtures/investigation/test-golden.json',
             stationRelationEvidenceIds: [
               'relation-evidence-test',
+            ],
+            stationFacts: [
+              {
+                id: 'a',
+                name: '1 км выше Атырау',
+                waterBody: 'Жайык',
+              },
+              {
+                id: 'b',
+                name: '1 км ниже Атырау',
+                waterBody: 'Жайык',
+              },
             ],
             stationRelationFacts: [
               {

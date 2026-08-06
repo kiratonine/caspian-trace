@@ -30,6 +30,14 @@ interface TestHarness {
   candidateRows: Array<{ sources: Array<{ sourceDocumentId: string }> }>
   measurementRows: TestMeasurementRow[]
   sourceRows: TestSourceDocumentRow[]
+  stationRows: TestStationRow[]
+}
+
+interface TestStationRow {
+  id: string
+  name: string
+  waterBody: string
+  region: string
 }
 
 interface TestMeasurementRow {
@@ -206,6 +214,30 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     expect(september?.measurements).toEqual(septemberFixture!.measurements)
   })
 
+  it('reconstructs exact scoped station names from narrowly equivalent canonical DB labels', async () => {
+    const harness = createHarness(inputs, handoff)
+    const septemberFixture = inputs.find(
+      ({ incident }) => incident.id === 'inv-atyrau-2025-09',
+    )
+    expect(septemberFixture).toBeDefined()
+
+    const above = harness.stationRows.find(({ id }) => id === 'st-zhaiyk-1km-above-atyrau')
+    const below = harness.stationRows.find(({ id }) => id === 'st-zhaiyk-1km-below-atyrau')
+    expect(above).toBeDefined()
+    expect(below).toBeDefined()
+    above!.name = '1 км выше г. Атырау'
+    below!.name = '1 км ниже г. Атырау'
+
+    const loaded = await harness.repository.loadInput('inv-atyrau-2025-09')
+
+    expect(loaded?.stations).toEqual(septemberFixture!.stations)
+    expect(calculateInputHash(loaded!)).toBe(
+      'ab5e5a1f3ac67d8405151065e29c3a9ca1099271cee11b6262b411acdef83b56',
+    )
+    expect(above!.name).toBe('1 км выше г. Атырау')
+    expect(below!.name).toBe('1 км ниже г. Атырау')
+  })
+
   it('supports the explicit empty scopes of the Aktau case', async () => {
     const { repository, evidenceFindMany } = createHarness(inputs, handoff)
 
@@ -293,6 +325,30 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     const wrongScope = createHarness(inputs, handoff)
     measurementFactFor(wrongScope, 'inv-atyrau-2025-05').id = 'measurement-outside-scope'
     await expect(wrongScope.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+  })
+
+  it('fails closed for missing, duplicate, wrong-scope, or unrelated station facts', async () => {
+    const missing = createHarness(inputs, handoff)
+    delete runtimeBootstrapFor(missing, 'inv-atyrau-2025-05').stationFacts
+    await expect(missing.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+
+    const duplicate = createHarness(inputs, handoff)
+    const duplicateBootstrap = runtimeBootstrapFor(duplicate, 'inv-atyrau-2025-09')
+    const duplicateFacts = duplicateBootstrap.stationFacts as InvestigationInput['stations']
+    duplicateBootstrap.stationFacts = [duplicateFacts[0]!, duplicateFacts[0]!]
+    await expect(duplicate.repository.loadInput('inv-atyrau-2025-09')).resolves.toBeNull()
+
+    const wrongScope = createHarness(inputs, handoff)
+    stationFactFor(wrongScope, 'inv-atyrau-2025-05').id = 'station-outside-scope'
+    await expect(wrongScope.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+
+    const unrelatedName = createHarness(inputs, handoff)
+    stationRowFor(unrelatedName, 'st-asa-0-5km-above').name = 'Совершенно другой створ'
+    await expect(unrelatedName.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+
+    const wrongWaterBody = createHarness(inputs, handoff)
+    stationRowFor(wrongWaterBody, 'st-asa-0-5km-above').waterBody = 'Другой водный объект'
+    await expect(wrongWaterBody.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
   })
 
   it('fails closed for unrelated measurement excerpt or immutable DB conflicts', async () => {
@@ -440,6 +496,7 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     const runtimeBootstrap = {
       version: 1,
       fixtureInputHash: result.inputHash,
+      stationFacts: input!.stations,
       measurementFacts: input!.measurements,
       sourceDocumentFacts: input!.sourceDocuments,
       stationRelationFacts,
@@ -659,6 +716,7 @@ function createHarness(inputs: InvestigationInput[], handoff: HandoffManifest): 
         candidateObjectIds: input.candidateObjects.map(({ id }) => id),
         sourceDocumentIds: input.sourceDocuments.map(({ id }) => id),
         runtimeBootstrap: {
+          stationFacts: structuredClone(input.stations),
           measurementFacts: structuredClone(input.measurements),
           sourceDocumentFacts: structuredClone(input.sourceDocuments),
           stationRelationFacts: input.stationRelations.map((relation) => ({
@@ -719,6 +777,7 @@ function createHarness(inputs: InvestigationInput[], handoff: HandoffManifest): 
     candidateRows,
     measurementRows,
     sourceRows,
+    stationRows,
   }
 }
 
@@ -758,6 +817,26 @@ function measurementFactFor(
     throw new Error(`Missing measurement facts ${incidentId}`)
   }
   return facts[0] as Record<string, unknown>
+}
+
+function stationFactFor(
+  harness: TestHarness,
+  incidentId: string,
+): Record<string, unknown> {
+  const facts = runtimeBootstrapFor(harness, incidentId).stationFacts
+  if (!Array.isArray(facts) || facts.length === 0) {
+    throw new Error(`Missing station facts ${incidentId}`)
+  }
+  return facts[0] as Record<string, unknown>
+}
+
+function stationRowFor(
+  harness: TestHarness,
+  stationId: string,
+): TestStationRow {
+  const station = harness.stationRows.find(({ id }) => id === stationId)
+  if (station === undefined) throw new Error(`Missing station row ${stationId}`)
+  return station
 }
 
 interface FindManyArgs {

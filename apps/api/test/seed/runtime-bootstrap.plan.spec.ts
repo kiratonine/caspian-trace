@@ -73,6 +73,12 @@ describe('runtime bootstrap persistence plan', () => {
         expect(
             aktau.metadata
                 .runtimeBootstrap
+                .stationFacts,
+        ).toEqual([])
+
+        expect(
+            aktau.metadata
+                .runtimeBootstrap
                 .measurementFacts,
         ).toEqual([])
 
@@ -140,6 +146,46 @@ describe('runtime bootstrap persistence plan', () => {
                 validatedCase.input.measurements,
             )
         }
+    })
+
+    it('preserves exact per-incident station facts', async () => {
+        const loaded =
+            await loadRuntimeBootstrap()
+
+        const validated =
+            validateRuntimeBootstrap(loaded)
+
+        for (
+            const validatedCase
+            of validated.cases
+        ) {
+            const incident =
+                requiredById(
+                    plan.incidents,
+                    validatedCase.input.incident.id,
+                )
+
+            expect(
+                incident.metadata
+                    .runtimeBootstrap
+                    .stationFacts,
+            ).toEqual(
+                validatedCase.input.stations,
+            )
+        }
+
+        const september = requiredById(
+            plan.incidents,
+            'inv-atyrau-2025-09',
+        )
+        expect(
+            september.metadata.runtimeBootstrap.stationFacts
+                .filter(({ id }) => id.includes('1km'))
+                .map(({ name }) => name),
+        ).toEqual([
+            '1 км выше Атырау',
+            '1 км ниже Атырау',
+        ])
     })
 
     it('keeps the exact scoped May measurement excerpts', () => {

@@ -16,6 +16,8 @@ import type {
 type SourceFact =
     InvestigationInput['sourceDocuments'][number]
 
+export type RuntimeBootstrapScopedStationFactPlan =
+    InvestigationInput['stations'][number]
 
 export type RuntimeBootstrapScopedSourceFactPlan =
     SourceFact
@@ -48,6 +50,8 @@ export interface RuntimeBootstrapIncidentPlan {
             inputPath: string
             expectedResultPath: string
             stationRelationEvidenceIds: string[]
+            stationFacts:
+            RuntimeBootstrapScopedStationFactPlan[]
             stationRelationFacts:
             RuntimeBootstrapScopedRelationFactPlan[]
             candidateObjectFacts:
@@ -431,6 +435,10 @@ function buildIncidentPlan(
                         ...handoff
                             .stationRelationEvidenceIds,
                     ],
+                stationFacts:
+                    structuredClone(
+                        input.stations,
+                    ),
                 stationRelationFacts,
                 candidateObjectFacts,
                 sourceDocumentFacts:

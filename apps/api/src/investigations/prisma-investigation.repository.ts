@@ -39,6 +39,7 @@ type RuntimeBootstrapScopes = {
   measurementIds: string[]
   candidateObjectIds: string[]
   sourceDocumentIds: string[]
+  stationFacts: InvestigationInput['stations']
   measurementFacts: InvestigationInput['measurements']
   sourceDocumentFacts: SourceDocumentFact[]
   stationRelationFacts: ScopedStationRelationFact[]
@@ -148,6 +149,16 @@ export class PrismaInvestigationRepository
       ) ||
       !containsExactlyScopedIds(measurements, scopes.measurementIds) ||
       !containsExactlyScopedIds(candidates, scopes.candidateObjectIds)
+    ) {
+      return null
+    }
+
+    const stationById = new Map(stations.map((station) => [station.id, station]))
+    if (
+      scopes.stationFacts.some((fact) => {
+        const station = stationById.get(fact.id)
+        return station === undefined || !matchesScopedStation(station, fact)
+      })
     ) {
       return null
     }
@@ -268,11 +279,7 @@ export class PrismaInvestigationRepository
           extractionMode: signal.extractionMode.toLowerCase(),
           verificationStatus: signal.verificationStatus.toLowerCase(),
         })),
-        stations: stations.map((station) => ({
-          id: station.id,
-          name: station.name,
-          waterBody: station.waterBody,
-        })),
+        stations: scopes.stationFacts,
         stationRelations,
         measurements: scopes.measurementFacts,
         candidateObjects,
@@ -989,6 +996,9 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
   const stationRelationFacts = readScopedStationRelationFacts(
     metadata.runtimeBootstrap.stationRelationFacts,
   )
+  const stationFacts = readScopedStationFacts(
+    metadata.runtimeBootstrap.stationFacts,
+  )
   const candidateObjectFacts = readScopedCandidateObjectFacts(
     metadata.runtimeBootstrap.candidateObjectFacts,
   )
@@ -1003,10 +1013,15 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
         sourceDocumentFacts,
       )
   if (
+    stationFacts === null ||
     stationRelationFacts === null ||
     candidateObjectFacts === null ||
     sourceDocumentFacts === null ||
     measurementFacts === null ||
+    !containsExactlyScopedIds(
+      stationFacts,
+      stationIds,
+    ) ||
     !containsExactlyScopedIds(
       stationRelationFacts.map(({ relationId }) => ({ id: relationId })),
       stationRelationIds,
@@ -1033,11 +1048,58 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
     measurementIds,
     candidateObjectIds,
     sourceDocumentIds,
+    stationFacts,
     measurementFacts,
     sourceDocumentFacts,
     stationRelationFacts,
     candidateObjectFacts,
   }
+}
+
+function readScopedStationFacts(
+  value: unknown,
+): InvestigationInput['stations'] | null {
+  if (!Array.isArray(value)) return null
+  try {
+    return parseInvestigationInput({
+      incident: {
+        id: 'runtime-bootstrap-station-facts',
+        title: 'Runtime bootstrap station facts',
+        region: 'atyrau',
+        indicator: 'runtime-bootstrap-validation',
+      },
+      signals: [],
+      stations: value,
+      stationRelations: [],
+      measurements: [],
+      candidateObjects: [],
+      sourceDocuments: [],
+    }).stations
+  } catch {
+    return null
+  }
+}
+
+function matchesScopedStation(
+  station: { id: string; name: string; waterBody: string },
+  fact: InvestigationInput['stations'][number],
+): boolean {
+  return (
+    station.id === fact.id &&
+    station.waterBody === fact.waterBody &&
+    (
+      station.name === fact.name ||
+      normalizeScopedStationName(station.name) === normalizeScopedStationName(fact.name)
+    )
+  )
+}
+
+function normalizeScopedStationName(value: string): string {
+  return value
+    .normalize('NFC')
+    .replace(/(^|\s)г\.\s*/giu, '$1')
+    .replace(/\s+/gu, ' ')
+    .trim()
 }
 
 function readScopedMeasurementFacts(

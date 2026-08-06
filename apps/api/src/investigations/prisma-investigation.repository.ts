@@ -441,6 +441,9 @@ async function persistInput(
     where: { id: input.incident.id },
     select: { metadata: true },
   })
+  const runtimeBootstrapRelationIds = readRuntimeBootstrapRelationIds(
+    existingIncident?.metadata,
+  )
   await transaction.incident.upsert({
     where: { id: input.incident.id },
     create: {
@@ -483,6 +486,43 @@ async function persistInput(
     })
   }
   for (const relation of input.stationRelations) {
+    if (runtimeBootstrapRelationIds !== undefined) {
+      const canonicalRelationId = runtimeBootstrapRelationIds.get(relation.id)
+      if (canonicalRelationId === undefined) {
+        throw new Error(
+          `Missing runtime bootstrap station relation mapping for evidence ${relation.id}`,
+        )
+      }
+      const canonicalRelation = await transaction.stationRelation.findUnique({
+        where: { id: canonicalRelationId },
+        select: {
+          id: true,
+          fromStationId: true,
+          toStationId: true,
+          kind: true,
+          metadata: true,
+        },
+      })
+      if (
+        canonicalRelation === null ||
+        !matchesInputStationRelation(canonicalRelation, relation)
+      ) {
+        throw new Error(
+          `Canonical station relation ${canonicalRelationId} does not match evidence ${relation.id}`,
+        )
+      }
+      await transaction.stationRelation.update({
+        where: { id: canonicalRelationId },
+        data: {
+          metadata: jsonValue({
+            ...asRecord(canonicalRelation.metadata),
+            comparisonPair: relation.comparisonPair,
+          }),
+        },
+      })
+      continue
+    }
+
     const existingRelation = await transaction.stationRelation.findUnique({
       where: { id: relation.id },
       select: { metadata: true },
@@ -563,6 +603,62 @@ async function persistInput(
       })
     }
   }
+}
+
+function readRuntimeBootstrapRelationIds(
+  metadata: unknown,
+): Map<string, string> | undefined {
+  const incidentMetadata = asRecord(metadata)
+  if (incidentMetadata.runtimeBootstrap === undefined) return undefined
+  if (!isRecord(incidentMetadata.runtimeBootstrap)) {
+    throw new Error('Invalid incident runtime bootstrap metadata')
+  }
+
+  const facts = incidentMetadata.runtimeBootstrap.stationRelationFacts
+  if (!Array.isArray(facts)) {
+    throw new Error('Invalid runtime bootstrap station relation facts')
+  }
+
+  const relationIds = new Map<string, string>()
+  for (const fact of facts) {
+    if (!isRecord(fact)) {
+      throw new Error('Invalid runtime bootstrap station relation fact')
+    }
+    const evidenceId = readString(fact.evidenceId)
+    const relationId = readString(fact.relationId)
+    if (
+      evidenceId === null ||
+      relationId === null ||
+      relationIds.has(evidenceId)
+    ) {
+      throw new Error('Invalid runtime bootstrap station relation mapping')
+    }
+    relationIds.set(evidenceId, relationId)
+  }
+  return relationIds
+}
+
+function matchesInputStationRelation(
+  canonical: {
+    fromStationId: string
+    toStationId: string
+    kind: string
+  },
+  input: StationRelationFact,
+): boolean {
+  if (canonical.kind === 'UPSTREAM_OF') {
+    return (
+      canonical.fromStationId === input.upstreamStationId &&
+      canonical.toStationId === input.downstreamStationId
+    )
+  }
+  if (canonical.kind === 'DOWNSTREAM_OF') {
+    return (
+      canonical.fromStationId === input.downstreamStationId &&
+      canonical.toStationId === input.upstreamStationId
+    )
+  }
+  return false
 }
 
 function mapScopedStationRelation(

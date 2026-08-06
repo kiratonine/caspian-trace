@@ -1,8 +1,8 @@
 import type { IncidentDetail } from "@/api/contracts"
 import {
   MAP_OBJECT_PLACEMENT,
-  MAP_PADDING_Y,
-  MAP_VIEWBOX_HEIGHT,
+  MAP_OPEN_CORRIDOR_EXTENSION_DEG,
+  MAP_PLACEHOLDER_STATION_COORDS,
 } from "@/constants/map"
 import type {
   CandidateObject,
@@ -11,22 +11,24 @@ import type {
   Station,
 } from "@/types"
 
-// Чистая подготовка геометрии карты. Никаких выводов фронт здесь не считает
+// Чистая подготовка данных карты. Никаких выводов фронт не считает
 // (запрет 6 CLAUDE.md): участок приходит границами `corridorBounds`, порядок —
-// подтверждённым `riverOrder`. Всё, что делает модуль, — раскладывает уже
-// принятые бэком факты по вертикали.
+// подтверждённым `riverOrder`. Координаты — демонстрационные из
+// `MAP_PLACEHOLDER_STATION_COORDS`, пока бэк не передал настоящие.
+
+/** [lon, lat] — порядок MapLibre. */
+export type LngLat = [number, number]
 
 export type MapStationNode = {
   station: Station
   measurement: Measurement | null
   sourceDocument: SourceDocument | null
-  /** Координата Y в единицах viewBox: меньше — выше по течению. */
-  y: number
+  coords: LngLat
 }
 
 export type MapObjectMarker = {
   object: CandidateObject
-  y: number
+  coords: LngLat
   /** Чем обосновано положение — печатается пользователю, а не умалчивается. */
   basis: string
   /** Объект лежит внутри участка. false — участок его не включает. */
@@ -38,15 +40,12 @@ export type MapModel = {
   markers: MapObjectMarker[]
   unplacedStations: Station[]
   unplacedObjects: CandidateObject[]
-  /** Верх участка в viewBox; null — участок открыт вверх, границы нет. */
-  corridorTopY: number | null
-  /** Низ участка в viewBox; null — участка нет вовсе. */
-  corridorBottomY: number | null
-  /**
-   * Единица, общая для ВСЕХ измерений события — тогда её печатают один раз,
-   * а не у каждого значения (решение сессии 18). Разные единицы так свернуть
-   * нельзя: null означает «печатать у каждого значения свою».
-   */
+  /** Линия русла по подтверждённому порядку створов. */
+  riverLine: LngLat[]
+  /** Линия участка; пустая — участка нет. */
+  corridorLine: LngLat[]
+  /** Участок открыт вверх по течению: верхней границы у него нет. */
+  corridorOpenUpstream: boolean
   commonUnit: string | null
 }
 
@@ -55,16 +54,18 @@ export function buildMapModel(detail: IncidentDetail): MapModel {
     detail.sourceDocuments.map((document) => [document.id, document])
   )
 
+  // Створ попадает на карту, только если у него подтверждён порядок И для него
+  // есть координата. Иначе он уходит в список «положение не подтверждено»:
+  // поставить точку наугад значило бы выдумать координаты (запрет 2).
   const ordered = detail.stations
-    .filter((station) => station.riverOrder !== null)
+    .filter(
+      (station) =>
+        station.riverOrder !== null &&
+        MAP_PLACEHOLDER_STATION_COORDS[station.id] !== undefined
+    )
     .sort((a, b) => (a.riverOrder ?? 0) - (b.riverOrder ?? 0))
 
-  const step =
-    ordered.length > 1
-      ? (MAP_VIEWBOX_HEIGHT - MAP_PADDING_Y * 2) / (ordered.length - 1)
-      : 0
-
-  const nodes: MapStationNode[] = ordered.map((station, index) => {
+  const nodes: MapStationNode[] = ordered.map((station) => {
     const measurement =
       detail.measurements.find((m) => m.stationId === station.id) ?? null
     return {
@@ -73,18 +74,53 @@ export function buildMapModel(detail: IncidentDetail): MapModel {
       sourceDocument: measurement
         ? (documentsById.get(measurement.sourceDocumentId) ?? null)
         : null,
-      y: MAP_PADDING_Y + step * index,
+      coords: MAP_PLACEHOLDER_STATION_COORDS[station.id] as LngLat,
     }
   })
 
-  const yByStationId = new Map(nodes.map((node) => [node.station.id, node.y]))
+  const placedIds = new Set(nodes.map((node) => node.station.id))
+  const coordsByStationId = new Map(
+    nodes.map((node) => [node.station.id, node.coords])
+  )
+  const riverLine = nodes.map((node) => node.coords)
+
   const bounds = detail.corridorBounds
-  const corridorTopY = bounds?.upstreamStationId
-    ? (yByStationId.get(bounds.upstreamStationId) ?? null)
-    : null
-  const corridorBottomY = bounds
-    ? (yByStationId.get(bounds.downstreamStationId) ?? null)
-    : null
+  const corridorBottom = bounds
+    ? coordsByStationId.get(bounds.downstreamStationId)
+    : undefined
+  const corridorTop = bounds?.upstreamStationId
+    ? coordsByStationId.get(bounds.upstreamStationId)
+    : undefined
+  const corridorOpenUpstream = Boolean(bounds && !bounds.upstreamStationId)
+
+  let corridorLine: LngLat[] = []
+  if (corridorBottom && corridorTop) {
+    // Закрытый интервал: отрезок русла между двумя границами.
+    const fromIndex = riverLine.findIndex((c) => c === corridorTop)
+    const toIndex = riverLine.findIndex((c) => c === corridorBottom)
+    corridorLine = riverLine.slice(
+      Math.min(fromIndex, toIndex),
+      Math.max(fromIndex, toIndex) + 1
+    )
+  } else if (corridorBottom && corridorOpenUpstream) {
+    // Открытый вверх: от нижней границы вверх по течению за пределы схемы.
+    // Направление берётся у самого русла, а не выдумывается: если следующего
+    // створа нет, идём строго на север.
+    const index = riverLine.findIndex((c) => c === corridorBottom)
+    const next = riverLine[index + 1]
+    const [lon, lat] = corridorBottom
+    const direction = next
+      ? [lon - next[0], lat - next[1]]
+      : ([0, 1] as [number, number])
+    const length = Math.hypot(direction[0], direction[1]) || 1
+    corridorLine = [
+      corridorBottom,
+      [
+        lon + (direction[0] / length) * MAP_OPEN_CORRIDOR_EXTENSION_DEG,
+        lat + (direction[1] / length) * MAP_OPEN_CORRIDOR_EXTENSION_DEG,
+      ],
+    ]
+  }
 
   const markers: MapObjectMarker[] = []
   const unplacedObjects: CandidateObject[] = []
@@ -92,25 +128,34 @@ export function buildMapModel(detail: IncidentDetail): MapModel {
   for (const object of detail.candidateObjects) {
     const placement = MAP_OBJECT_PLACEMENT[object.id]
     const first = placement
-      ? yByStationId.get(placement.betweenStationIds[0])
+      ? coordsByStationId.get(placement.betweenStationIds[0])
       : undefined
     const second = placement
-      ? yByStationId.get(placement.betweenStationIds[1])
+      ? coordsByStationId.get(placement.betweenStationIds[1])
       : undefined
 
-    // Разместить объект можно, только если ОБА опорных створа есть в событии
-    // и у обоих подтверждён порядок. Иначе честнее сказать «не знаем», чем
-    // поставить точку наугад (запрет 2 CLAUDE.md).
-    if (placement && first !== undefined && second !== undefined) {
-      const y = (first + second) / 2
+    if (placement && first && second) {
+      const coords: LngLat = [
+        (first[0] + second[0]) / 2,
+        (first[1] + second[1]) / 2,
+      ]
+      // Внутри участка — если объект попадает между границами по течению.
+      // Считается по порядку створов, а не по расстоянию: порядок подтверждён
+      // документами, а координаты демонстрационные.
+      const orderOf = (coord: LngLat) =>
+        nodes.find((node) => node.coords === coord)?.station.riverOrder ?? null
+      const objectOrder = ((orderOf(first) ?? 0) + (orderOf(second) ?? 0)) / 2
+      const bottomOrder = corridorBottom ? orderOf(corridorBottom) : null
+      const topOrder = corridorTop ? orderOf(corridorTop) : null
+
       markers.push({
         object,
-        y,
+        coords,
         basis: placement.basis,
         insideCorridor:
-          corridorBottomY !== null &&
-          y <= corridorBottomY &&
-          (corridorTopY === null || y >= corridorTopY),
+          bottomOrder !== null &&
+          objectOrder <= bottomOrder &&
+          (topOrder === null || objectOrder >= topOrder),
       })
     } else {
       unplacedObjects.push(object)
@@ -128,11 +173,12 @@ export function buildMapModel(detail: IncidentDetail): MapModel {
     nodes,
     markers,
     unplacedStations: detail.stations.filter(
-      (station) => station.riverOrder === null
+      (station) => !placedIds.has(station.id)
     ),
     unplacedObjects,
-    corridorTopY,
-    corridorBottomY,
+    riverLine,
+    corridorLine,
+    corridorOpenUpstream,
     commonUnit,
   }
 }

@@ -1,13 +1,15 @@
 import { useMemo } from "react"
 
+import { MAP_CAPTION } from "@/constants/map"
 import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { InsufficientDataScreen } from "@/features/aktau/InsufficientDataScreen"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
-import { GeoSchemeMap } from "./GeoSchemeMap"
+import { MapLibreMap } from "./MapLibreMap"
+import { UnplacedList } from "./UnplacedList"
 import { buildMapModel } from "./map-model"
 
 /**
- * Вкладка «Историческое событие»: вывод расследования на геосхеме.
+ * Вкладка «Историческое событие»: вывод расследования на карте.
  * Данные — тот же `useSelectedIncidentDetail`, что кормит экран разбора,
  * поэтому ни одного нового запроса вкладка не делает.
  */
@@ -32,8 +34,15 @@ export function MapTab() {
   }
 
   return (
-    <div className="flex min-h-0 flex-col p-4 lg:p-6">
-      <GeoSchemeMap model={model} />
+    <div className="flex min-h-0 flex-col gap-3 p-4 lg:p-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+        <MapLibreMap model={model} />
+        <UnplacedList
+          stations={model.unplacedStations}
+          objects={model.unplacedObjects}
+        />
+      </div>
+      <p className="text-center text-xs text-muted-foreground">{MAP_CAPTION}</p>
     </div>
   )
 }

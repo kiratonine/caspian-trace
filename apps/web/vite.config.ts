@@ -23,6 +23,16 @@ export default defineConfig({
     // тогда не резолвятся («does not provide an export named ...»).
     // Прод-сборка справляется сама, поэтому расхождение вылезает только в dev.
     include: ["@caspian-trace/contracts"],
+    // MapLibre парсит GeoJSON в Web Worker и до его ответа держит источник
+    // незагруженным: слои не рисуются вовсе, хотя DOM-маркеры видны и ошибок
+    // в консоли нет. Оптимизатор зависимостей Vite не переносит его воркер
+    // (`maplibre-gl-worker.mjs` не оказывается в .vite/deps), поэтому пакет
+    // отдаётся как есть — это же предлагает и само сообщение Vite.
+    exclude: ["maplibre-gl"],
+  },
+  // Воркер MapLibre — ES-модуль; формат воркеров у Vite по умолчанию 'iife'.
+  worker: {
+    format: "es",
   },
   server: {
     proxy: {

@@ -1,10 +1,5 @@
 import { useTranslation } from "react-i18next"
 
-import {
-  DOSSIER_SHA_LABEL,
-  DOSSIER_SHA_NOT_COMPUTED,
-  DOSSIER_SOURCE_PAGE_PREFIX,
-} from "@/constants/dossier"
 import type { SourceEntry } from "@/features/conclusion/panel-model"
 import { useFormat } from "@/i18n/use-format"
 import { hasConfirmedPage, sourceHref } from "@/lib/source"
@@ -31,7 +26,7 @@ export function DossierSources({ entries }: DossierSourcesProps) {
         const href = sourceHref(document, page)
         const meta = [document.publisher]
         if (hasConfirmedPage(document, page)) {
-          meta.push(`${DOSSIER_SOURCE_PAGE_PREFIX} ${page}`)
+          meta.push(`${t("dossier.sourcePagePrefix")} ${page}`)
         }
         if (document.publishedAt) {
           meta.push(formatDate(document.publishedAt))
@@ -53,13 +48,13 @@ export function DossierSources({ entries }: DossierSourcesProps) {
               {href}
             </a>
             <p className="text-xs text-muted-foreground">
-              {DOSSIER_SHA_LABEL}:{" "}
+              {t("dossier.shaLabel")}:{" "}
               {document.sha256 ? (
                 <span className="font-mono break-all">{document.sha256}</span>
               ) : (
                 // Пустой хэш не замалчиваем: читатель должен видеть, что
                 // сверить целостность файла пока нечем.
-                DOSSIER_SHA_NOT_COMPUTED
+                t("dossier.shaNotComputed")
               )}
             </p>
           </li>

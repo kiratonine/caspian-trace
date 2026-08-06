@@ -1,28 +1,11 @@
 import { useMemo, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 
+import type { TFunction } from "i18next"
+
 import type { IncidentDetail } from "@/api/contracts"
 import { EvidenceLevelBadge } from "@/components/common"
-import {
-  DOSSIER_CORRIDOR_BETWEEN_PREFIX,
-  DOSSIER_CORRIDOR_LABEL,
-  DOSSIER_CORRIDOR_NONE,
-  DOSSIER_CORRIDOR_OPEN_UP_PREFIX,
-  DOSSIER_GENERATED_AT_LABEL,
-  DOSSIER_INPUT_HASH_LABEL,
-  DOSSIER_INPUT_HASH_MISSING,
-  DOSSIER_KICKER,
-  DOSSIER_LEGAL_TITLE,
-  DOSSIER_NO_MAP_NOTE,
-  DOSSIER_PERIOD_LABEL,
-  DOSSIER_PROVENANCE_NOTE,
-  DOSSIER_REGION_LABEL,
-  DOSSIER_RULESET_LABEL,
-  DOSSIER_RULESET_MISSING,
-  DOSSIER_SECTIONS,
-  DOSSIER_UPDATED_AT_LABEL,
-  type DossierSectionId,
-} from "@/constants/dossier"
+import { DOSSIER_SECTIONS, type DossierSectionId } from "@/constants/dossier"
 import { StatementList } from "@/features/conclusion/StatementList"
 import { useFormat } from "@/i18n/use-format"
 import { CandidateObjectList } from "./CandidateObjectList"
@@ -53,6 +36,7 @@ export function DossierDocument({
   period,
   generatedAt,
 }: DossierDocumentProps) {
+  const { t } = useTranslation()
   const model = useMemo(() => buildDossierModel(detail), [detail])
 
   return (
@@ -76,7 +60,7 @@ export function DossierDocument({
         ) : (
           <section key={section.id} className="flex flex-col gap-2">
             <h2 className="break-after-avoid border-b pb-1 text-xs font-medium tracking-widest text-muted-foreground uppercase">
-              {section.title}
+              {t(`dossier.section.${section.id}`)}
             </h2>
             {body}
           </section>
@@ -110,26 +94,26 @@ function SectionBody({
       return (
         <header className="flex flex-col gap-2">
           <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-            {DOSSIER_KICKER}
+            {t("dossier.kicker")}
           </p>
           <h1 className="text-xl font-semibold text-pretty">
             {investigation.title}
           </h1>
           <dl className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-            <MetaRow label={DOSSIER_REGION_LABEL}>
+            <MetaRow label={t("dossier.regionLabel")}>
               {t(`regions.${detail.region}`)}
             </MetaRow>
             {/* Периода может не быть вовсе (кейс «недостаточно данных») —
                 тогда строки в шапке просто нет. */}
             {period !== null && (
-              <MetaRow label={DOSSIER_PERIOD_LABEL}>
+              <MetaRow label={t("dossier.periodLabel")}>
                 {formatMonth(period)}
               </MetaRow>
             )}
-            <MetaRow label={DOSSIER_UPDATED_AT_LABEL}>
+            <MetaRow label={t("dossier.updatedAtLabel")}>
               {formatDateTime(investigation.updatedAt)}
             </MetaRow>
-            <MetaRow label={DOSSIER_GENERATED_AT_LABEL}>
+            <MetaRow label={t("dossier.generatedAtLabel")}>
               {formatDateTime(generatedAt)}
             </MetaRow>
           </dl>
@@ -139,7 +123,7 @@ function SectionBody({
       return (
         <aside className="flex flex-col gap-1 border p-3">
           <h2 className="text-xs font-medium tracking-widest uppercase">
-            {DOSSIER_LEGAL_TITLE}
+            {t("dossier.legalTitle")}
           </h2>
           <p className="text-xs text-pretty">{t("app.legalDisclaimer")}</p>
         </aside>
@@ -149,7 +133,7 @@ function SectionBody({
         <div className="flex flex-col gap-2">
           {/* Вывод печатается дословно с бэка — ни сокращений, ни пересказа. */}
           <p className="text-pretty">{investigation.conclusion}</p>
-          <CorridorLine corridor={model.corridor} />
+          <CorridorLine corridor={model.corridor} t={t} />
         </div>
       )
     case "evidenceLevel":
@@ -199,37 +183,45 @@ function SectionBody({
       return (
         <div className="flex flex-col gap-2">
           <dl className="flex flex-col gap-0.5 text-xs">
-            <MetaRow label={DOSSIER_RULESET_LABEL}>
+            <MetaRow label={t("dossier.rulesetLabel")}>
               {model.provenance.rulesetVersion ?? (
                 <span className="text-muted-foreground">
-                  {DOSSIER_RULESET_MISSING}
+                  {t("dossier.rulesetMissing")}
                 </span>
               )}
             </MetaRow>
-            <MetaRow label={DOSSIER_INPUT_HASH_LABEL}>
+            <MetaRow label={t("dossier.inputHashLabel")}>
               {model.provenance.inputHash ? (
                 <span className="font-mono break-all">
                   {model.provenance.inputHash}
                 </span>
               ) : (
                 <span className="text-muted-foreground">
-                  {DOSSIER_INPUT_HASH_MISSING}
+                  {t("dossier.inputHashMissing")}
                 </span>
               )}
             </MetaRow>
           </dl>
           <p className="text-xs text-pretty text-muted-foreground">
-            {DOSSIER_PROVENANCE_NOTE}
+            {t("dossier.provenanceNote")}
           </p>
         </div>
       )
   }
 }
 
-function CorridorLine({ corridor }: { corridor: DossierCorridor }) {
+function CorridorLine({
+  corridor,
+  t,
+}: {
+  corridor: DossierCorridor
+  t: TFunction
+}) {
   if (corridor === null) {
     return (
-      <p className="text-xs text-muted-foreground">{DOSSIER_CORRIDOR_NONE}</p>
+      <p className="text-xs text-muted-foreground">
+        {t("dossier.corridorNone")}
+      </p>
     )
   }
 
@@ -237,15 +229,18 @@ function CorridorLine({ corridor }: { corridor: DossierCorridor }) {
   // арнасы»), и вложенные ёлочки в печати читаются как опечатка.
   const bounds =
     corridor.kind === "openUpstream"
-      ? `${DOSSIER_CORRIDOR_OPEN_UP_PREFIX} ${corridor.downstream.name}`
-      : `${DOSSIER_CORRIDOR_BETWEEN_PREFIX} ${corridor.upstream.name} и ${corridor.downstream.name}`
+      ? `${t("dossier.corridorOpenUpPrefix")} ${corridor.downstream.name}`
+      : `${t("dossier.corridorBetweenPrefix")} ${corridor.upstream.name} и ${corridor.downstream.name}`
 
   return (
     <div className="flex flex-col gap-0.5">
       <p className="text-pretty">
-        <span className="font-medium">{DOSSIER_CORRIDOR_LABEL}:</span> {bounds}
+        <span className="font-medium">{t("dossier.corridorLabel")}:</span>{" "}
+        {bounds}
       </p>
-      <p className="text-xs text-muted-foreground">{DOSSIER_NO_MAP_NOTE}</p>
+      <p className="text-xs text-muted-foreground">
+        {t("dossier.noMapNote")}
+      </p>
     </div>
   )
 }

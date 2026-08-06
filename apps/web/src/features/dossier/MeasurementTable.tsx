@@ -1,12 +1,6 @@
 import { useTranslation } from "react-i18next"
 
 import { MeasurementValue } from "@/components/common"
-import {
-  DOSSIER_MEASUREMENT_COLUMNS,
-  DOSSIER_MEASUREMENT_SHARED_PREFIX,
-  DOSSIER_NO_DATE,
-  DOSSIER_NO_MEASUREMENTS,
-} from "@/constants/dossier"
 import { useFormat } from "@/i18n/use-format"
 import { useMatrixLabel, useUnitLabel } from "@/i18n/use-labels"
 import { useLocale } from "@/i18n/use-locale"
@@ -39,7 +33,9 @@ export function MeasurementTable({ rows }: MeasurementTableProps) {
   const matrixLabel = useMatrixLabel()
 
   if (rows.length === 0) {
-    return <p className="text-muted-foreground">{DOSSIER_NO_MEASUREMENTS}</p>
+    return (
+      <p className="text-muted-foreground">{t("dossier.noMeasurements")}</p>
+    )
   }
 
   const shared = sharedMeasurementColumns(rows, locale, t)
@@ -54,36 +50,36 @@ export function MeasurementTable({ rows }: MeasurementTableProps) {
     <div className="flex flex-col gap-1.5">
       {sharedParts.length > 0 && (
         <p className="text-xs text-pretty text-muted-foreground">
-          {DOSSIER_MEASUREMENT_SHARED_PREFIX}: {sharedParts.join(" · ")}
+          {t("dossier.measurementSharedPrefix")}: {sharedParts.join(" · ")}
         </p>
       )}
       <table className="w-full border-collapse text-left text-xs">
         <thead>
           <tr className="border-b">
             <th className="py-1.5 pr-3 font-medium">
-              {DOSSIER_MEASUREMENT_COLUMNS.station}
+              {t("dossier.measurementColumns.station")}
             </th>
             {shared.indicator === null && (
               <th className="py-1.5 pr-3 font-medium">
-                {DOSSIER_MEASUREMENT_COLUMNS.indicator}
+                {t("dossier.measurementColumns.indicator")}
               </th>
             )}
             {shared.matrix === null && (
               <th className="py-1.5 pr-3 font-medium">
-                {DOSSIER_MEASUREMENT_COLUMNS.matrix}
+                {t("dossier.measurementColumns.matrix")}
               </th>
             )}
             {shared.sampledDate === null && (
               <th className="py-1.5 pr-3 font-medium">
-                {DOSSIER_MEASUREMENT_COLUMNS.sampledAt}
+                {t("dossier.measurementColumns.sampledAt")}
               </th>
             )}
             <th className="py-1.5 pr-3 font-medium last:pr-0">
-              {DOSSIER_MEASUREMENT_COLUMNS.value}
+              {t("dossier.measurementColumns.value")}
             </th>
             {shared.source === null && (
               <th className="py-1.5 font-medium">
-                {DOSSIER_MEASUREMENT_COLUMNS.source}
+                {t("dossier.measurementColumns.source")}
               </th>
             )}
           </tr>
@@ -113,7 +109,7 @@ export function MeasurementTable({ rows }: MeasurementTableProps) {
                   <td className="py-1.5 pr-3 whitespace-nowrap">
                     {sampledDate ?? (
                       <span className="text-muted-foreground">
-                        {DOSSIER_NO_DATE}
+                        {t("dossier.noDate")}
                       </span>
                     )}
                   </td>
@@ -138,7 +134,7 @@ export function MeasurementTable({ rows }: MeasurementTableProps) {
                 </td>
                 {shared.source === null && (
                   <td className="py-1.5 text-pretty text-muted-foreground">
-                    {measurementSourceLabel(row)}
+                    {measurementSourceLabel(row, t)}
                   </td>
                 )}
               </tr>

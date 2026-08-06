@@ -11,13 +11,6 @@ import {
 } from "@/api/queries"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  DOSSIER_BACK_ACTION,
-  DOSSIER_JSON_ACTION,
-  DOSSIER_JSON_ERROR,
-  DOSSIER_KICKER,
-  DOSSIER_PRINT_ACTION,
-} from "@/constants/dossier"
 import { DOSSIER_ID_PARAM, incidentPath } from "@/constants/routing"
 import { downloadJson } from "@/lib/download"
 import { DossierDocument } from "./DossierDocument"
@@ -58,12 +51,12 @@ export function DossierPage() {
           className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
           <ArrowLeft />
-          {DOSSIER_BACK_ACTION}
+          {t("dossier.backAction")}
         </Link>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()}>
             <Printer />
-            {DOSSIER_PRINT_ACTION}
+            {t("dossier.printAction")}
           </Button>
           <Button
             variant="outline"
@@ -72,20 +65,20 @@ export function DossierPage() {
             onClick={() => download.mutate()}
           >
             <Download />
-            {DOSSIER_JSON_ACTION}
+            {t("dossier.jsonAction")}
           </Button>
         </div>
       </nav>
       {download.isError && (
         <p role="alert" className="text-sm text-destructive print:hidden">
-          {DOSSIER_JSON_ERROR}
+          {t("dossier.jsonError")}
         </p>
       )}
       {detailQuery.data ? (
         <>
           {/* React 19 поднимает title в head: во врезке печати браузер
               подписывает лист именно им. */}
-          <title>{`${DOSSIER_KICKER} — ${detailQuery.data.investigation.title}`}</title>
+          <title>{`${t("dossier.kicker")} — ${detailQuery.data.investigation.title}`}</title>
           <DossierDocument
             detail={detailQuery.data}
             period={period}

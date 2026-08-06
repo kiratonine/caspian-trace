@@ -1,7 +1,6 @@
 import type { TFunction } from "i18next"
 
 import type { IncidentDetail } from "@/api/contracts"
-import { DOSSIER_SOURCE_PAGE_PREFIX } from "@/constants/dossier"
 import {
   buildPanelModel,
   type SourceEntry,
@@ -132,14 +131,15 @@ export function buildDossierModel(detail: IncidentDetail): DossierModel {
 
 /** «РГП «Казгидромет», стр. 22» — издатель и страница; null, если документа нет. */
 export function measurementSourceLabel(
-  row: DossierMeasurementRow
+  row: DossierMeasurementRow,
+  t: TFunction
 ): string | null {
   const { measurement, sourceDocument } = row
   if (!sourceDocument) return null
   return [
     sourceDocument.publisher,
     hasConfirmedPage(sourceDocument, measurement.sourcePage) &&
-      `${DOSSIER_SOURCE_PAGE_PREFIX} ${measurement.sourcePage}`,
+      `${t("dossier.sourcePagePrefix")} ${measurement.sourcePage}`,
   ]
     .filter((part): part is string => typeof part === "string")
     .join(", ")
@@ -185,6 +185,6 @@ export function sharedMeasurementColumns(
     sampledDate: sharedValue(rows, (row) =>
       formatSampledDate(row.measurement, locale)
     ),
-    source: sharedValue(rows, measurementSourceLabel),
+    source: sharedValue(rows, (row) => measurementSourceLabel(row, t)),
   }
 }

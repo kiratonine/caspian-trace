@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/collapsible"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import { DOSSIER_LINK_LABEL, DOSSIER_OPEN_ACTION } from "@/constants/dossier"
 import { CONCLUSION_SECTIONS, type ConclusionSectionId } from "@/constants/panel"
 import { REPLAY_PENDING } from "@/constants/replay"
 import { dossierPath } from "@/constants/routing"
@@ -65,7 +64,7 @@ export function ConclusionPanel() {
           // вкладке»), поэтому берём только его классы.
           <Link
             to={dossierPath(selectedIncidentId)}
-            title={DOSSIER_OPEN_ACTION}
+            title={t("dossier.openAction")}
             className={buttonVariants({
               variant: "outline",
               size: "xs",
@@ -73,7 +72,7 @@ export function ConclusionPanel() {
             })}
           >
             <FileText />
-            {DOSSIER_LINK_LABEL}
+            {t("dossier.linkLabel")}
           </Link>
         )}
       </header>

@@ -1,11 +1,5 @@
 import { useTranslation } from "react-i18next"
 
-import {
-  DOSSIER_COMPLETENESS_LABELS,
-  DOSSIER_NO_OBJECTS,
-  DOSSIER_OBJECT_BASIS_LABEL,
-  DOSSIER_OBJECT_NO_BASIS,
-} from "@/constants/dossier"
 import type { DossierObjectEntry } from "./dossier-model"
 
 type CandidateObjectListProps = {
@@ -13,10 +7,10 @@ type CandidateObjectListProps = {
 }
 
 /** Документы-основания одной строкой; отсутствие оснований — тоже значение. */
-function objectBasis(entry: DossierObjectEntry): string {
+function objectBasis(entry: DossierObjectEntry, noBasisText: string): string {
   return entry.evidenceDocuments.length > 0
     ? entry.evidenceDocuments.map((document) => document.title).join("; ")
-    : DOSSIER_OBJECT_NO_BASIS
+    : noBasisText
 }
 
 /**
@@ -26,19 +20,22 @@ function objectBasis(entry: DossierObjectEntry): string {
  */
 export function CandidateObjectList({ entries }: CandidateObjectListProps) {
   const { t } = useTranslation()
+  const noBasisText = t("dossier.objectNoBasis")
   if (entries.length === 0) {
-    return <p className="text-muted-foreground">{DOSSIER_NO_OBJECTS}</p>
+    return <p className="text-muted-foreground">{t("dossier.noObjects")}</p>
   }
 
   return (
     <ul className="flex flex-col gap-3">
       {entries.map((entry, index) => {
         const { object } = entry
-        const basis = objectBasis(entry)
+        const basis = objectBasis(entry, noBasisText)
         // Одинаковое основание у соседей печатается один раз: два подряд
         // идентичных абзаца — шум, а не подсказка (решение сессии 15).
         const previous = entries[index - 1]
-        const previousBasis = previous ? objectBasis(previous) : null
+        const previousBasis = previous
+          ? objectBasis(previous, noBasisText)
+          : null
 
         return (
           <li
@@ -54,14 +51,14 @@ export function CandidateObjectList({ entries }: CandidateObjectListProps) {
               {[
                 object.category,
                 object.waterBody,
-                DOSSIER_COMPLETENESS_LABELS[object.completeness],
+                t(`dossier.completeness.${object.completeness}`),
               ]
                 .filter((part): part is string => typeof part === "string")
                 .join(" · ")}
             </p>
             {basis !== previousBasis && (
               <p className="text-xs text-pretty text-muted-foreground">
-                {DOSSIER_OBJECT_BASIS_LABEL}: {basis}
+                {t("dossier.objectBasisLabel")}: {basis}
               </p>
             )}
           </li>

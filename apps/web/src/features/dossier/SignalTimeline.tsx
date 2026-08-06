@@ -1,10 +1,5 @@
 import { useTranslation } from "react-i18next"
 
-import {
-  DOSSIER_NO_SIGNALS,
-  DOSSIER_TIMELINE_OBSERVED,
-  DOSSIER_TIMELINE_REPORTED,
-} from "@/constants/dossier"
 import { useFormat } from "@/i18n/use-format"
 import { usePhenomenonLabel } from "@/i18n/use-labels"
 import type { DossierSignalEntry } from "./dossier-model"
@@ -23,7 +18,7 @@ export function SignalTimeline({ entries }: SignalTimelineProps) {
   const phenomenonLabel = usePhenomenonLabel()
   const { formatDateTime, formatObservedDate } = useFormat()
   if (entries.length === 0) {
-    return <p className="text-muted-foreground">{DOSSIER_NO_SIGNALS}</p>
+    return <p className="text-muted-foreground">{t("dossier.noSignals")}</p>
   }
 
   return (
@@ -32,8 +27,8 @@ export function SignalTimeline({ entries }: SignalTimelineProps) {
         const observedDate = formatObservedDate(signal)
         const chronology = [
           observedDate !== null &&
-            `${DOSSIER_TIMELINE_OBSERVED}: ${observedDate}`,
-          `${DOSSIER_TIMELINE_REPORTED}: ${formatDateTime(signal.reportedAt)}`,
+            `${t("dossier.timelineObserved")}: ${observedDate}`,
+          `${t("dossier.timelineReported")}: ${formatDateTime(signal.reportedAt)}`,
         ].filter((part): part is string => typeof part === "string")
 
         return (

@@ -50,7 +50,7 @@ export function RiverScheme() {
   }
 
   return (
-    <section aria-label="Линейная схема реки" className="flex min-h-0 flex-col">
+    <section aria-label={t("a11y.schemeRegion")} className="flex min-h-0 flex-col">
       {shownDetail ? (
         <RiverSchemeContent
           detail={shownDetail}

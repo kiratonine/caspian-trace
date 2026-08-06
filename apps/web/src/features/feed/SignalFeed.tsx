@@ -30,7 +30,7 @@ export function SignalFeed() {
 
   return (
     <section
-      aria-label="Сигналы и расследования"
+      aria-label={t("a11y.feedRegion")}
       className="flex min-h-0 flex-col"
     >
       <header className="border-b px-4 py-3">

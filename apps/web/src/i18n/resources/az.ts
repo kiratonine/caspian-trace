@@ -307,4 +307,11 @@ export const az = {
     endpointReady: "endpoint qaldırılıb",
     endpointMissing: "endpoint hələ yoxdur",
   },
+  a11y: {
+    feedRegion: "Siqnallar və araşdırmalar",
+    schemeRegion: "Çayın xətti sxemi",
+    mapRegion: "Sahənin xəritəsi",
+    panelRegion: "Nəticə və sübutlar",
+    replayTimeline: "Replay şkalası",
+  },
 } as const satisfies TranslationResource

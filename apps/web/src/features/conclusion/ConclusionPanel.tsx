@@ -46,7 +46,7 @@ export function ConclusionPanel() {
 
   return (
     <section
-      aria-label="Вывод и доказательства"
+      aria-label={t("a11y.panelRegion")}
       className="flex min-h-0 flex-col"
     >
       {/* py-3 и -my-1 у ссылки: линия под шапкой обязана совпасть с соседними

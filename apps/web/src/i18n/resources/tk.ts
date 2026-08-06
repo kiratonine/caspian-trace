@@ -309,4 +309,11 @@ export const tk = {
     endpointReady: "endpoint göterildi",
     endpointMissing: "endpoint entek ýok",
   },
+  a11y: {
+    feedRegion: "Signallar we derňewler",
+    schemeRegion: "Derýanyň çyzykly shemasy",
+    mapRegion: "Bölegiň kartasy",
+    panelRegion: "Netije we subutnamalar",
+    replayTimeline: "Repleý şkalasy",
+  },
 } as const satisfies TranslationResource

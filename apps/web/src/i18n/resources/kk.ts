@@ -306,4 +306,11 @@ export const kk = {
     endpointReady: "эндпоинт іске қосылған",
     endpointMissing: "эндпоинт әлі жоқ",
   },
+  a11y: {
+    feedRegion: "Сигналдар мен тексерулер",
+    schemeRegion: "Өзеннің сызықтық сызбасы",
+    mapRegion: "Учаске картасы",
+    panelRegion: "Қорытынды және дәлелдер",
+    replayTimeline: "Реплей шкаласы",
+  },
 } as const satisfies TranslationResource

@@ -311,4 +311,11 @@ export const fa = {
     endpointReady: "نقطهٔ پایانی بالا آمده",
     endpointMissing: "نقطهٔ پایانی هنوز نیست",
   },
+  a11y: {
+    feedRegion: "سیگنال‌ها و بررسی‌ها",
+    schemeRegion: "نمودار خطی رودخانه",
+    mapRegion: "نقشهٔ بازه",
+    panelRegion: "نتیجه و شواهد",
+    replayTimeline: "نوار زمانی بازپخش",
+  },
 } as const satisfies TranslationResource

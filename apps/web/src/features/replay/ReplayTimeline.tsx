@@ -244,7 +244,7 @@ export function ReplayTimeline() {
 
   return (
     <footer
-      aria-label="Шкала реплея"
+      aria-label={t("a11y.replayTimeline")}
       // min-w-0: как строка грида футер иначе получает минимальную ширину по
       // содержимому, и длинный текст шага растягивает весь экран вбок.
       className="flex min-w-0 items-center gap-4 border-t px-4 py-2.5"

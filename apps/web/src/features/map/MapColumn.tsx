@@ -56,7 +56,7 @@ export function MapColumn() {
 
   if (!shownDetail || !mapModel) {
     return (
-      <section aria-label="Карта участка" className="flex min-h-0 flex-col">
+      <section aria-label={t("a11y.mapRegion")} className="flex min-h-0 flex-col">
         <div className="flex min-h-0 flex-1 items-center justify-center p-8">
           {isError && (
             <p className="text-sm text-muted-foreground">
@@ -76,7 +76,7 @@ export function MapColumn() {
 
   return (
     <section
-      aria-label="Карта участка"
+      aria-label={t("a11y.mapRegion")}
       className="flex min-h-0 flex-col gap-3 p-4"
     >
       {hasComparablePeriods(periods) && (

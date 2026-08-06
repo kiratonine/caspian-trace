@@ -27,6 +27,8 @@ interface GdeltRunState {
   allowedCandidateCount: number
   invalidCandidateCount: number
   regionMismatchCount: number
+  irrelevantCount: number
+  parserFailureCount: number
   accepted: ProcessedArticle[]
   rejectedCount: number
   queryHash: string | null
@@ -72,6 +74,8 @@ export class GdeltIngestionService {
       sourceStatus: null, cacheStatus: null, httpStatus: null, fetchedCount: 0,
       discoveredCount: 0, allowedCandidateCount: 0, invalidCandidateCount: 0,
       accepted: [], rejectedCount: 0, regionMismatchCount: 0,
+      irrelevantCount: 0,
+      parserFailureCount: 0,
       queryHash: null, error: null, responseUsable: false,
     }
     let gdeltCandidates: PublicArticleCandidate[] = []
@@ -93,13 +97,35 @@ export class GdeltIngestionService {
       for (const candidate of discovery.candidates) {
         try {
           const processed = await this.articles.process(candidate, runId)
-          if (processed.requestedRegionMatched === false) {
+
+          if (processed.parserFailed) {
+            state.parserFailureCount += 1
+            state.error ??= {
+              code: 'PUBLIC_ARTICLE_INGESTION_FAILED',
+              message:
+                'A public article was cached but could not be fully processed',
+            }
+            continue
+          }
+
+          if (processed.requestedRegionMatched !== true) {
             state.regionMismatchCount += 1
             continue
           }
+
+          if (processed.document.relevant !== true) {
+            state.irrelevantCount += 1
+            continue
+          }
+
           state.accepted.push(processed)
-          if (processed.parserFailed || processed.sourceStatus !== 'healthy') {
-            state.error ??= { code: 'PUBLIC_ARTICLE_INGESTION_FAILED', message: 'A public article was cached but could not be fully processed' }
+
+          if (processed.sourceStatus !== 'healthy') {
+            state.error ??= {
+              code: 'PUBLIC_ARTICLE_INGESTION_FAILED',
+              message:
+                'A public article was cached but could not be fully processed',
+            }
           }
         } catch (error) {
           state.rejectedCount += 1
@@ -136,6 +162,8 @@ export class GdeltIngestionService {
         allowedCandidateCount: state.allowedCandidateCount,
         invalidCandidateCount: state.invalidCandidateCount,
         regionMismatchCount: state.regionMismatchCount,
+        irrelevantCount: state.irrelevantCount,
+        parserFailureCount: state.parserFailureCount,
         ...(state.queryHash ? { queryHash: state.queryHash } : {}),
         ...(state.cacheStatus ? { cacheStatus: state.cacheStatus } : {}),
         ...(state.sourceStatus ? { sourceStatus: state.sourceStatus } : {}),
@@ -148,7 +176,10 @@ export class GdeltIngestionService {
       status: gdeltHealthStatus(state), lastHttpStatus: state.httpStatus,
       cacheAvailable: gdeltCacheAvailable,
       detail: state.error ? `${state.error.code}: ${state.error.message}` : null,
-      actualError: state.sourceStatus !== 'healthy' || state.rejectedCount > 0 || state.accepted.some((item) => item.parserFailed),
+      actualError:
+        state.sourceStatus !== 'healthy' ||
+        state.rejectedCount > 0 ||
+        state.parserFailureCount > 0,
       success: state.responseUsable,
       metadata: {
         lastRunId: runId,
@@ -230,6 +261,7 @@ export class GdeltIngestionService {
       metadata: {
         ...requestMetadata(request), candidateCount: candidates.length,
         parserFailures, regionMismatchCount: result.regionMismatchCount,
+        irrelevantCount: result.irrelevantCount,
         temporalMismatchCount: result.temporalMismatchCount,
         temporalUnknownCount: result.temporalUnknownCount,
       },
@@ -311,16 +343,51 @@ function safeGdeltSourceError(status: 'degraded' | 'rate_limited'): { code: stri
 }
 
 function gdeltRunStatus(state: GdeltRunState): PublicRunStatus {
-  if (state.sourceStatus === 'rate_limited') return 'rate_limited'
-  if (state.accepted.length > 0 && state.sourceStatus === 'healthy' && state.rejectedCount === 0 && !state.accepted.some((item) => item.parserFailed || item.sourceStatus !== 'healthy')) return 'succeeded'
-  if (state.accepted.length > 0) return 'partial'
+  if (state.sourceStatus === 'rate_limited') {
+    return 'rate_limited'
+  }
+
+  if (
+    state.accepted.length > 0 &&
+    state.sourceStatus === 'healthy' &&
+    state.rejectedCount === 0 &&
+    state.parserFailureCount === 0 &&
+    !state.accepted.some(
+      (item) => item.sourceStatus !== 'healthy',
+    )
+  ) {
+    return 'succeeded'
+  }
+
+  if (state.accepted.length > 0) {
+    return 'partial'
+  }
+
   return 'failed'
 }
 
-function gdeltHealthStatus(state: GdeltRunState): SourceHealthStatus {
-  if (state.sourceStatus === 'rate_limited') return SourceHealthStatus.RATE_LIMITED
-  if (!state.responseUsable) return SourceHealthStatus.FAILED
-  if (state.sourceStatus === 'degraded' || state.rejectedCount > 0 || state.accepted.some((item) => item.parserFailed)) return SourceHealthStatus.DEGRADED
+function gdeltHealthStatus(
+  state: GdeltRunState,
+): SourceHealthStatus {
+  if (state.sourceStatus === 'rate_limited') {
+    return SourceHealthStatus.RATE_LIMITED
+  }
+
+  if (!state.responseUsable) {
+    return SourceHealthStatus.FAILED
+  }
+
+  if (
+    state.sourceStatus === 'degraded' ||
+    state.rejectedCount > 0 ||
+    state.parserFailureCount > 0 ||
+    state.accepted.some(
+      (item) => item.sourceStatus !== 'healthy',
+    )
+  ) {
+    return SourceHealthStatus.DEGRADED
+  }
+
   return SourceHealthStatus.HEALTHY
 }
 

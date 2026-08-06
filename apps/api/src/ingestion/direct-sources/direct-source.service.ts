@@ -8,7 +8,7 @@ type DirectSourceWindow = Pick<NormalizedGdeltRequest, 'from' | 'to'>
 
 @Injectable()
 export class DirectSourceService {
-  constructor(private readonly articles: ArticleIngestionService) {}
+  constructor(private readonly articles: ArticleIngestionService) { }
 
   async process(
     candidates: readonly PublicArticleCandidate[],
@@ -19,6 +19,7 @@ export class DirectSourceService {
     rejectedCount: number
     rateLimitedCount: number
     regionMismatchCount: number
+    irrelevantCount: number
     temporalMismatchCount: number
     temporalUnknownCount: number
     parserFailureCount: number
@@ -30,6 +31,7 @@ export class DirectSourceService {
     let rejectedCount = 0
     let rateLimitedCount = 0
     let regionMismatchCount = 0
+    let irrelevantCount = 0
     let temporalMismatchCount = 0
     let temporalUnknownCount = 0
     let parserFailureCount = 0
@@ -41,14 +43,39 @@ export class DirectSourceService {
         const processed = await this.articles.process(candidate, runId)
         successfulFetchCount += 1
         lastHttpStatus = processed.httpStatus
-        if (processed.parserFailed) parserFailureCount += 1
-        if (processed.sourceStatus !== 'healthy') degradedCount += 1
-        const temporalMatch = classifyPublicationTime(processed.document.publishedAt, window)
-        if (temporalMatch === 'mismatch') temporalMismatchCount += 1
-        if (temporalMatch === 'unknown') temporalUnknownCount += 1
-        if (processed.requestedRegionMatched === false) {
+        if (processed.sourceStatus !== 'healthy') {
+          degradedCount += 1
+        }
+
+        if (processed.parserFailed) {
+          parserFailureCount += 1
+          continue
+        }
+
+        const temporalMatch = classifyPublicationTime(
+          processed.document.publishedAt,
+          window,
+        )
+
+        if (temporalMatch === 'mismatch') {
+          temporalMismatchCount += 1
+        }
+
+        if (temporalMatch === 'unknown') {
+          temporalUnknownCount += 1
+        }
+
+        if (processed.requestedRegionMatched !== true) {
           regionMismatchCount += 1
-        } else if (temporalMatch === 'matched') {
+          continue
+        }
+
+        if (processed.document.relevant !== true) {
+          irrelevantCount += 1
+          continue
+        }
+
+        if (temporalMatch === 'matched') {
           accepted.push(processed)
         }
       } catch (error) {
@@ -61,6 +88,7 @@ export class DirectSourceService {
       rejectedCount,
       rateLimitedCount,
       regionMismatchCount,
+      irrelevantCount,
       temporalMismatchCount,
       temporalUnknownCount,
       parserFailureCount,

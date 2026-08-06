@@ -119,6 +119,81 @@ describe('direct fallback requested-region acceptance', () => {
     })
     expect(result.accepted.map((item) => item.document.canonicalUrl)).toEqual([candidates[0]!.originalUrl])
   })
+  it(
+    'does not accept an in-window same-region article without a pollution marker',
+    async () => {
+      const candidates = adapter.candidates(
+        atyrauRequest(),
+        1,
+        new Set(),
+      )
+
+      const article = processed(
+        candidates[0]!.originalUrl,
+        true,
+        [],
+        '2025-09-09T10:16:00.000Z',
+      )
+
+      article.document.relevant = false
+
+      process.mockResolvedValueOnce(article)
+
+      await expect(
+        service.process(
+          candidates,
+          'test-part08-direct-run',
+          septemberWindow(),
+        ),
+      ).resolves.toMatchObject({
+        accepted: [],
+        irrelevantCount: 1,
+        regionMismatchCount: 0,
+        parserFailureCount: 0,
+        successfulFetchCount: 1,
+      })
+    },
+  )
+  it(
+    'never accepts a parser failure even when a previous publication date is in-window',
+    async () => {
+      const candidates = adapter.candidates(
+        atyrauRequest(),
+        1,
+        new Set(),
+      )
+
+      const article = processed(
+        candidates[0]!.originalUrl,
+        true,
+        [],
+        '2025-09-09T10:16:00.000Z',
+      )
+
+      article.parserFailed = true
+      article.requestedRegionMatched = null
+      article.document.parserStatus = 'failed'
+      article.document.relevant = null
+      article.document.matchedRequestedRegions = null
+
+      process.mockResolvedValueOnce(article)
+
+      await expect(
+        service.process(
+          candidates,
+          'test-part08-direct-run',
+          septemberWindow(),
+        ),
+      ).resolves.toMatchObject({
+        accepted: [],
+        parserFailureCount: 1,
+        irrelevantCount: 0,
+        temporalMismatchCount: 0,
+        temporalUnknownCount: 0,
+        successfulFetchCount: 1,
+      })
+    },
+  )
 })
 
 function mangystauRequest(): NormalizedGdeltRequest {

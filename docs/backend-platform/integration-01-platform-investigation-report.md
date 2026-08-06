@@ -182,14 +182,23 @@ Manual HTTP verification against the compiled API modules on `127.0.0.1:3099` al
 
 ## 16. Archive
 
-- Archive: `artifacts/caspian-trace-backend-platform-clean-2026-08-06T01-29-39-709Z.tar.gz`
+- Archive: `artifacts/caspian-trace-backend-platform-clean-2026-08-06T10-10-28-071Z.tar.gz`
 - Allowlist entries: 274.
 - Includes integration modules/core/tests/fixtures, migration, report, and Integration 01 TODO.
 - Excludes frontend, secrets/env, node_modules/dist/coverage, generated Prisma client, raw HTML/PDF/GDELT dumps, artifacts, Gemini provider, and Gemini verification transport.
 
 ## 17. Git status
 
-Initial worktree was clean. Final implementation is intentionally uncommitted on `integration/mvp`. No commit, push, pull, merge, rebase, cherry-pick, reset, or shared migration deploy was performed.
+The initial Integration 01 implementation was committed and pushed to
+`integration/mvp` as:
+
+`ba739cc feat(api): integrate investigation runtime`
+
+The post-integration GDELT/direct acceptance hardening is currently
+uncommitted and will be recorded as a separate follow-up commit.
+
+No merge, rebase, force push, branch deletion, or shared database reset
+was performed.
 
 ## 18. Next handoff
 
@@ -215,3 +224,35 @@ optional ArticleSignalEnricher port
 - ruleset version was increased from `1.2.0` to `1.2.1`;
 - golden and API fixtures were regenerated;
 - recompute remains idempotent after a PostgreSQL roundtrip.
+
+## 20. GDELT/direct acceptance hardening
+
+Accepted public articles now require all of the following:
+
+- parser completed successfully;
+- requested region matched explicitly;
+- pollution relevance marker matched;
+- direct-source publication time matched the requested window.
+
+Parser-failed and irrelevant articles retain their immutable source
+snapshots and provenance but are excluded from accepted API documents.
+
+Added bounded run metadata:
+
+- `irrelevantCount`;
+- `parserFailureCount`.
+
+A parser failure produces:
+
+- `acceptedCount = 0`;
+- no entry in response `documents`;
+- failed run when no other article is accepted;
+- degraded source health;
+- retained immutable raw snapshot.
+
+Regression coverage includes:
+
+- same-region article without a pollution marker;
+- parser failure with an otherwise usable publication date;
+- parser-failed GDELT snapshot persistence and exact cleanup;
+- direct and GDELT accepted-document boundaries.

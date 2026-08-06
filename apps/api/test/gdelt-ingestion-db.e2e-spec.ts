@@ -130,12 +130,100 @@ describe('GDELT/direct ingestion persistence (disposable PostgreSQL e2e)', () =>
     })).resolves.toBe(2)
   })
 
-  it('retains raw snapshot when parsing fails', async () => {
-    html = '<html><body><nav>no article body</nav></body></html>'
-    const result = await run({ includeDirectFallback: false })
-    expect(result).toMatchObject({ status: 'partial', documents: [expect.objectContaining({ parserStatus: 'failed' })] })
-    expect(storage.objects.has(result.documents[0]!.cachePath)).toBe(true)
-  })
+  it(
+    'retains raw snapshot when parsing fails without accepting it',
+    async () => {
+      html =
+        '<html><body><nav>no article body</nav></body></html>'
+
+      const result = await run({
+        includeDirectFallback: false,
+      })
+
+      expect(result).toMatchObject({
+        status: 'failed',
+        documents: [],
+        gdelt: {
+          status: 'failed',
+          acceptedCount: 0,
+          rejectedCount: 0,
+        },
+      })
+
+      const stored =
+        await prisma.sourceDocument.findFirstOrThrow({
+          where: {
+            extractionMetadata: {
+              path: [
+                'publicArticle',
+                'ingestionRunIds',
+              ],
+              array_contains: [result.gdelt.runId],
+            },
+          },
+          select: {
+            id: true,
+            cachePath: true,
+            extractionMetadata: true,
+          },
+        })
+
+      trackedDocuments.add(stored.id)
+
+      expect(stored.cachePath).toEqual(
+        expect.any(String),
+      )
+
+      expect(
+        storage.objects.has(stored.cachePath!),
+      ).toBe(true)
+
+      expect(stored.extractionMetadata).toMatchObject({
+        publicArticle: {
+          parserStatus: 'failed',
+        },
+      })
+
+      const runRow =
+        await prisma.ingestionRun.findUniqueOrThrow({
+          where: {
+            id: result.gdelt.runId,
+          },
+          select: {
+            status: true,
+            acceptedCount: true,
+            rejectedCount: true,
+            errorCode: true,
+            metadata: true,
+          },
+        })
+
+      expect(runRow).toMatchObject({
+        status: 'FAILED',
+        acceptedCount: 0,
+        rejectedCount: 0,
+        errorCode: 'PUBLIC_ARTICLE_INGESTION_FAILED',
+        metadata: {
+          parserFailureCount: 1,
+          irrelevantCount: 0,
+        },
+      })
+
+      const health =
+        await prisma.sourceHealth.findUniqueOrThrow({
+          where: {
+            sourceId: 'gdelt',
+          },
+          select: {
+            status: true,
+            consecutiveErrors: true,
+          },
+        })
+
+      expect(health.status).toBe('DEGRADED')
+      expect(health.consecutiveErrors).toBeGreaterThan(0)
+    },
+  )
 
   it('keeps stale 429 explicit while processing cached articles', async () => {
     html = articleHtml('stale response')

@@ -51,6 +51,7 @@ describe('GdeltIngestionService run and health semantics', () => {
     directAdapter.candidates.mockReturnValue([])
     directSources.process.mockResolvedValue({
       accepted: [], rejectedCount: 0, rateLimitedCount: 0, regionMismatchCount: 0,
+      irrelevantCount: 0,
       temporalMismatchCount: 0, temporalUnknownCount: 0,
       parserFailureCount: 0, degradedCount: 0,
       successfulFetchCount: 0, lastHttpStatus: null,
@@ -88,12 +89,15 @@ describe('GdeltIngestionService run and health semantics', () => {
     const directCandidate = { ...candidate, discoveryMode: 'direct_fallback' as const }
     directAdapter.candidates.mockReturnValueOnce([directCandidate])
     directSources.process.mockResolvedValueOnce({
-      accepted: [{ ...processed, document: {
-        ...processed.document,
-        discoveryMode: 'direct_fallback' as const,
-        publishedAt: '2025-09-09T10:16:00.000Z',
-      } }],
+      accepted: [{
+        ...processed, document: {
+          ...processed.document,
+          discoveryMode: 'direct_fallback' as const,
+          publishedAt: '2025-09-09T10:16:00.000Z',
+        }
+      }],
       rejectedCount: 0, rateLimitedCount: 0, regionMismatchCount: 0,
+      irrelevantCount: 0,
       temporalMismatchCount: 0, temporalUnknownCount: 0,
       parserFailureCount: 0, degradedCount: 0,
       successfulFetchCount: 1, lastHttpStatus: 200,
@@ -134,6 +138,7 @@ describe('GdeltIngestionService run and health semantics', () => {
     }
     directSources.process.mockResolvedValueOnce({
       accepted: [matched], rejectedCount: 0, rateLimitedCount: 0, regionMismatchCount: 0,
+      irrelevantCount: 0,
       temporalMismatchCount: 1, temporalUnknownCount: 1,
       parserFailureCount: 0, degradedCount: 0,
       successfulFetchCount: 3, lastHttpStatus: 200,
@@ -213,6 +218,76 @@ describe('GdeltIngestionService run and health semantics', () => {
       sourceId: 'gdelt', status: 'HEALTHY', success: true, actualError: false,
     }))
   })
+  it(
+    'does not accept a same-region GDELT article without a pollution marker',
+    async () => {
+      articles.process.mockResolvedValueOnce({
+        ...processed,
+        document: {
+          ...processed.document,
+          relevant: false,
+        },
+      })
+
+      const result = await service.run({
+        ...body(),
+        includeDirectFallback: false,
+      })
+
+      expect(result).toMatchObject({
+        status: 'failed',
+        documents: [],
+        gdelt: {
+          acceptedCount: 0,
+        },
+      })
+
+      expect(
+        JSON.stringify(repository.finalizeRun.mock.calls),
+      ).toContain('"irrelevantCount":1')
+    },
+  )
+  it(
+    'does not accept a GDELT article whose parser failed',
+    async () => {
+      articles.process.mockResolvedValueOnce({
+        ...processed,
+        parserFailed: true,
+        requestedRegionMatched: null,
+        document: {
+          ...processed.document,
+          parserStatus: 'failed',
+          relevant: null,
+          matchedRequestedRegions: null,
+        },
+      })
+
+      const result = await service.run({
+        ...body(),
+        includeDirectFallback: false,
+      })
+
+      expect(result).toMatchObject({
+        status: 'failed',
+        documents: [],
+        gdelt: {
+          acceptedCount: 0,
+        },
+      })
+
+      expect(repository.finalizePublicHealth).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourceId: 'gdelt',
+          status: 'DEGRADED',
+          actualError: true,
+        }),
+      )
+
+      expect(
+        JSON.stringify(repository.finalizeRun.mock.calls),
+      ).toContain('"parserFailureCount":1')
+    },
+  )
 })
 
 describe('normalizeGdeltRequest', () => {

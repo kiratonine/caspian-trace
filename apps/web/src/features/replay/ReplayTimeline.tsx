@@ -262,7 +262,7 @@ export function ReplayTimeline() {
           disabled={!canReplay}
           onClick={togglePlayback}
           aria-label={playLabel}
-          title={playLabel}
+          title={`${playLabel} · ${REPLAY_KEYBOARD_HINT}`}
         >
           {isPlaying ? <Pause /> : <Play />}
         </Button>
@@ -300,7 +300,7 @@ export function ReplayTimeline() {
           ) : scenarioQuery.isError ? (
             REPLAY_UNAVAILABLE
           ) : (
-            REPLAY_KEYBOARD_HINT
+            REPLAY_PLAY_LABEL
           )}
         </p>
         {/* touch-none: на планшете вертикальный свайп по шкале иначе уводит
@@ -346,6 +346,7 @@ export function ReplayTimeline() {
                   onClick={() => handleMarkerClick(index)}
                   aria-label={replayStepAriaLabel(label)}
                   aria-current={isCurrent ? "step" : undefined}
+                  title={label}
                   className="absolute top-2.25 -translate-x-1/2 -translate-y-1/2 rounded-full p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-default"
                 >
                   <span
@@ -356,15 +357,20 @@ export function ReplayTimeline() {
                     )}
                   />
                 </button>
-                <span
-                  className={cn(
-                    "absolute top-5 block w-max text-[10px] leading-tight text-muted-foreground",
-                    labelAlignment(index, steps.length),
-                    isCurrent && "font-medium text-foreground"
-                  )}
-                >
-                  {label}
-                </span>
+                {/* Подпись только у текущего шага: шесть подписей сразу давали
+                    два одинаковых «Применение правила» подряд (в сценарии по
+                    шагу inference на каждое правило). Названия остальных
+                    доступны по наведению и скринридеру. */}
+                {isCurrent && (
+                  <span
+                    className={cn(
+                      "absolute top-5 block w-max text-[10px] leading-tight font-medium text-foreground",
+                      labelAlignment(index, steps.length)
+                    )}
+                  >
+                    {label}
+                  </span>
+                )}
               </div>
             )
           })}

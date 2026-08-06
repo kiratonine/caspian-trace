@@ -3,7 +3,7 @@
   "generatedAt": "2026-08-04",
   "reviewPolicy": {
     "requiredHumanReviewers": 2,
-    "completedHumanReviewers": 0,
+    "completedHumanReviewers": 1,
     "status": "pending"
   },
   "fixtures": [

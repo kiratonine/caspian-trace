@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common'
 
+import { SourcesModule } from '../sources/sources.module'
 import { LiveController } from './live.controller'
-import { LiveRepository } from './live.repository'
 import { LiveService } from './live.service'
 
 @Module({
+  imports: [SourcesModule],
   controllers: [LiveController],
-  providers: [LiveRepository, LiveService],
+  providers: [LiveService],
   exports: [LiveService],
 })
-export class LiveModule {}
+export class LiveModule { }

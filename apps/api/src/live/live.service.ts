@@ -1,16 +1,26 @@
 import { Injectable } from '@nestjs/common'
 
-import { LiveStatusSchema, type LiveStatus } from '@caspian-trace/contracts'
+import {
+  LiveStatusSchema,
+  type LiveStatus,
+} from '@caspian-trace/contracts'
 
-import { LIVE_SOURCE_REGISTRY, mapLiveHealth } from './live.mapper'
-import { LiveRepository } from './live.repository'
+import { SourceHealthService } from '../sources/source-health/source-health.service'
+import { mapLiveHealth } from './live.mapper'
 
 @Injectable()
 export class LiveService {
-  constructor(private readonly repository: LiveRepository) {}
+  constructor(
+    private readonly sourceHealth:
+      SourceHealthService,
+  ) { }
 
   async getStatus(): Promise<LiveStatus> {
-    const rows = await this.repository.findHealth(LIVE_SOURCE_REGISTRY.map((source) => source.dbId))
-    return LiveStatusSchema.parse({ sources: mapLiveHealth(rows) })
+    const rows =
+      await this.sourceHealth.getAll()
+
+    return LiveStatusSchema.parse({
+      sources: mapLiveHealth(rows),
+    })
   }
 }

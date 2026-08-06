@@ -7,9 +7,9 @@ import { SafeFetchError } from '../../common/http/safe-fetch/safe-fetch.errors'
 import type { PlatformEnvironment } from '../../config/environment'
 import {
   IngestionRunStatus,
-  SourceHealthStatus,
 } from '../../generated/prisma/enums'
 import { SourcesService } from '../../sources/sources.service'
+import { SourceHealthService } from '../../sources/source-health/source-health.service'
 import type { RunKazhydrometIngestionDto } from '../dto/run-kazhydromet-ingestion.dto'
 import {
   KazhydrometIngestionError,
@@ -61,6 +61,7 @@ export class KazhydrometIngestionService {
   constructor(
     private readonly adapter: KazhydrometAdapter,
     private readonly repository: IngestionRepository,
+    private readonly sourceHealth: SourceHealthService,
     private readonly sources: SourcesService,
     private readonly pdfText: PdfTextService,
     config: ConfigService<PlatformEnvironment, true>,
@@ -74,7 +75,10 @@ export class KazhydrometIngestionService {
     const startedAt = new Date()
     const state = emptyState()
     await this.repository.createRun(runId, request)
-    await this.repository.markHealthAttempt(startedAt)
+    await this.sourceHealth.startAttempt(
+      'kazhydromet',
+      startedAt,
+    )
 
     try {
       state.cacheAvailable = await this.repository.hasCachedKazhydrometSnapshots()
@@ -141,18 +145,84 @@ export class KazhydrometIngestionService {
         documentIds: state.documents.map((document) => document.sourceDocumentId),
       },
     })
-    const healthStatus = toHealthStatus(status)
-    await this.repository.finalizeHealth({
-      at: finishedAt,
-      status: healthStatus,
+    await this.finalizeSourceHealth(
+      status,
+      state,
+      finishedAt,
+      runId,
+    )
+
+    return response(runId, status, state)
+  }
+
+  private async finalizeSourceHealth(
+    status: KazhydrometIngestionResponse['status'],
+    state: MutableRunState,
+    at: Date,
+    runId: string,
+  ): Promise<void> {
+    const baseInput = {
+      at,
       lastHttpStatus: state.lastHttpStatus,
       cacheAvailable: state.cacheAvailable,
-      detail: state.lastError ? `${state.lastError.code}: ${state.lastError.message}` : null,
-      actualError: state.lastError !== null,
-      success: state.acceptedCount > 0,
-      metadata: { lastRunId: runId },
-    })
-    return response(runId, status, state)
+      metadata: {
+        lastRunId: runId,
+      },
+    }
+
+    if (status === 'succeeded') {
+      await this.sourceHealth.markSuccess(
+        'kazhydromet',
+        baseInput,
+      )
+      return
+    }
+
+    if (status === 'rate_limited') {
+      await this.sourceHealth.markRateLimited(
+        'kazhydromet',
+        {
+          ...baseInput,
+          success: state.acceptedCount > 0,
+          error:
+            state.lastError ?? {
+              code: 'KAZHYDROMET_RATE_LIMITED',
+              message:
+                'Kazhydromet source is rate limited',
+            },
+        },
+      )
+      return
+    }
+
+    if (
+      status === 'partial' &&
+      state.lastError === null
+    ) {
+      await this.sourceHealth.markSuccess(
+        'kazhydromet',
+        {
+          ...baseInput,
+          degraded: true,
+        },
+      )
+      return
+    }
+
+    await this.sourceHealth.markFailure(
+      'kazhydromet',
+      {
+        ...baseInput,
+        degraded: status === 'partial',
+        success: state.acceptedCount > 0,
+        error:
+          state.lastError ?? {
+            code: 'KAZHYDROMET_INGESTION_FAILED',
+            message:
+              'Kazhydromet ingestion failed',
+          },
+      },
+    )
   }
 
   private async processCandidate(
@@ -333,14 +403,6 @@ function toRunStatus(status: KazhydrometIngestionResponse['status']): IngestionR
   }[status]
 }
 
-function toHealthStatus(status: KazhydrometIngestionResponse['status']): SourceHealthStatus {
-  return {
-    succeeded: SourceHealthStatus.HEALTHY,
-    partial: SourceHealthStatus.DEGRADED,
-    failed: SourceHealthStatus.FAILED,
-    rate_limited: SourceHealthStatus.RATE_LIMITED,
-  }[status]
-}
 
 function response(
   runId: string,

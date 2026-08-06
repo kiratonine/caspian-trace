@@ -12,6 +12,7 @@ import { PdfTextService } from '../../src/ingestion/kazhydromet/pdf-text.service
 import type { PdfCandidate } from '../../src/ingestion/kazhydromet/kazhydromet.types'
 import type { NormalizedKazhydrometRequest } from '../../src/ingestion/ingestion.types'
 import { SourcesService } from '../../src/sources/sources.service'
+import { SourceHealthService } from '../../src/sources/source-health/source-health.service'
 
 const candidate: PdfCandidate = {
   url: new URL('https://www.kazhydromet.kz/atyrau-russ-2025-09.pdf'),
@@ -26,9 +27,20 @@ const sha256 = 'a'.repeat(64)
 describe('KazhydrometIngestionService', () => {
   const adapter = { discover: jest.fn(), fetch: jest.fn() }
   const repository = {
-    createRun: jest.fn(), markHealthAttempt: jest.fn(), finalizeRun: jest.fn(), finalizeHealth: jest.fn(),
-    ensureSourceDocument: jest.fn(), findCachedSources: jest.fn(), findCachedSourceById: jest.fn(),
-    findCachedSourceByCanonicalUrl: jest.fn(), hasCachedKazhydrometSnapshots: jest.fn(), persistPages: jest.fn(),
+    createRun: jest.fn(),
+    finalizeRun: jest.fn(),
+    ensureSourceDocument: jest.fn(),
+    findCachedSources: jest.fn(),
+    findCachedSourceById: jest.fn(),
+    findCachedSourceByCanonicalUrl: jest.fn(),
+    hasCachedKazhydrometSnapshots: jest.fn(),
+    persistPages: jest.fn(),
+  }
+  const sourceHealth = {
+    startAttempt: jest.fn(),
+    markSuccess: jest.fn(),
+    markFailure: jest.fn(),
+    markRateLimited: jest.fn(),
   }
   const sources = { cacheExistingSourceSnapshot: jest.fn(), readCachedSourceSnapshot: jest.fn() }
   const pdfText = { extractPages: jest.fn() }
@@ -39,8 +51,18 @@ describe('KazhydrometIngestionService', () => {
       providers: [
         KazhydrometIngestionService,
         { provide: KazhydrometAdapter, useValue: adapter },
-        { provide: IngestionRepository, useValue: repository },
-        { provide: SourcesService, useValue: sources },
+        {
+          provide: IngestionRepository,
+          useValue: repository,
+        },
+        {
+          provide: SourceHealthService,
+          useValue: sourceHealth,
+        },
+        {
+          provide: SourcesService,
+          useValue: sources,
+        },
         { provide: PdfTextService, useValue: pdfText },
         { provide: ConfigService, useValue: { getOrThrow: (): number => 3 } },
       ],
@@ -51,9 +73,19 @@ describe('KazhydrometIngestionService', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     repository.createRun.mockResolvedValue({})
-    repository.markHealthAttempt.mockResolvedValue(undefined)
     repository.finalizeRun.mockResolvedValue(undefined)
-    repository.finalizeHealth.mockResolvedValue(undefined)
+    sourceHealth.startAttempt.mockResolvedValue(
+      undefined,
+    )
+    sourceHealth.markSuccess.mockResolvedValue(
+      undefined,
+    )
+    sourceHealth.markFailure.mockResolvedValue(
+      undefined,
+    )
+    sourceHealth.markRateLimited.mockResolvedValue(
+      undefined,
+    )
     repository.hasCachedKazhydrometSnapshots.mockResolvedValue(false)
     repository.findCachedSources.mockResolvedValue([])
     repository.findCachedSourceById.mockResolvedValue(null)
@@ -89,8 +121,69 @@ describe('KazhydrometIngestionService', () => {
     })
     expect(repository.persistPages).toHaveBeenCalled()
     expect(repository.finalizeRun).toHaveBeenCalledWith(expect.objectContaining({ status: 'SUCCEEDED', acceptedCount: 1 }))
-    expect(repository.finalizeHealth).toHaveBeenCalledWith(expect.objectContaining({ status: 'HEALTHY', cacheAvailable: true }))
+    expect(
+      sourceHealth.startAttempt,
+    ).toHaveBeenCalledWith(
+      'kazhydromet',
+      expect.any(Date),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).toHaveBeenCalledWith(
+      'kazhydromet',
+      expect.objectContaining({
+        lastHttpStatus: 200,
+        cacheAvailable: true,
+      }),
+    )
+
+    expect(
+      sourceHealth.markFailure,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
     expect(repository).not.toHaveProperty('measurement')
+  })
+
+  it('marks a usable parser-partial run as degraded success', async () => {
+    pdfText.extractPages.mockResolvedValueOnce([
+      {
+        pageNumber: 1,
+        text:
+          'Ежемесячный информационный бюллетень',
+        textSha256: 'c'.repeat(64),
+      },
+    ])
+
+    await expect(
+      service.run(validRequest()),
+    ).resolves.toMatchObject({
+      status: 'partial',
+      fetchedCount: 1,
+      cachedCount: 1,
+    })
+
+    expect(
+      sourceHealth.markSuccess,
+    ).toHaveBeenCalledWith(
+      'kazhydromet',
+      expect.objectContaining({
+        degraded: true,
+        lastHttpStatus: 200,
+        cacheAvailable: true,
+      }),
+    )
+
+    expect(
+      sourceHealth.markFailure,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
   })
 
   it('retains the raw snapshot and records partial when parser fails', async () => {
@@ -106,6 +199,30 @@ describe('KazhydrometIngestionService', () => {
     expect(repository.finalizeRun).toHaveBeenCalledWith(expect.objectContaining({
       status: 'PARTIAL', rejectedCount: 1, errorMessage: 'Kazhydromet document ingestion failed',
     }))
+    expect(
+      sourceHealth.markFailure,
+    ).toHaveBeenCalledWith(
+      'kazhydromet',
+      expect.objectContaining({
+        degraded: true,
+        success: false,
+        cacheAvailable: true,
+        error: {
+          code:
+            'KAZHYDROMET_INGESTION_FAILED',
+          message:
+            'Kazhydromet document ingestion failed',
+        },
+      }),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
   })
 
   it('persists rate-limited run and health without fabricating an empty success', async () => {
@@ -114,7 +231,28 @@ describe('KazhydrometIngestionService', () => {
     }))
     await expect(service.run(validRequest())).resolves.toMatchObject({ status: 'rate_limited', documents: [] })
     expect(repository.finalizeRun).toHaveBeenCalledWith(expect.objectContaining({ status: 'RATE_LIMITED', errorCode: 'KAZHYDROMET_RATE_LIMITED' }))
-    expect(repository.finalizeHealth).toHaveBeenCalledWith(expect.objectContaining({ status: 'RATE_LIMITED' }))
+    expect(
+      sourceHealth.markRateLimited,
+    ).toHaveBeenCalledWith(
+      'kazhydromet',
+      expect.objectContaining({
+        success: false,
+        cacheAvailable: false,
+        error: {
+          code: 'KAZHYDROMET_RATE_LIMITED',
+          message:
+            'Kazhydromet source is rate limited',
+        },
+      }),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markFailure,
+    ).not.toHaveBeenCalled()
   })
 
   it('uses cached snapshot after origin failure and reparses it', async () => {
@@ -135,10 +273,30 @@ describe('KazhydrometIngestionService', () => {
       errorCode: 'KAZHYDROMET_ORIGIN_UNAVAILABLE',
       errorMessage: 'Kazhydromet document origin is unavailable; cached snapshot was used',
     }))
-    expect(repository.finalizeHealth).toHaveBeenCalledWith(expect.objectContaining({
-      status: 'DEGRADED', actualError: true,
-      detail: 'KAZHYDROMET_ORIGIN_UNAVAILABLE: Kazhydromet document origin is unavailable; cached snapshot was used',
-    }))
+    expect(
+      sourceHealth.markFailure,
+    ).toHaveBeenCalledWith(
+      'kazhydromet',
+      expect.objectContaining({
+        degraded: true,
+        success: true,
+        cacheAvailable: true,
+        error: {
+          code:
+            'KAZHYDROMET_ORIGIN_UNAVAILABLE',
+          message:
+            'Kazhydromet document origin is unavailable; cached snapshot was used',
+        },
+      }),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
     expect(repository.finalizeRun).not.toHaveBeenCalledWith(expect.objectContaining({ errorMessage: 'origin unavailable' }))
   })
 
@@ -191,9 +349,29 @@ describe('KazhydrometIngestionService', () => {
       candidates: [], metadata: { statusCode: 200, sourceStatus: 'healthy' },
     })
     await expect(service.run(validRequest())).resolves.toMatchObject({ status: 'failed', documents: [] })
-    expect(repository.finalizeHealth).toHaveBeenCalledWith(expect.objectContaining({
-      status: 'FAILED', cacheAvailable: true, actualError: true,
-    }))
+    expect(
+      sourceHealth.markFailure,
+    ).toHaveBeenCalledWith(
+      'kazhydromet',
+      expect.objectContaining({
+        degraded: false,
+        success: false,
+        cacheAvailable: true,
+        error: {
+          code: 'KAZHYDROMET_NO_CANDIDATES',
+          message:
+            'No matching Kazhydromet PDF bulletins were discovered',
+        },
+      }),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
   })
 
   it('validates range and configured document maximum', () => {

@@ -10,7 +10,6 @@ import type {
 
 import { Prisma, type Region } from '../generated/prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
-import { FileInvestigationRepository } from './file-investigation.repository'
 import { parseInvestigationInput } from './investigation-input.schema'
 import type {
   InvestigationInputReader,
@@ -22,79 +21,82 @@ type JsonRecord = Record<string, unknown>
 
 @Injectable()
 export class PrismaInvestigationRepository
-  implements InvestigationInputReader, InvestigationResultWriter
-{
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly fixtures: FileInvestigationRepository,
-  ) {}
+  implements InvestigationInputReader, InvestigationResultWriter {
+  constructor(private readonly prisma: PrismaService) { }
 
-  async loadInput(investigationId: string): Promise<InvestigationInput | null> {
+  async loadInput(referenceId: string): Promise<InvestigationInput | null> {
+    const referencedVersion = await this.prisma.investigation.findUnique({
+      where: { id: referenceId },
+      select: { incidentId: true, isCurrent: true },
+    })
+    if (referencedVersion !== null && !referencedVersion.isCurrent) return null
+
+    const incidentId = referencedVersion?.incidentId ?? referenceId
     const incident = await this.prisma.incident.findUnique({
-      where: { id: investigationId },
+      where: { id: incidentId },
       include: { signals: { include: { signal: true } } },
     })
-    if (incident === null) return this.fixtures.loadInput(investigationId)
+    if (incident === null) return null
 
     const incidentMetadata = asRecord(incident.metadata)
     const stationScope = readStringArray(incidentMetadata.stationIds)
     const relationScope = readStringArray(incidentMetadata.stationRelationIds)
     const measurementScope = readStringArray(incidentMetadata.measurementIds)
     const candidateScope = readStringArray(incidentMetadata.candidateObjectIds)
+    if (
+      stationScope === null ||
+      relationScope === null ||
+      measurementScope === null ||
+      candidateScope === null
+    ) {
+      return null
+    }
+
     const stations = await this.prisma.station.findMany({
-      where:
-        stationScope === null
-          ? { region: incident.region }
-          : { id: { in: stationScope } },
+      where: { id: { in: stationScope } },
       orderBy: { id: 'asc' },
     })
-    const stationIds = stations.map(({ id }) => id)
-    const stationIdSet = new Set(stationIds)
-    const waterBodies = new Set(stations.map(({ waterBody }) => waterBody))
-    const [relations, measurements, allCandidates] = await Promise.all([
+    const [relations, measurements, candidates] = await Promise.all([
       this.prisma.stationRelation.findMany({
-        where:
-          relationScope === null
-            ? {
-                fromStationId: { in: stationIds },
-                toStationId: { in: stationIds },
-              }
-            : { id: { in: relationScope } },
+        where: { id: { in: relationScope } },
         orderBy: { id: 'asc' },
+        include: {
+          evidence: {
+            orderBy: [
+              { sourceDocumentId: 'asc' },
+              { sourcePage: 'asc' },
+              { id: 'asc' },
+            ],
+          },
+        },
       }),
       this.prisma.measurement.findMany({
-        where:
-          measurementScope === null
-            ? {
-                stationId: { in: stationIds },
-                ...(incident.indicator === null
-                  ? {}
-                  : { indicator: incident.indicator }),
-              }
-            : { id: { in: measurementScope } },
+        where: { id: { in: measurementScope } },
         include: { sourcePage: true },
         orderBy: { id: 'asc' },
       }),
       this.prisma.candidateObject.findMany({
-        where:
-          candidateScope === null ? undefined : { id: { in: candidateScope } },
+        where: { id: { in: candidateScope } },
         include: { sources: true },
         orderBy: { id: 'asc' },
       }),
     ])
-    const candidates = allCandidates.filter((candidate) => {
-      if (candidateScope !== null) return true
-      const metadata = asRecord(candidate.metadata)
-      return (
-        metadata.region === incident.region.toLowerCase() ||
-        (typeof metadata.stationId === 'string' && stationIdSet.has(metadata.stationId)) ||
-        (typeof metadata.waterBody === 'string' && waterBodies.has(metadata.waterBody))
-      )
-    })
+
+    if (
+      !containsExactlyScopedIds(stations, stationScope) ||
+      !containsExactlyScopedIds(relations, relationScope) ||
+      !containsExactlyScopedIds(measurements, measurementScope) ||
+      !containsExactlyScopedIds(candidates, candidateScope)
+    ) {
+      return null
+    }
 
     const sourceIds = new Set<string>()
     for (const { signal } of incident.signals) sourceIds.add(signal.sourceDocumentId)
-    for (const relation of relations) sourceIds.add(relation.sourceDocumentId)
+    for (const relation of relations) {
+      if (relation.sourceDocumentId !== null) sourceIds.add(relation.sourceDocumentId)
+      for (const evidence of relation.evidence) sourceIds.add(evidence.sourceDocumentId)
+    }
     for (const measurement of measurements) sourceIds.add(measurement.sourceDocumentId)
     for (const candidate of candidates) {
       for (const source of candidate.sources) sourceIds.add(source.sourceDocumentId)
@@ -164,12 +166,17 @@ export class PrismaInvestigationRepository
     })
   }
 
-  async findCurrent(investigationId: string): Promise<StoredInvestigation | null> {
-    const current = await this.prisma.investigation.findFirst({
-      where: { incidentId: investigationId, isCurrent: true },
+  async findCurrent(referenceId: string): Promise<StoredInvestigation | null> {
+    const exactCurrent = await this.prisma.investigation.findFirst({
+      where: { id: referenceId, isCurrent: true },
+    })
+    if (exactCurrent !== null) return readStoredSnapshot(exactCurrent)
+
+    const currentByIncident = await this.prisma.investigation.findFirst({
+      where: { incidentId: referenceId, isCurrent: true },
       orderBy: { generatedAt: 'desc' },
     })
-    return current === null ? null : readStoredSnapshot(current)
+    return currentByIncident === null ? null : readStoredSnapshot(currentByIncident)
   }
 
   async saveVersioned(
@@ -341,7 +348,7 @@ async function persistInput(
     await transaction.sourceDocument.upsert({
       where: { id: source.id },
       create: { id: source.id, ...data },
-      update: data,
+      update: {},
     })
   }
   const region = input.incident.region.toUpperCase() as Region
@@ -349,9 +356,13 @@ async function persistInput(
     await transaction.station.upsert({
       where: { id: station.id },
       create: { id: station.id, name: station.name, waterBody: station.waterBody, region },
-      update: { name: station.name, waterBody: station.waterBody, region },
+      update: {},
     })
   }
+  const existingIncident = await transaction.incident.findUnique({
+    where: { id: input.incident.id },
+    select: { metadata: true },
+  })
   await transaction.incident.upsert({
     where: { id: input.incident.id },
     create: {
@@ -359,13 +370,13 @@ async function persistInput(
       title: input.incident.title,
       region,
       indicator: input.incident.indicator,
-      metadata: incidentMetadataSnapshot(input),
+      metadata: incidentMetadataSnapshot(input, existingIncident?.metadata),
     },
     update: {
       title: input.incident.title,
       region,
       indicator: input.incident.indicator,
-      metadata: incidentMetadataSnapshot(input),
+      metadata: incidentMetadataSnapshot(input, existingIncident?.metadata),
     },
   })
   for (const signal of input.signals) {
@@ -385,16 +396,7 @@ async function persistInput(
         verificationStatus: signal.verificationStatus.toUpperCase() as 'UNVERIFIED' | 'CORROBORATED' | 'OFFICIAL' | 'CONFLICTING',
         dedupKey: signal.id,
       },
-      update: {
-        title: signal.title,
-        observedAt: toDate(signal.observedAt),
-        observedPeriod: signal.observedPeriod,
-        reportedAt: new Date(signal.reportedAt),
-        locationText: signal.locationText,
-        phenomenon: signal.phenomenon,
-        excerpt: signal.excerpt,
-        verificationStatus: signal.verificationStatus.toUpperCase() as 'UNVERIFIED' | 'CORROBORATED' | 'OFFICIAL' | 'CONFLICTING',
-      },
+      update: {},
     })
     await transaction.incidentSignalLink.upsert({
       where: { incidentId_signalId: { incidentId: input.incident.id, signalId: signal.id } },
@@ -403,6 +405,10 @@ async function persistInput(
     })
   }
   for (const relation of input.stationRelations) {
+    const existingRelation = await transaction.stationRelation.findUnique({
+      where: { id: relation.id },
+      select: { metadata: true },
+    })
     await transaction.stationRelation.upsert({
       where: { id: relation.id },
       create: {
@@ -419,12 +425,9 @@ async function persistInput(
         }),
       },
       update: {
-        sourceDocumentId: relation.sourceDocumentId,
-        verificationStatus: relation.verified ? 'OFFICIAL' : 'UNVERIFIED',
-        notes: relation.basis,
         metadata: jsonValue({
+          ...asRecord(existingRelation?.metadata),
           comparisonPair: relation.comparisonPair,
-          provenance: relation.provenance,
         }),
       },
     })
@@ -448,7 +451,7 @@ async function persistInput(
     await transaction.measurement.upsert({
       where: { id: measurement.id },
       create: { id: measurement.id, ...data },
-      update: data,
+      update: {},
     })
   }
   for (const candidate of input.candidateObjects) {
@@ -467,7 +470,7 @@ async function persistInput(
     await transaction.candidateObject.upsert({
       where: { id: candidate.id },
       create: { id: candidate.id, ...data },
-      update: data,
+      update: {},
     })
     for (const sourceDocumentId of candidate.evidenceDocumentIds) {
       await transaction.candidateObjectSource.upsert({
@@ -489,26 +492,41 @@ function mapStationRelation(relation: {
   fromStationId: string
   toStationId: string
   kind: string
-  sourceDocumentId: string
+  sourceDocumentId: string | null
   verificationStatus: string
   notes: string | null
   metadata: unknown
+  evidence: Array<{
+    id: string
+    sourceDocumentId: string
+    sourcePage: number | null
+    basis: string
+    sourceExcerpt: string
+    verificationStatus: string
+  }>
 }): StationRelationFact {
   const metadata = asRecord(relation.metadata)
   const provenance = asRecord(metadata.provenance)
+  const evidence = relation.evidence[0]
   const reverse = relation.kind === 'DOWNSTREAM_OF'
-  const sourcePage = readNumber(provenance.sourcePage)
-  const sourceExcerpt = readString(provenance.sourceExcerpt)
-  const fixturePath = readString(provenance.fixturePath)
+  const sourceDocumentId = evidence?.sourceDocumentId ?? relation.sourceDocumentId
+  if (sourceDocumentId === null) {
+    throw new Error(`STATION_RELATION_PROVENANCE_MISSING:${relation.id}`)
+  }
+  const sourcePage = evidence?.sourcePage ?? readNumber(provenance.sourcePage)
+  const sourceExcerpt = evidence?.sourceExcerpt ?? readString(provenance.sourceExcerpt)
+  const fixturePath =
+    readString(provenance.fixturePath) ??
+    (evidence === undefined ? null : `database:station_relation_evidence/${evidence.id}`)
   return {
     id: relation.id,
     upstreamStationId: reverse ? relation.toStationId : relation.fromStationId,
     downstreamStationId: reverse ? relation.fromStationId : relation.toStationId,
-    sourceDocumentId: relation.sourceDocumentId,
-    basis: relation.notes ?? '',
+    sourceDocumentId,
+    basis: relation.notes ?? evidence?.basis ?? '',
     verified:
       relation.kind !== 'SAME_REACH' &&
-      isVerified(relation.verificationStatus) &&
+      isVerified(evidence?.verificationStatus ?? relation.verificationStatus) &&
       fixturePath !== null &&
       sourcePage !== null &&
       sourceExcerpt !== null,
@@ -597,8 +615,12 @@ function readIncidentUnknowns(metadata: unknown): unknown[] {
   return Array.isArray(unknowns) ? unknowns : []
 }
 
-function incidentMetadataSnapshot(input: InvestigationInput): Prisma.InputJsonValue {
+function incidentMetadataSnapshot(
+  input: InvestigationInput,
+  existing?: unknown,
+): Prisma.InputJsonValue {
   return jsonValue({
+    ...asRecord(existing),
     unknowns: input.incident.unknowns ?? [],
     stationIds: input.stations.map(({ id }) => id),
     stationRelationIds: input.stationRelations.map(({ id }) => id),
@@ -654,10 +676,27 @@ function readNumber(value: unknown): number | null {
     : null
 }
 
+function containsExactlyScopedIds(
+  records: ReadonlyArray<{ id: string }>,
+  expectedIds: readonly string[],
+): boolean {
+  if (records.length !== expectedIds.length) {
+    return false
+  }
+
+  const expected = new Set(expectedIds)
+
+  return records.every(({ id }) => expected.has(id))
+}
+
 function readStringArray(value: unknown): string[] | null {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string')
-    ? value
-    : null
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => typeof item !== 'string' || item.length === 0)
+  ) {
+    return null
+  }
+  return new Set(value).size === value.length ? value : null
 }
 
 function toDate(value: string | null): Date | null {

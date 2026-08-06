@@ -41,11 +41,11 @@ describe('InvestigationsService', () => {
     const loadInput = jest.spyOn(repository, 'loadInput')
     const saveVersioned = jest.spyOn(repository, 'saveVersioned')
 
-    await expect(service.getStored('inv-atyrau-2025-09')).resolves.toEqual(current)
-    await expect(service.getCurrentResult('inv-atyrau-2025-09')).resolves.toEqual(
+    await expect(service.getStored(current.id)).resolves.toEqual(current)
+    await expect(service.getCurrentResult(current.id)).resolves.toEqual(
       current.result,
     )
-    await expect(service.getEvidenceGraph('inv-atyrau-2025-09')).resolves.toMatchObject({
+    await expect(service.getEvidenceGraph(current.id)).resolves.toMatchObject({
       investigationId: 'inv-atyrau-2025-09',
     })
     expect(loadInput).not.toHaveBeenCalled()

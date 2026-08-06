@@ -288,6 +288,48 @@ describe('safety boundaries', () => {
 })
 
 describe('golden investigations', () => {
+  it('normalizes equivalent timestamp offsets and empty unknown collections', () => {
+    const utcEquivalent: InvestigationInput = {
+      ...september,
+      incident: {
+        ...september.incident,
+        unknowns: [],
+      },
+      signals: september.signals.map((signal) => ({
+        ...signal,
+        observedAt:
+          signal.observedAt === null
+            ? null
+            : new Date(signal.observedAt).toISOString(),
+        reportedAt: new Date(signal.reportedAt).toISOString(),
+      })),
+      measurements: september.measurements.map((measurement) => ({
+        ...measurement,
+        sampledAt:
+          measurement.sampledAt === null
+            ? null
+            : new Date(measurement.sampledAt).toISOString(),
+      })),
+      sourceDocuments: september.sourceDocuments.map((source) => ({
+        ...source,
+        publishedAt:
+          source.publishedAt === null
+            ? null
+            : new Date(source.publishedAt).toISOString(),
+        fetchedAt:
+          source.fetchedAt === null
+            ? null
+            : new Date(source.fetchedAt).toISOString(),
+      })),
+    }
+
+    expect(calculateInputHash(utcEquivalent)).toBe(
+      calculateInputHash(september),
+    )
+    expect(runInvestigation(utcEquivalent).inputHash).toBe(
+      runInvestigation(september).inputHash,
+    )
+  })
   it('derives the September L2/open-upstream result', () => {
     const intervals = evaluatePairedIntervals(september)
     expect(intervals.find(({ relationId }) => relationId === 'rel-sep-asa-pair')?.delta).toBe(
@@ -301,7 +343,7 @@ describe('golden investigations', () => {
         upstreamStationId: null,
         downstreamStationId: 'st-zhaiyk-1km-above-atyrau',
       },
-      rulesetVersion: '1.2.0',
+      rulesetVersion: '1.2.1',
     })
     expect(result.contradictedHypotheses.map(({ code }) => code)).toEqual(
       expect.arrayContaining(['NO_LOCAL_INCREASE_IN_PAIR', 'MAXIMUM_UPSTREAM_OF_OBJECT']),
@@ -319,7 +361,7 @@ describe('golden investigations', () => {
         upstreamStationId: 'st-asa-0-5km-above',
         downstreamStationId: 'st-asa-0-5km-below',
       },
-      rulesetVersion: '1.2.0',
+      rulesetVersion: '1.2.1',
     })
     expect(result.supportedFacts).toHaveLength(1)
     expect(result.supportedFacts[0]?.text).toContain('+0,079')

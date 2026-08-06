@@ -28,7 +28,14 @@ export class FileInvestigationRepository
 {
   private readonly versions = new Map<string, StoredInvestigation[]>()
 
-  async loadInput(investigationId: string): Promise<InvestigationInput | null> {
+  async loadInput(referenceId: string): Promise<InvestigationInput | null> {
+    let investigationId = referenceId
+    for (const [candidateId, versions] of this.versions.entries()) {
+      if (versions.some(({ id, isCurrent }) => id === referenceId && isCurrent)) {
+        investigationId = candidateId
+        break
+      }
+    }
     const filename = FIXTURE_NAMES[investigationId]
     if (filename === undefined) return null
     const path = resolve(
@@ -46,11 +53,23 @@ export class FileInvestigationRepository
     return parseInvestigationInput(raw)
   }
 
-  findCurrent(investigationId: string): Promise<StoredInvestigation | null> {
-    const current = this.versions
-      .get(investigationId)
+  findCurrent(referenceId: string): Promise<StoredInvestigation | null> {
+    const currentByIncident = this.versions
+      .get(referenceId)
       ?.find(({ isCurrent }) => isCurrent)
-    return Promise.resolve(current === undefined ? null : structuredClone(current))
+    if (currentByIncident !== undefined) {
+      return Promise.resolve(structuredClone(currentByIncident))
+    }
+
+    for (const versions of this.versions.values()) {
+      const currentByVersion = versions.find(
+        ({ id, isCurrent }) => id === referenceId && isCurrent,
+      )
+      if (currentByVersion !== undefined) {
+        return Promise.resolve(structuredClone(currentByVersion))
+      }
+    }
+    return Promise.resolve(null)
   }
 
   saveVersioned(

@@ -3,7 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger'
 
 import type { InvestigationResult } from '@caspian-trace/investigation-core'
 
-import { IngestionTokenGuard } from './ingestion-token.guard'
+import { IngestionTokenGuard } from '../ingestion/ingestion-token.guard'
 import { InvestigationsService } from './investigations.service'
 
 @ApiTags('admin investigations')

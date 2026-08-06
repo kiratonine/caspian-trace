@@ -30,14 +30,14 @@ export class InvestigationsService {
     if (loadedInput === null) throw investigationNotFound(investigationId)
     const input = canonicalizeInvestigationInput(loadedInput)
     const result = runInvestigation(input)
-    const current = await this.resultWriter.findCurrent(investigationId)
+    const current = await this.resultWriter.findCurrent(input.incident.id)
     if (
       current?.result.inputHash === result.inputHash &&
       current.result.rulesetVersion === result.rulesetVersion
     ) {
       return current
     }
-    return this.resultWriter.saveVersioned(investigationId, input, result)
+    return this.resultWriter.saveVersioned(input.incident.id, input, result)
   }
 
   async getEvidenceGraph(investigationId: string): Promise<EvidenceGraph> {

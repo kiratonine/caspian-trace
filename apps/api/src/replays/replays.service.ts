@@ -16,7 +16,7 @@ export class ReplaysService {
   async start(id: string): Promise<ReplayScenario> {
     const stored = await this.investigations.getStored(id)
     const fingerprint = `${stored.result.rulesetVersion}:${stored.result.inputHash}`
-    const existing = this.repository.find(id, fingerprint)
+    const existing = this.repository.find(stored.investigationId, fingerprint)
     if (existing !== null) return existing
     return this.repository.save(
       fingerprint,

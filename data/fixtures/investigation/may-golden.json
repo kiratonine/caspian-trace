@@ -31,6 +31,6 @@
   ],
   "unknowns": [],
   "conclusion": "Источник не установлен. В сопоставимом парном интервале зарегистрирован рост; интервал требует проверки как возможная зона дополнительного поступления.",
-  "inputHash": "30c0ebeec4f0ecc6f0b5fc90491bfec8fa69cb9eba228379c5fb87a7cec1981b",
-  "rulesetVersion": "1.2.0"
+  "inputHash": "6af691a9ea5c0e34d527ea8bcd415cb4f74e1484755bd681a7c2a68721ae51c1",
+  "rulesetVersion": "1.2.1"
 }

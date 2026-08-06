@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common'
 
+import { IngestionModule } from '../ingestion/ingestion.module'
 import { AdminInvestigationsController } from './admin-investigations.controller'
-import { FileInvestigationRepository } from './file-investigation.repository'
-import { IngestionTokenGuard } from './ingestion-token.guard'
 import {
   INVESTIGATION_INPUT_READER,
   INVESTIGATION_RESULT_WRITER,
@@ -12,9 +11,9 @@ import { InvestigationsService } from './investigations.service'
 import { PrismaInvestigationRepository } from './prisma-investigation.repository'
 
 @Module({
+  imports: [IngestionModule],
   controllers: [InvestigationsController, AdminInvestigationsController],
   providers: [
-    FileInvestigationRepository,
     PrismaInvestigationRepository,
     {
       provide: INVESTIGATION_INPUT_READER,
@@ -25,7 +24,6 @@ import { PrismaInvestigationRepository } from './prisma-investigation.repository
       useExisting: PrismaInvestigationRepository,
     },
     InvestigationsService,
-    IngestionTokenGuard,
   ],
   exports: [InvestigationsService],
 })

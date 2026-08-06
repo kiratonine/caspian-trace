@@ -149,12 +149,12 @@ export const EvidenceStatementSchema = z
   .object({
     id: nonEmptyId,
     code: z.string().trim().regex(/^[A-Z][A-Z0-9_]*$/),
+    sortOrder: z.number().int().nonnegative(),
     kind: z.enum(['supports', 'contradicts', 'limits', 'unknown']),
     text: nonEmptyText,
     measurementIds: z.array(nonEmptyId),
     sourceDocumentIds: z.array(nonEmptyId),
     generatedBy: z.enum(['rule_engine', 'human_verified']),
-    sortOrder: z.number().int().nonnegative(),
   })
   .strict()
   .superRefine(({ kind, sourceDocumentIds }, context) => {

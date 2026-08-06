@@ -13,9 +13,11 @@ export function stableStringify(value: unknown): string {
 }
 
 /**
- * Canonical order for every collection that is semantically a set.
- * The same canonical value is used by both hashing and rule evaluation so an
- * input permutation cannot keep the hash while changing the result.
+ * Canonical representation used by both hashing and rule evaluation.
+ *
+ * Collections that are semantically sets are sorted.
+ * Equivalent ISO timestamps are normalized to UTC.
+ * Missing and empty incident unknown collections are treated identically.
  */
 export function canonicalizeInvestigationInput(
   input: InvestigationInput,
@@ -24,20 +26,28 @@ export function canonicalizeInvestigationInput(
     ...input,
     incident: {
       ...input.incident,
-      unknowns:
-        input.incident.unknowns === undefined
-          ? undefined
-          : [...input.incident.unknowns].sort(compareUnknowns),
+      unknowns: [...(input.incident.unknowns ?? [])].sort(compareUnknowns),
     },
-    signals: sortById(input.signals),
+    signals: sortById(input.signals).map((signal) => ({
+      ...signal,
+      observedAt: normalizeIsoDateTime(signal.observedAt),
+      reportedAt: normalizeIsoDateTime(signal.reportedAt),
+    })),
     stations: sortById(input.stations),
     stationRelations: sortById(input.stationRelations),
-    measurements: sortById(input.measurements),
+    measurements: sortById(input.measurements).map((measurement) => ({
+      ...measurement,
+      sampledAt: normalizeIsoDateTime(measurement.sampledAt),
+    })),
     candidateObjects: sortById(input.candidateObjects).map((candidate) => ({
       ...candidate,
       evidenceDocumentIds: [...candidate.evidenceDocumentIds].sort(),
     })),
-    sourceDocuments: sortById(input.sourceDocuments),
+    sourceDocuments: sortById(input.sourceDocuments).map((source) => ({
+      ...source,
+      publishedAt: normalizeIsoDateTime(source.publishedAt),
+      fetchedAt: normalizeIsoDateTime(source.fetchedAt),
+    })),
   }
 }
 
@@ -52,10 +62,28 @@ function compareUnknowns(
   return a.code.localeCompare(b.code) || a.text.localeCompare(b.text)
 }
 
+function normalizeIsoDateTime(value: string): string
+function normalizeIsoDateTime(value: string | null): string | null
+function normalizeIsoDateTime(value: string | null): string | null {
+  if (value === null) {
+    return null
+  }
+
+  const parsed = new Date(value)
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error('INVALID_INVESTIGATION_DATETIME')
+  }
+
+  return parsed.toISOString()
+}
+
 function sortObjectKeys(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(sortObjectKeys)
   if (typeof value !== 'object' || value === null) return value
+
   const record = value as Record<string, unknown>
+
   return Object.fromEntries(
     Object.keys(record)
       .sort()

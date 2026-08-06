@@ -4,7 +4,8 @@ import type { InvestigationInput } from '@caspian-trace/investigation-core'
 
 const id = z.string().trim().min(1)
 const text = z.string().trim().min(1)
-const nullableDate = z.string().trim().min(1).nullable()
+const isoDateTime = z.string().datetime({ offset: true })
+const nullableDate = isoDateTime.nullable()
 
 const sourceDocumentSchema = z.object({
   id,
@@ -45,7 +46,7 @@ const investigationInputSchema = z.object({
     title: text,
     observedAt: nullableDate,
     observedPeriod: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).nullable(),
-    reportedAt: text,
+    reportedAt: isoDateTime,
     locationText: text,
     phenomenon: z.enum([
       'oil_film',

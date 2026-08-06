@@ -11,17 +11,20 @@ describe('ReplaysService', () => {
   it('returns the same contract-valid immutable scenario', async () => {
     const inputs = new FileInvestigationRepository()
     const investigations = new InvestigationsService(inputs, inputs)
-    const replays = new ReplaysService(investigations, new ReplaysRepository())
-    await investigations.recompute('inv-atyrau-2025-09')
+    const replayRepository = new ReplaysRepository()
+    const save = jest.spyOn(replayRepository, 'save')
+    const replays = new ReplaysService(investigations, replayRepository)
+    const current = await investigations.recompute('inv-atyrau-2025-09')
 
     const first = ReplayScenarioSchema.parse(
-      await replays.start('inv-atyrau-2025-09'),
+      await replays.start(current.id),
     )
     const originalId = first.steps[0]?.id
     if (first.steps[0] !== undefined) first.steps[0].id = 'mutated-client-copy'
-    const second = await replays.start('inv-atyrau-2025-09')
+    const second = await replays.start(current.id)
 
     expect(second.steps[0]?.id).toBe(originalId)
+    expect(save).toHaveBeenCalledTimes(1)
     expect(second.steps.map(({ offsetMs }) => offsetMs)).toEqual(
       [...second.steps].map(({ offsetMs }) => offsetMs).sort((a, b) => a - b),
     )

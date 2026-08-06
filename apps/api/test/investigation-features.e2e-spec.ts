@@ -7,59 +7,78 @@ import { Test } from '@nestjs/testing'
 import request from 'supertest'
 
 import {
+  ApiErrorSchema,
   DossierSchema,
   EvidenceGraphSchema,
+  IncidentSummaryListSchema,
+  LiveStatusSchema,
   ReplayScenarioSchema,
 } from '@caspian-trace/contracts'
 
 import { AppModule } from '../src/app.module'
 import { configureApplication } from '../src/config/application.setup'
+import { IncidentsService } from '../src/incidents/incidents.service'
 import { FileInvestigationRepository } from '../src/investigations/file-investigation.repository'
 import {
   INVESTIGATION_INPUT_READER,
   INVESTIGATION_RESULT_WRITER,
 } from '../src/investigations/investigation.ports'
 import { InvestigationsService } from '../src/investigations/investigations.service'
+import { LiveService } from '../src/live/live.service'
 
 describe('investigation features (e2e)', () => {
+  const ingestionToken = 'test-ingestion-token-at-least-32-characters'
   let app: INestApplication
   let httpServer: Server
   let fixtures: FileInvestigationRepository
+  let currentInvestigationId: string
 
   beforeAll(async () => {
-    process.env.INGESTION_TOKEN = 'test-ingestion-token-at-least-32-chars'
     fixtures = new FileInvestigationRepository()
     const module = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(INVESTIGATION_INPUT_READER)
       .useValue(fixtures)
       .overrideProvider(INVESTIGATION_RESULT_WRITER)
       .useValue(fixtures)
+      .overrideProvider(IncidentsService)
+      .useValue({ list: () => Promise.resolve([]) })
+      .overrideProvider(LiveService)
+      .useValue({
+        getStatus: () => Promise.resolve({
+          sources: [
+            { id: 'kazhydromet-bulletins', name: 'Казгидромет', lastSuccessAt: null, cacheAvailable: false, status: 'never_run' },
+            { id: 'gdelt', name: 'GDELT', lastSuccessAt: null, cacheAvailable: false, status: 'never_run' },
+            { id: 'direct-sources', name: 'Прямые источники', lastSuccessAt: null, cacheAvailable: false, status: 'never_run' },
+          ],
+        }),
+      })
       .compile()
     app = module.createNestApplication({ bodyParser: false })
     configureApplication(app)
     await app.init()
     httpServer = app.getHttpServer() as Server
-    await app.get(InvestigationsService).recompute('inv-atyrau-2025-09')
+    currentInvestigationId = (
+      await app.get(InvestigationsService).recompute('inv-atyrau-2025-09')
+    ).id
   })
 
   afterAll(async () => {
     await app.close()
-    delete process.env.INGESTION_TOKEN
   })
 
   it('serves evidence, stable replay and both dossier formats', async () => {
     const saveVersioned = jest.spyOn(fixtures, 'saveVersioned')
     const evidence = await request(httpServer)
-      .get('/api/investigations/inv-atyrau-2025-09/evidence')
+      .get(`/api/investigations/${currentInvestigationId}/evidence`)
       .expect(200)
     EvidenceGraphSchema.parse(evidence.body)
     expect(evidence.body).toEqual(readSample('evidence-september.json'))
 
     const firstReplay = await request(httpServer)
-      .post('/api/replays/inv-atyrau-2025-09/start')
+      .post(`/api/replays/${currentInvestigationId}/start`)
       .expect(201)
     const secondReplay = await request(httpServer)
-      .post('/api/replays/inv-atyrau-2025-09/start')
+      .post(`/api/replays/${currentInvestigationId}/start`)
       .expect(201)
     expect(ReplayScenarioSchema.parse(secondReplay.body)).toEqual(
       ReplayScenarioSchema.parse(firstReplay.body),
@@ -67,7 +86,7 @@ describe('investigation features (e2e)', () => {
     expect(secondReplay.body).toEqual(readSample('replay-september.json'))
 
     const json = await request(httpServer)
-      .get('/api/investigations/inv-atyrau-2025-09/export?format=json')
+      .get(`/api/investigations/${currentInvestigationId}/export?format=json`)
       .expect('content-type', /application\/json/)
       .expect(200)
     DossierSchema.parse(json.body)
@@ -76,8 +95,10 @@ describe('investigation features (e2e)', () => {
     )
 
     const html = await request(httpServer)
-      .get('/api/investigations/inv-atyrau-2025-09/export?format=html')
+      .get(`/api/investigations/${currentInvestigationId}/export?format=html`)
       .expect('content-security-policy', /default-src 'none'/)
+      .expect('x-content-type-options', 'nosniff')
+      .expect('content-disposition', /attachment/)
       .expect('content-type', /text\/html/)
       .expect(200)
     expect(html.text).not.toContain('<script')
@@ -87,19 +108,67 @@ describe('investigation features (e2e)', () => {
   })
 
   it('protects recompute with the ingestion token', async () => {
-    await request(httpServer)
-      .post('/api/admin/investigations/inv-atyrau-2025-09/recompute')
+    const missing = await request(httpServer)
+      .post(`/api/admin/investigations/${currentInvestigationId}/recompute`)
       .expect(401)
-    await request(httpServer)
-      .post('/api/admin/investigations/inv-atyrau-2025-09/recompute')
-      .set('x-ingestion-token', 'test-ingestion-token-at-least-32-chars')
+    expect(ApiErrorSchema.parse(missing.body)).toEqual({
+      code: 'INGESTION_UNAUTHORIZED',
+      message: 'Invalid ingestion credentials',
+      requestId: missing.headers['x-request-id'],
+    })
+    const invalid = await request(httpServer)
+      .post(`/api/admin/investigations/${currentInvestigationId}/recompute`)
+      .set('x-ingestion-token', 'invalid')
+      .expect(401)
+    expect(ApiErrorSchema.parse(invalid.body).code).toBe('INGESTION_UNAUTHORIZED')
+    const first = await request(httpServer)
+      .post(`/api/admin/investigations/${currentInvestigationId}/recompute`)
+      .set('x-ingestion-token', ingestionToken)
       .expect(201)
+    const second = await request(httpServer)
+      .post(`/api/admin/investigations/${currentInvestigationId}/recompute`)
+      .set('x-ingestion-token', ingestionToken)
+      .expect(201)
+    expect(second.body).toEqual(first.body)
   })
 
   it('returns 404 for an unknown investigation', async () => {
-    await request(httpServer)
+    const response = await request(httpServer)
       .get('/api/investigations/unknown/evidence')
       .expect(404)
+    expect(ApiErrorSchema.parse(response.body).requestId).toBe(response.headers['x-request-id'])
+  })
+
+  it('keeps platform health, incidents, live status and Swagger paths wired', async () => {
+    await request(httpServer).get('/api/health/live').expect(200)
+    const incidents = await request(httpServer).get('/api/incidents').expect(200)
+    expect(IncidentSummaryListSchema.parse(incidents.body)).toEqual([])
+    const live = await request(httpServer).get('/api/live/status').expect(200)
+    LiveStatusSchema.parse(live.body)
+    const swagger = await request(httpServer).get('/api/docs-json').expect(200)
+    const document: unknown = swagger.body
+    if (!isRecord(document) || !isRecord(document.paths)) {
+      throw new Error('Swagger document has no paths object')
+    }
+    for (const path of [
+      '/api/investigations/{id}/evidence',
+      '/api/admin/investigations/{id}/recompute',
+      '/api/replays/{id}/start',
+      '/api/investigations/{id}/export',
+    ]) {
+      expect(document.paths).toHaveProperty(path)
+    }
+  })
+
+  it('normalizes an invalid export format', async () => {
+    const response = await request(httpServer)
+      .get(`/api/investigations/${currentInvestigationId}/export?format=pdf`)
+      .expect(400)
+    expect(ApiErrorSchema.parse(response.body)).toEqual({
+      code: 'EXPORT_FORMAT_INVALID',
+      message: 'format must be json or html',
+      requestId: response.headers['x-request-id'],
+    })
   })
 })
 
@@ -122,4 +191,8 @@ function readSampleText(filename: string): string {
     ),
     'utf8',
   )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

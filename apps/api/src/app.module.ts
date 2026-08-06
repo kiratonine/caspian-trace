@@ -1,27 +1,37 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 
-import { validateApplicationEnvironment } from './config/environment'
-import { ExportModule } from './export/export.module'
+import { validatePlatformEnvironment } from './config/environment'
 import { HealthModule } from './health/health.module'
+import { IncidentsModule } from './incidents/incidents.module'
+import { PrismaModule } from './prisma/prisma.module'
+import { SafeFetchModule } from './common/http/safe-fetch.module'
+import { SourcesModule } from './sources/sources.module'
+import { IngestionModule } from './ingestion/ingestion.module'
+import { LiveModule } from './live/live.module'
+import { ExportModule } from './export/export.module'
 import { InvestigationsModule } from './investigations/investigations.module'
 import { LlmModule } from './llm/llm.module'
 import { ReplaysModule } from './replays/replays.module'
-import { PrismaModule } from './prisma/prisma.module'
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      validate: validateApplicationEnvironment,
+      validate: validatePlatformEnvironment,
     }),
     PrismaModule,
     HealthModule,
+    IncidentsModule,
+    SourcesModule,
+    SafeFetchModule,
+    IngestionModule,
+    LiveModule,
+    LlmModule,
     InvestigationsModule,
     ReplaysModule,
     ExportModule,
-    LlmModule,
   ],
 })
 export class AppModule {}

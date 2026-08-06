@@ -1,5 +1,7 @@
+import { useTranslation } from "react-i18next"
+
 import type { SourceHealthItem } from "@/api/contracts"
-import { LIVE_STATUS_EMPTY, SOURCE_HEALTH_META } from "@/constants/live-status"
+import { SOURCE_HEALTH_META } from "@/constants/live-status"
 import { useLocale } from "@/i18n/use-locale"
 import { groupSourcesBySeverity, sourceDetailLine } from "./live-status-model"
 import { SourceHealthMarkIcon } from "./SourceHealthMark"
@@ -18,24 +20,29 @@ type SourceStatusListProps = {
 }
 
 export function SourceStatusList({ sources }: SourceStatusListProps) {
+  const { t } = useTranslation()
   const { locale } = useLocale()
 
   if (sources.length === 0) {
-    return <p className="text-muted-foreground">{LIVE_STATUS_EMPTY}</p>
+    return <p className="text-muted-foreground">{t("liveStatus.empty")}</p>
   }
 
   return (
     <ul className="flex flex-col gap-3">
-      {groupSourcesBySeverity(sources, locale).map((group) => {
+      {groupSourcesBySeverity(sources, locale, t).map((group) => {
         const meta = SOURCE_HEALTH_META[group.status]
+        const label = t(`liveStatus.sourceHealth.${group.status}.label`)
+        const description = t(
+          `liveStatus.sourceHealth.${group.status}.description`
+        )
 
         return (
           <li key={group.status} className="flex gap-2">
             <SourceHealthMarkIcon mark={meta.mark} className="mt-1.5" />
             <div className="min-w-0 flex-1">
               <p className="text-pretty text-muted-foreground">
-                <span className="text-foreground">{meta.label}.</span>{" "}
-                {meta.description}
+                <span className="text-foreground">{label}.</span>{" "}
+                {description}
               </p>
               <ul className="mt-0.5 flex flex-col">
                 {group.sources.map((source) => (
@@ -44,7 +51,7 @@ export function SourceStatusList({ sources }: SourceStatusListProps) {
                     {group.sharedDetail === null && (
                       <span className="text-muted-foreground">
                         {" — "}
-                        {sourceDetailLine(source, locale)}
+                        {sourceDetailLine(source, locale, t)}
                       </span>
                     )}
                   </li>

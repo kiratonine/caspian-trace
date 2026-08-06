@@ -1,15 +1,7 @@
+import { useTranslation } from "react-i18next"
+
 import type { DataMode } from "@/constants/api"
-import {
-  DATA_MODE_API_SUMMARY,
-  DATA_MODE_SEED_EXPLANATION,
-  DATA_MODE_SEED_SUMMARY,
-  DATA_MODE_TITLE,
-  MAP_COORDS_DISCLAIMER,
-  MAP_COORDS_DISCLAIMER_TITLE,
-  STUB_DATA_SOURCES,
-  STUB_ENDPOINT_MISSING,
-  STUB_ENDPOINT_READY,
-} from "@/constants/stubs"
+import { STUB_DATA_SOURCES } from "@/constants/stubs"
 
 // Что на экране приходит из файла, а что заменит бэкенд. Реестр показывается
 // в обоих режимах: в `seed` он объясняет происхождение данных, в `api` —
@@ -21,28 +13,33 @@ type DataModeNoticeProps = {
 }
 
 export function DataModeNotice({ mode }: DataModeNoticeProps) {
+  const { t } = useTranslation()
   const isSeed = mode === "seed"
 
   return (
     <section className="flex flex-col gap-1.5">
-      <h3 className="font-medium">{DATA_MODE_TITLE}</h3>
+      <h3 className="font-medium">{t("stubs.dataModeTitle")}</h3>
       <p className="text-pretty text-muted-foreground">
-        {isSeed ? DATA_MODE_SEED_SUMMARY : DATA_MODE_API_SUMMARY}
+        {isSeed
+          ? t("stubs.dataModeSeedSummary")
+          : t("stubs.dataModeApiSummary")}
       </p>
       {isSeed && (
         <p className="text-pretty text-muted-foreground">
-          {DATA_MODE_SEED_EXPLANATION}
+          {t("stubs.dataModeSeedExplanation")}
         </p>
       )}
       <ul className="flex flex-col gap-1.5 border-t pt-1.5">
         {STUB_DATA_SOURCES.map((source) => (
           <li key={source.id}>
-            <p className="text-pretty">{source.screenArea}</p>
+            <p className="text-pretty">
+              {t(`stubs.source.${source.id}.screenArea`)}
+            </p>
             <p className="text-muted-foreground">
               <code className="font-mono">{source.endpoint}</code> —{" "}
               {source.backendReady
-                ? STUB_ENDPOINT_READY
-                : STUB_ENDPOINT_MISSING}
+                ? t("stubs.endpointReady")
+                : t("stubs.endpointMissing")}
             </p>
           </li>
         ))}
@@ -51,9 +48,9 @@ export function DataModeNotice({ mode }: DataModeNoticeProps) {
           (решение владельца продукта 06.08.2026): «что на экране не из
           проверенных данных» — один список, а не метки по всему интерфейсу. */}
       <div className="border-t pt-1.5">
-        <p className="font-medium">{MAP_COORDS_DISCLAIMER_TITLE}</p>
+        <p className="font-medium">{t("stubs.mapCoordsDisclaimerTitle")}</p>
         <p className="text-pretty text-muted-foreground">
-          {MAP_COORDS_DISCLAIMER}
+          {t("stubs.mapCoordsDisclaimer")}
         </p>
       </div>
     </section>

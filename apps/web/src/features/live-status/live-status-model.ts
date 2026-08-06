@@ -1,13 +1,9 @@
+import type { TFunction } from "i18next"
+
 import type { SourceHealthItem, SourceHealthStatus } from "@/api/contracts"
+import { SOURCE_HEALTH_META } from "@/constants/live-status"
 import type { Locale } from "@/i18n/config"
 import { formatDateTime } from "@/lib/format"
-import {
-  LIVE_STATUS_CACHE_AVAILABLE,
-  LIVE_STATUS_CACHE_MISSING,
-  LIVE_STATUS_LAST_SUCCESS_LABEL,
-  LIVE_STATUS_NEVER_SUCCEEDED,
-  SOURCE_HEALTH_META,
-} from "@/constants/live-status"
 
 // Чистая свёртка списка источников в одну строку для шапки. Фронт ничего
 // не вычисляет о данных (запрет 6) — он только пересказывает статусы,
@@ -57,15 +53,19 @@ export function sortSourcesBySeverity(
 }
 
 /** «Последний успешный опрос: успешных опросов не было · кэша нет». */
-export function sourceDetailLine(source: SourceHealthItem, locale: Locale): string {
+export function sourceDetailLine(
+  source: SourceHealthItem,
+  locale: Locale,
+  t: TFunction
+): string {
   const lastSuccess =
     source.lastSuccessAt === null
-      ? LIVE_STATUS_NEVER_SUCCEEDED
+      ? t("liveStatus.neverSucceeded")
       : formatDateTime(source.lastSuccessAt, locale)
   const cache = source.cacheAvailable
-    ? LIVE_STATUS_CACHE_AVAILABLE
-    : LIVE_STATUS_CACHE_MISSING
-  return `${LIVE_STATUS_LAST_SUCCESS_LABEL}: ${lastSuccess} · ${cache}`
+    ? t("liveStatus.cacheAvailable")
+    : t("liveStatus.cacheMissing")
+  return `${t("liveStatus.lastSuccessLabel")}: ${lastSuccess} · ${cache}`
 }
 
 export type SourceHealthGroup = {
@@ -87,7 +87,8 @@ export type SourceHealthGroup = {
  */
 export function groupSourcesBySeverity(
   sources: readonly SourceHealthItem[],
-  locale: Locale
+  locale: Locale,
+  t: TFunction
 ): SourceHealthGroup[] {
   const groups: SourceHealthGroup[] = []
 
@@ -107,11 +108,11 @@ export function groupSourcesBySeverity(
   return groups.map((group) => {
     const [first, ...rest] = group.sources
     if (!first) return group
-    const detail = sourceDetailLine(first, locale)
+    const detail = sourceDetailLine(first, locale, t)
     return {
       ...group,
       sharedDetail: rest.every(
-        (source) => sourceDetailLine(source, locale) === detail
+        (source) => sourceDetailLine(source, locale, t) === detail
       )
         ? detail
         : null,

@@ -14,7 +14,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CONCLUSION_SECTIONS, type ConclusionSectionId } from "@/constants/panel"
-import { REPLAY_PENDING } from "@/constants/replay"
 import { dossierPath } from "@/constants/routing"
 import { VerdictChange } from "@/features/comparison/VerdictChange"
 import {
@@ -289,7 +288,8 @@ function SectionBody({
 }
 
 function ReplayPendingNote() {
-  return <p className="text-sm text-muted-foreground">{REPLAY_PENDING}</p>
+  const { t } = useTranslation()
+  return <p className="text-sm text-muted-foreground">{t("replay.pending")}</p>
 }
 
 type SectionItemProps = {

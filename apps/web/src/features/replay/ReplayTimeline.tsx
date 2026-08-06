@@ -1,21 +1,14 @@
 import { useEffect, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Pause, Play, Square } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { replayScenarioQueryOptions } from "@/api/queries"
 import { EvidenceLevelBadge } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import {
-  REPLAY_EXIT_LABEL,
-  REPLAY_KEYBOARD_HINT,
-  REPLAY_PAUSE_LABEL,
-  REPLAY_PLAY_LABEL,
-  REPLAY_RESTART_LABEL,
-  REPLAY_RESUME_LABEL,
   REPLAY_STEP_OFFSETS_MS,
-  REPLAY_STEP_TYPE_LABELS,
   REPLAY_STEP_TYPE_ORDER,
-  REPLAY_UNAVAILABLE,
   replayStepAriaLabel,
 } from "@/constants/replay"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
@@ -55,6 +48,7 @@ type DragState = {
 }
 
 export function ReplayTimeline() {
+  const { t } = useTranslation()
   const { selectedIncidentId } = useSelectedIncidentDetail()
   const scenarioQuery = useQuery({
     ...replayScenarioQueryOptions(selectedIncidentId ?? ""),
@@ -136,19 +130,19 @@ export function ReplayTimeline() {
   const isPlaying = frame !== null && status === "playing"
   const canReplay = availableScenario !== null || activeScenario !== null
   const playLabel = !activeScenario
-    ? REPLAY_PLAY_LABEL
+    ? t("replay.playLabel")
     : status === "playing"
-      ? REPLAY_PAUSE_LABEL
+      ? t("replay.pauseLabel")
       : status === "finished"
-        ? REPLAY_RESTART_LABEL
-        : REPLAY_RESUME_LABEL
+        ? t("replay.restartLabel")
+        : t("replay.resumeLabel")
 
   const steps =
     (activeScenario ?? availableScenario)?.steps ?? PLACEHOLDER_STEPS
   const totalMs = steps[steps.length - 1]?.offsetMs || 1
   const progress =
     positionMs === null ? null : Math.min(positionMs / totalMs, 1)
-  const stepSummary = frame ? describeReplayStep(frame.step) : null
+  const stepSummary = frame ? describeReplayStep(frame.step, t) : null
 
   const togglePlayback = () => {
     if (!activeScenario) {
@@ -262,7 +256,7 @@ export function ReplayTimeline() {
           disabled={!canReplay}
           onClick={togglePlayback}
           aria-label={playLabel}
-          title={`${playLabel} · ${REPLAY_KEYBOARD_HINT}`}
+          title={`${playLabel} · ${t("replay.keyboardHint")}`}
         >
           {isPlaying ? <Pause /> : <Play />}
         </Button>
@@ -271,8 +265,8 @@ export function ReplayTimeline() {
           size="icon"
           disabled={!activeScenario}
           onClick={exit}
-          aria-label={REPLAY_EXIT_LABEL}
-          title={REPLAY_EXIT_LABEL}
+          aria-label={t("replay.exitLabel")}
+          title={t("replay.exitLabel")}
         >
           <Square />
         </Button>
@@ -288,7 +282,7 @@ export function ReplayTimeline() {
           {frame ? (
             <>
               <span className="font-medium text-foreground">
-                {REPLAY_STEP_TYPE_LABELS[frame.step.type]}
+                {t(`replay.stepType.${frame.step.type}`)}
               </span>
               <EvidenceLevelBadge
                 level={frame.evidenceLevel}
@@ -298,9 +292,9 @@ export function ReplayTimeline() {
               {stepSummary}
             </>
           ) : scenarioQuery.isError ? (
-            REPLAY_UNAVAILABLE
+            t("replay.unavailable")
           ) : (
-            REPLAY_PLAY_LABEL
+            t("replay.playLabel")
           )}
         </p>
         {/* touch-none: на планшете вертикальный свайп по шкале иначе уводит
@@ -333,7 +327,7 @@ export function ReplayTimeline() {
           {steps.map((step, index) => {
             const reached = frame !== null && index <= frame.stepIndex
             const isCurrent = frame !== null && index === frame.stepIndex
-            const label = REPLAY_STEP_TYPE_LABELS[step.type]
+            const label = t(`replay.stepType.${step.type}`)
             return (
               <div
                 key={step.id}
@@ -344,7 +338,7 @@ export function ReplayTimeline() {
                   type="button"
                   disabled={!canReplay}
                   onClick={() => handleMarkerClick(index)}
-                  aria-label={replayStepAriaLabel(label)}
+                  aria-label={replayStepAriaLabel(label, t)}
                   aria-current={isCurrent ? "step" : undefined}
                   title={label}
                   className="absolute top-2.25 -translate-x-1/2 -translate-y-1/2 rounded-full p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-default"

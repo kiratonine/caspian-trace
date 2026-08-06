@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next"
 import { useMemo } from "react"
 
 import type {
@@ -118,7 +119,7 @@ export function projectDetailForReplay(
 }
 
 /** Строка текущего шага для шкалы: дословные тексты payload, без пересказа. */
-export function describeReplayStep(step: ReplayStep): string {
+export function describeReplayStep(step: ReplayStep, t: TFunction): string {
   switch (step.type) {
     case "signal":
       return `«${step.payload.signal.excerpt}»`
@@ -127,6 +128,6 @@ export function describeReplayStep(step: ReplayStep): string {
     case "conclusion":
       return step.payload.text
     case "measurement":
-      return replayMeasurementSummary(step.payload.measurements.length)
+      return replayMeasurementSummary(step.payload.measurements.length, t)
   }
 }

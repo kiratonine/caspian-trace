@@ -10,12 +10,13 @@
 //
 // Полный реестр (включая `GET /api/investigations/:id/evidence`, который UI
 // пока не потребляет) остаётся в `docs/stubs.md`: здесь только то, что видно
-// на экране.
+// на экране. screenArea — текст, читается по id из i18n-ресурса
+// (stubs.source.<id>.screenArea); id/endpoint/backendReady остаются данными.
+
+export type StubDataSourceId = "incidents" | "replay" | "export" | "live-status"
 
 export type StubDataSource = {
-  id: string
-  /** Что этот эндпоинт наполняет на экране. */
-  screenArea: string
+  id: StubDataSourceId
   endpoint: string
   /** Поднят ли эндпоинт у бэкенда на 05.08.2026 (docs/stubs.md). */
   backendReady: boolean
@@ -24,59 +25,22 @@ export type StubDataSource = {
 export const STUB_DATA_SOURCES: readonly StubDataSource[] = [
   {
     id: "incidents",
-    screenArea: "Лента событий, схема реки, правая панель, досье",
     endpoint: "GET /api/incidents, GET /api/incidents/:id",
     backendReady: false,
   },
   {
     id: "replay",
-    screenArea: "Сценарий реплея",
     endpoint: "POST /api/replays/:id/start",
     backendReady: true,
   },
   {
     id: "export",
-    screenArea: "Досье в JSON",
     endpoint: "GET /api/investigations/:id/export",
     backendReady: true,
   },
   {
     id: "live-status",
-    screenArea: "Состояние источников (этот список)",
     endpoint: "GET /api/live/status",
     backendReady: false,
   },
 ]
-
-/**
- * Оговорка про карту живёт здесь, а не плашкой поверх неё (просьба владельца
- * продукта 06.08.2026 убрать метки с карты). Реестр «что на экране не из
- * бэкенда» — ровно то место, где ей и место: координаты створов подтверждены
- * не были, а карте нужны были хоть какие-то, и это надо говорить вслух.
- */
-export const MAP_COORDS_DISCLAIMER_TITLE = "Координаты на карте"
-
-export const MAP_COORDS_DISCLAIMER =
-  "Демонстрационные. Подтверждённых координат створов в данных нет: " +
-  "порядок створов вниз по течению подтверждён документами, положение " +
-  "точек на местности — нет. Створы и объекты, чьё место в цепочке не " +
-  "подтверждено, на карту не выносятся вовсе."
-
-/** Метка в шапке: короткое слово, которое видно без открытия поповера. */
-export const STUB_BADGE_LABEL = "заглушки"
-
-export const DATA_MODE_TITLE = "Режим данных"
-
-export const DATA_MODE_SEED_SUMMARY =
-  "Данные читаются из проверенного файла в сборке, а не из API: бэкенд ещё не подключён."
-
-export const DATA_MODE_SEED_EXPLANATION =
-  "Числа при этом не выдуманы: значения, страницы и SHA-256 — из бюллетеней Казгидромета. " +
-  "Заглушка это способ доставки, а не источник данных."
-
-export const DATA_MODE_API_SUMMARY =
-  "Данные читаются из API. Ответ каждого эндпоинта проверяется схемой контракта на границе сети."
-
-export const STUB_ENDPOINT_READY = "эндпоинт поднят"
-
-export const STUB_ENDPOINT_MISSING = "эндпоинта ещё нет"

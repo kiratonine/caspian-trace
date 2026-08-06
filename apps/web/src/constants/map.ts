@@ -10,11 +10,8 @@ export const MAP_PADDING_Y = 30
 /** Горизонтальное положение русла в viewBox. */
 export const MAP_RIVER_X = 42
 
-/**
- * Кривая русла. Живёт константой, потому что её рисуют двое — сама линия
- * и слой сноса: разъехавшись, они читались бы как две разные реки.
- */
-export const MAP_RIVER_PATH_D = `M ${MAP_RIVER_X} 0 C ${MAP_RIVER_X - 10} ${MAP_VIEWBOX_HEIGHT * 0.25}, ${MAP_RIVER_X + 10} ${MAP_VIEWBOX_HEIGHT * 0.5}, ${MAP_RIVER_X - 4} ${MAP_VIEWBOX_HEIGHT * 0.75} S ${MAP_RIVER_X + 2} ${MAP_VIEWBOX_HEIGHT}, ${MAP_RIVER_X} ${MAP_VIEWBOX_HEIGHT}`
+/** Размах меандра русла в единицах viewBox. */
+export const MAP_RIVER_AMPLITUDE = 7
 
 export const MAP_CAPTION =
   "Географическая схема. Порядок створов подтверждён документами; точные координаты не переданы и на схеме не утверждаются."

@@ -7,6 +7,7 @@ import {
   type InvestigationResult,
 } from '@caspian-trace/investigation-core'
 
+import { Prisma } from '../../src/generated/prisma/client'
 import { PrismaInvestigationRepository } from '../../src/investigations/prisma-investigation.repository'
 import { PrismaService } from '../../src/prisma/prisma.service'
 
@@ -154,9 +155,11 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     await expect(missingSource.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
   })
 
-  it('preserves runtime bootstrap scopes when saving a recomputed version', async () => {
+  it('persists a runtime bootstrap relation through its canonical ID without creating a duplicate edge', async () => {
     const input = inputs.find(({ incident }) => incident.id === 'inv-atyrau-2025-05')
     expect(input).toBeDefined()
+    const inputRelation = input!.stationRelations.find(({ id }) => id === 'rel-may-asa-pair')
+    expect(inputRelation).toBeDefined()
     const result = await readJson<InvestigationResult>(
       'data/fixtures/investigation/may-golden.json',
     )
@@ -168,6 +171,9 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
         relationId: canonicalRelationIds[0],
         evidenceId: 'rel-may-asa-pair',
         sourceDocumentId: 'doc-kazhydromet-2025-05',
+        basis: inputRelation!.basis,
+        comparisonPair: inputRelation!.comparisonPair,
+        provenance: inputRelation!.provenance,
       },
     ]
     const candidateObjectFacts = [
@@ -188,6 +194,34 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     }
     const incidentUpsert = jest.fn((args: unknown) => Promise.resolve(args))
     const upsert = jest.fn(() => Promise.resolve({}))
+    const canonicalRelation = {
+      id: canonicalRelationIds[0],
+      fromStationId: inputRelation!.upstreamStationId,
+      toStationId: inputRelation!.downstreamStationId,
+      kind: 'UPSTREAM_OF',
+      metadata: { seededBy: 'verified-seed', comparisonPair: false },
+    }
+    const stationRelationFindUnique = jest.fn(
+      ({ where }: { where: { id: string } }) =>
+        Promise.resolve(where.id === canonicalRelation.id ? canonicalRelation : null),
+    )
+    const stationRelationUpsert = jest.fn(
+      ({ create }: { create: { id: string } }) => {
+        if (create.id === 'rel-may-asa-pair') {
+          return Promise.reject(
+            new Prisma.PrismaClientKnownRequestError('Duplicate station relation edge', {
+              code: 'P2002',
+              clientVersion: 'test',
+              meta: {
+                target: ['from_station_id', 'to_station_id', 'kind'],
+              },
+            }),
+          )
+        }
+        return Promise.resolve({})
+      },
+    )
+    const stationRelationUpdate = jest.fn(() => Promise.resolve(canonicalRelation))
     const transaction = {
       sourceDocument: { upsert },
       station: { upsert },
@@ -198,8 +232,9 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
       incidentSignal: { upsert },
       incidentSignalLink: { upsert },
       stationRelation: {
-        findUnique: jest.fn(() => Promise.resolve({ metadata: {} })),
-        upsert,
+        findUnique: stationRelationFindUnique,
+        upsert: stationRelationUpsert,
+        update: stationRelationUpdate,
       },
       measurement: { upsert },
       candidateObject: { upsert },
@@ -221,6 +256,9 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
       investigationUnknown: { createMany: jest.fn() },
     }
     const prisma = {
+      investigation: {
+        findFirst: jest.fn(() => Promise.resolve(null)),
+      },
       $transaction: jest.fn((operation: (client: typeof transaction) => Promise<unknown>) =>
         operation(transaction),
       ),
@@ -229,6 +267,26 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
 
     await repository.saveVersioned(input!.incident.id, input!, result)
 
+    expect(stationRelationFindUnique).toHaveBeenCalledWith({
+      where: { id: canonicalRelation.id },
+      select: {
+        id: true,
+        fromStationId: true,
+        toStationId: true,
+        kind: true,
+        metadata: true,
+      },
+    })
+    expect(stationRelationUpsert).not.toHaveBeenCalled()
+    expect(stationRelationUpdate).toHaveBeenCalledWith({
+      where: { id: canonicalRelation.id },
+      data: {
+        metadata: {
+          seededBy: 'verified-seed',
+          comparisonPair: true,
+        },
+      },
+    })
     const upsertCall = incidentUpsert.mock.calls[0]?.[0] as
       | {
           update: { metadata: Record<string, unknown> }

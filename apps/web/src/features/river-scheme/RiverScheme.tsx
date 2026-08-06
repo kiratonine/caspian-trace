@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
 import type { IncidentDetail } from "@/api/contracts"
@@ -11,7 +12,6 @@ import {
   SCHEME_UNCONFIRMED_ORDER_HINT,
   SCHEME_UPSTREAM_HINT,
 } from "@/constants/scheme"
-import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { unitLabel } from "@/constants/units"
 import { InsufficientDataScreen } from "@/features/aktau/InsufficientDataScreen"
 import { PeriodSwitcher } from "@/features/comparison/PeriodSwitcher"
@@ -31,6 +31,7 @@ import { buildSchemeModel } from "./scheme-model"
 
 /** Колонка схемы: рисует выбранное событие (общий хук выбора). */
 export function RiverScheme() {
+  const { t } = useTranslation()
   const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail()
   // Во время реплея схема показывает только «уже загруженные» шагами
   // измерения и коридор — селектор поверх данных, без рефетча (план сессии 9).
@@ -72,7 +73,9 @@ export function RiverScheme() {
           <SchemeHeader subtitle={null} />
           <div className="flex min-h-0 flex-1 items-center justify-center p-8">
             {isError ? (
-              <p className="text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("app.dataLoadError")}
+              </p>
             ) : (
               <SchemeSkeleton />
             )}

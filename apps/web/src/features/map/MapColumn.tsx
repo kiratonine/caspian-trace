@@ -1,10 +1,10 @@
 import { useMemo } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
 import { incidentsQueryOptions } from "@/api/queries"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
-import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { InsufficientDataScreen } from "@/features/aktau/InsufficientDataScreen"
 import { PeriodSwitcher } from "@/features/comparison/PeriodSwitcher"
 import {
@@ -26,6 +26,7 @@ import { buildMapModel } from "./map-model"
  * (§16 п. 5).
  */
 export function MapColumn() {
+  const { t } = useTranslation()
   const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail()
   // Во время реплея показываем только «уже загруженные» шагами измерения
   // и коридор — селектор поверх данных, без рефетча (решение сессии 9).
@@ -58,7 +59,9 @@ export function MapColumn() {
       <section aria-label="Карта участка" className="flex min-h-0 flex-col">
         <div className="flex min-h-0 flex-1 items-center justify-center p-8">
           {isError && (
-            <p className="text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("app.dataLoadError")}
+            </p>
           )}
         </div>
       </section>

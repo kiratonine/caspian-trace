@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
 import type { IncidentDetail, IncidentSummary } from "@/api/contracts"
@@ -12,7 +13,6 @@ import {
   FEED_SIGNALS_HEADING,
 } from "@/constants/feed"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
-import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
 import { cn } from "@/lib/utils"
 import { SignalCard } from "./SignalCard"
@@ -21,6 +21,7 @@ import { SignalCard } from "./SignalCard"
 // карточкой выбранного события из его detail — списковый эндпоинт сигналы
 // не отдаёт (вопрос 2 плана), а detail уже загружен для схемы и панели.
 export function SignalFeed() {
+  const { t } = useTranslation()
   const incidentsQuery = useQuery(incidentsQueryOptions)
   const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail()
   const [, setSearchParams] = useSearchParams()
@@ -52,7 +53,9 @@ export function SignalFeed() {
             onSelect={selectIncident}
           />
         ) : incidentsQuery.isError ? (
-          <p className="p-4 text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
+          <p className="p-4 text-sm text-muted-foreground">
+            {t("app.dataLoadError")}
+          </p>
         ) : (
           <FeedSkeleton />
         )}
@@ -157,6 +160,7 @@ type SignalsBlockProps = {
 
 // relative — блок должен ловить клики поверх растянутой кнопки карточки.
 function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
+  const { t } = useTranslation()
   return (
     <div className="relative mt-1.5 flex flex-col gap-2 border-t pt-2.5">
       <h3 className="text-xs font-medium text-muted-foreground">
@@ -182,7 +186,9 @@ function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
           <p className="text-xs text-muted-foreground">{FEED_NO_SIGNALS}</p>
         )
       ) : detailError ? (
-        <p className="text-xs text-muted-foreground">{DATA_LOAD_ERROR}</p>
+        <p className="text-xs text-muted-foreground">
+          {t("app.dataLoadError")}
+        </p>
       ) : (
         <div aria-hidden className="flex flex-col gap-2">
           <Skeleton className="h-3 w-3/4" />

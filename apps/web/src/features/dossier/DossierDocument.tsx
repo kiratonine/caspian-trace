@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 
 import type { IncidentDetail } from "@/api/contracts"
 import { EvidenceLevelBadge } from "@/components/common"
@@ -29,7 +30,6 @@ import {
   PANEL_NO_UNKNOWNS,
 } from "@/constants/panel"
 import { REGION_LABELS } from "@/constants/regions"
-import { LEGAL_DISCLAIMER } from "@/constants/strings"
 import { StatementList } from "@/features/conclusion/StatementList"
 import { formatDateTime, formatMonth } from "@/lib/format"
 import { CandidateObjectList } from "./CandidateObjectList"
@@ -108,6 +108,7 @@ function SectionBody({
   period,
   generatedAt,
 }: SectionBodyProps) {
+  const { t } = useTranslation()
   const { investigation } = detail
 
   switch (sectionId) {
@@ -146,7 +147,7 @@ function SectionBody({
           <h2 className="text-xs font-medium tracking-widest uppercase">
             {DOSSIER_LEGAL_TITLE}
           </h2>
-          <p className="text-xs text-pretty">{LEGAL_DISCLAIMER}</p>
+          <p className="text-xs text-pretty">{t("app.legalDisclaimer")}</p>
         </aside>
       )
     case "conclusion":

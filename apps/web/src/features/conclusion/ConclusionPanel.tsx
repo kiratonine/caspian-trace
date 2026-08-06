@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from "react"
 import { ChevronRight, FileText } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import type { IncidentDetail } from "@/api/contracts"
@@ -22,7 +23,6 @@ import {
 } from "@/constants/panel"
 import { REPLAY_PENDING } from "@/constants/replay"
 import { dossierPath } from "@/constants/routing"
-import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { VerdictChange } from "@/features/comparison/VerdictChange"
 import {
   projectDetailForReplay,
@@ -39,6 +39,7 @@ import { buildPanelModel, type PanelModel } from "./panel-model"
 
 // Порядок и нумерация секций приходят из CONCLUSION_SECTIONS (ТЗ §13, 1–6).
 export function ConclusionPanel() {
+  const { t } = useTranslation()
   const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail()
   // Во время реплея панель показывает состояние текущего шага — селектор
   // поверх загруженных данных, без рефетча (план сессии 9).
@@ -93,7 +94,9 @@ export function ConclusionPanel() {
         {shownDetail ? (
           <ConclusionPanelContent detail={shownDetail} replayFrame={frame} />
         ) : isError ? (
-          <p className="p-4 text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
+          <p className="p-4 text-sm text-muted-foreground">
+            {t("app.dataLoadError")}
+          </p>
         ) : (
           <PanelSkeleton />
         )}

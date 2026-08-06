@@ -1,10 +1,11 @@
+import { useTranslation } from "react-i18next"
+
 import {
   DOSSIER_COMPLETENESS_LABELS,
   DOSSIER_NO_OBJECTS,
   DOSSIER_OBJECT_BASIS_LABEL,
   DOSSIER_OBJECT_NO_BASIS,
 } from "@/constants/dossier"
-import { OBJECT_FOR_REVIEW_LABEL } from "@/constants/strings"
 import type { DossierObjectEntry } from "./dossier-model"
 
 type CandidateObjectListProps = {
@@ -24,6 +25,7 @@ function objectBasis(entry: DossierObjectEntry): string {
  * с документами-основаниями: досье не утверждает ничьей причастности (ТЗ §4).
  */
 export function CandidateObjectList({ entries }: CandidateObjectListProps) {
+  const { t } = useTranslation()
   if (entries.length === 0) {
     return <p className="text-muted-foreground">{DOSSIER_NO_OBJECTS}</p>
   }
@@ -46,7 +48,7 @@ export function CandidateObjectList({ entries }: CandidateObjectListProps) {
             <p className="text-pretty">
               <span className="font-medium">{object.name}</span>
               {" — "}
-              {OBJECT_FOR_REVIEW_LABEL}
+              {t("app.objectForReview")}
             </p>
             <p className="text-xs text-muted-foreground">
               {[

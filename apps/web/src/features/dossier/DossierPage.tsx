@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { ArrowLeft, Download, Printer } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
 
 import { fetchDossierJson } from "@/api/export"
@@ -18,7 +19,6 @@ import {
   DOSSIER_PRINT_ACTION,
 } from "@/constants/dossier"
 import { DOSSIER_ID_PARAM, incidentPath } from "@/constants/routing"
-import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { downloadJson } from "@/lib/download"
 import { DossierDocument } from "./DossierDocument"
 
@@ -28,6 +28,7 @@ import { DossierDocument } from "./DossierDocument"
  * (решение сессии 1), поэтому работает офлайн и не ждёт серверный экспорт.
  */
 export function DossierPage() {
+  const { t } = useTranslation()
   const params = useParams()
   const incidentId = params[DOSSIER_ID_PARAM] ?? ""
   const detailQuery = useQuery(incidentDetailQueryOptions(incidentId))
@@ -43,7 +44,7 @@ export function DossierPage() {
   const [generatedAt] = useState(() => new Date().toISOString())
 
   const download = useMutation({
-    mutationFn: () => fetchDossierJson(incidentId),
+    mutationFn: () => fetchDossierJson(incidentId, t),
     onSuccess: (data) => downloadJson(`dossier-${incidentId}.json`, data),
   })
 
@@ -92,7 +93,9 @@ export function DossierPage() {
           />
         </>
       ) : detailQuery.isError ? (
-        <p className="text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
+        <p className="text-sm text-muted-foreground">
+          {t("app.dataLoadError")}
+        </p>
       ) : (
         <DossierSkeleton />
       )}

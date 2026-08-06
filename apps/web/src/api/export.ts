@@ -1,6 +1,6 @@
 import { DossierSchema } from "@caspian-trace/contracts"
+import type { TFunction } from "i18next"
 
-import { LEGAL_DISCLAIMER } from "@/constants/strings"
 import { apiGet, IS_SEED_MODE, parseSeed, warnStubOnce } from "./client"
 import type { Dossier, IncidentDetail } from "./contracts"
 import { incidentDetails } from "./seed-data"
@@ -15,6 +15,7 @@ import { incidentDetails } from "./seed-data"
 // STUB: ветка seed остаётся аварийным офлайн-режимом и после интеграции.
 export async function fetchDossierJson(
   id: string,
+  t: TFunction,
   signal?: AbortSignal
 ): Promise<Dossier> {
   if (IS_SEED_MODE) {
@@ -25,7 +26,7 @@ export async function fetchDossierJson(
     if (!detail) throw new Error(`Расследование «${id}» не найдено`)
     return parseSeed(
       DossierSchema,
-      buildDossierFromDetail(detail),
+      buildDossierFromDetail(detail, t),
       `GET /api/investigations/${id}/export?format=json`
     )
   }
@@ -42,14 +43,17 @@ export async function fetchDossierJson(
 // непереданный.
 const UNSPECIFIED_UNKNOWN_CODE = "UNSPECIFIED"
 
-function buildDossierFromDetail(detail: IncidentDetail): Dossier {
+function buildDossierFromDetail(
+  detail: IncidentDetail,
+  t: TFunction
+): Dossier {
   const { investigation } = detail
   return {
     title: investigation.title,
     // Дата выгрузки файла, а не дата вывода: `investigation.updatedAt`
     // означает совсем другое.
     generatedAt: new Date().toISOString(),
-    disclaimer: LEGAL_DISCLAIMER,
+    disclaimer: t("app.legalDisclaimer"),
     conclusion: investigation.conclusion,
     evidenceLevel: investigation.evidenceLevel,
     signals: detail.signals,

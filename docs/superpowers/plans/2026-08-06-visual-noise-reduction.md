@@ -471,8 +471,8 @@ export function MeasurementValue({
 
 `apps/web/src/features/river-scheme/RiverScheme.tsx`.
 
-Импорты: удалить `formatSampledDate` из `@/lib/format` (станет неиспользуемым),
-добавить `import { unitLabel } from "@/constants/units"`.
+Импорты: `formatSampledDate` ОСТАЁТСЯ — код ниже по-прежнему её вызывает,
+просто условно. Добавить `import { unitLabel } from "@/constants/units"`.
 
 В тип `RiverSchemeContentProps` добавить:
 

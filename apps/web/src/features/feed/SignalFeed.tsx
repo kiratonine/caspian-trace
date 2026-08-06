@@ -11,7 +11,6 @@ import {
   FEED_NO_SIGNALS,
   FEED_SIGNALS_HEADING,
 } from "@/constants/feed"
-import { REGION_LABELS } from "@/constants/regions"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
 import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
@@ -146,9 +145,6 @@ function IncidentCard({
           className="relative"
         />
       </div>
-      <p className="text-xs text-muted-foreground">
-        {incident.indicator} · {REGION_LABELS[incident.region]}
-      </p>
       {selected && <SignalsBlock detail={detail} detailError={detailError} />}
     </li>
   )

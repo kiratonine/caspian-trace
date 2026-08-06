@@ -201,7 +201,9 @@ export function ReplayTimeline() {
     return nearestIndex
   }
 
-  const handleTrackPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleTrackPointerDown = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
     if (!canReplay || event.button !== 0) return
     const index = stepIndexFromClientX(event.clientX)
     if (index === null) return
@@ -219,7 +221,9 @@ export function ReplayTimeline() {
     goToStep(index)
   }
 
-  const handleTrackPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handleTrackPointerMove = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) return
     const index = stepIndexFromClientX(event.clientX)

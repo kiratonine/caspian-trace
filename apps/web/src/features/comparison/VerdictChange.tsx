@@ -31,19 +31,14 @@ type VerdictChangeProps = {
  * а не просто список значений. Живёт вне прокручиваемой области панели,
  * чтобы не потеряться, если панель прокручена.
  */
-export function VerdictChange({
-  before,
-  onDismiss,
-}: VerdictChangeProps) {
+export function VerdictChange({ before, onDismiss }: VerdictChangeProps) {
   return (
     <section
       aria-label={VERDICT_CHANGE_TITLE}
       className="flex flex-col gap-2 border-b bg-muted/30 px-4 py-3"
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-xs font-medium">
-          {VERDICT_CHANGE_TITLE}
-        </h3>
+        <h3 className="text-xs font-medium">{VERDICT_CHANGE_TITLE}</h3>
         <Button
           variant="ghost"
           size="icon"

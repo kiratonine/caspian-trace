@@ -28,7 +28,25 @@ interface TestHarness {
   incidentRows: Array<{ id: string; metadata: Record<string, unknown> }>
   evidenceRows: Array<{ id: string; sourceDocumentId: string }>
   candidateRows: Array<{ sources: Array<{ sourceDocumentId: string }> }>
+  measurementRows: TestMeasurementRow[]
   sourceRows: TestSourceDocumentRow[]
+}
+
+interface TestMeasurementRow {
+  id: string
+  stationId: string
+  sourceDocumentId: string
+  indicator: string
+  matrix: string
+  value: { toString(): string }
+  rawValueText: string
+  unit: string
+  sampledAt: Date | null
+  sampledPeriod: string | null
+  sourcePage: { pageNumber: number } | null
+  sourceExcerpt: string | null
+  verificationStatus: string
+  metadata: Record<string, unknown>
 }
 
 interface TestSourceDocumentRow {
@@ -156,6 +174,38 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     expect(source!.fetchedAt?.toISOString()).toBe('2026-08-07T02:00:00.000Z')
   })
 
+  it('reconstructs exact scoped measurements from longer canonical DB excerpts', async () => {
+    const harness = createHarness(inputs, handoff)
+    const mayFixture = inputs.find(({ incident }) => incident.id === 'inv-atyrau-2025-05')
+    const septemberFixture = inputs.find(
+      ({ incident }) => incident.id === 'inv-atyrau-2025-09',
+    )
+    expect(mayFixture).toBeDefined()
+    expect(septemberFixture).toBeDefined()
+
+    expect(
+      harness.measurementRows
+        .filter(({ id }) => id.startsWith('m-2025-05-asa-'))
+        .map(({ sourceExcerpt }) => sourceExcerpt),
+    ).toEqual([
+      'г.Атырау, 0,5 км выше сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,114 мг/дм3',
+      'г.Атырау, 0,5 км ниже сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,193 мг/дм3',
+    ])
+    const may = await harness.repository.loadInput('inv-atyrau-2025-05')
+    expect(may?.measurements).toEqual(mayFixture!.measurements)
+
+    expect(
+      harness.measurementRows
+        .filter(({ id }) => id === 'm-2025-09-asa-above' || id === 'm-2025-09-asa-below')
+        .map(({ sourceExcerpt }) => sourceExcerpt),
+    ).toEqual([
+      'г.Атырау, 0,5 км выше сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,058 мг/дм3',
+      'г.Атырау, 0,5 км ниже сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,054 мг/дм3',
+    ])
+    const september = await harness.repository.loadInput('inv-atyrau-2025-09')
+    expect(september?.measurements).toEqual(septemberFixture!.measurements)
+  })
+
   it('supports the explicit empty scopes of the Aktau case', async () => {
     const { repository, evidenceFindMany } = createHarness(inputs, handoff)
 
@@ -170,15 +220,20 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     expect(evidenceFindMany).not.toHaveBeenCalled()
   })
 
-  it.each(['inv-atyrau-2025-09', 'inv-atyrau-2025-05', 'inv-aktau-insufficient'])(
+  it.each([
+    ['inv-atyrau-2025-09', 'ab5e5a1f3ac67d8405151065e29c3a9ca1099271cee11b6262b411acdef83b56'],
+    ['inv-atyrau-2025-05', '6af691a9ea5c0e34d527ea8bcd415cb4f74e1484755bd681a7c2a68721ae51c1'],
+    ['inv-aktau-insufficient', '4e95296c26e52b914e0c7bf2dd1091c10767cd9c0b56300d92ecfd5d1c2084ad'],
+  ])(
     'reconstructs the manifest fixtureInputHash for %s',
-    async (incidentId) => {
+    async (incidentId, expectedHash) => {
       const { repository } = createHarness(inputs, handoff)
       const loaded = await repository.loadInput(incidentId)
       const manifestCase = handoff.cases.find(({ incident }) => incident.id === incidentId)
 
       expect(loaded).not.toBeNull()
-      expect(calculateInputHash(loaded!)).toBe(manifestCase?.expectedResult.fixtureInputHash)
+      expect(manifestCase?.expectedResult.fixtureInputHash).toBe(expectedHash)
+      expect(calculateInputHash(loaded!)).toBe(expectedHash)
     },
   )
 
@@ -222,6 +277,43 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     const invalid = createHarness(inputs, handoff)
     delete sourceFactFor(invalid, 'inv-atyrau-2025-05').publisher
     await expect(invalid.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+  })
+
+  it('fails closed for missing, duplicate, or wrong-scope measurement facts', async () => {
+    const missing = createHarness(inputs, handoff)
+    delete runtimeBootstrapFor(missing, 'inv-atyrau-2025-05').measurementFacts
+    await expect(missing.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+
+    const duplicate = createHarness(inputs, handoff)
+    const duplicateBootstrap = runtimeBootstrapFor(duplicate, 'inv-atyrau-2025-05')
+    const duplicateFacts = duplicateBootstrap.measurementFacts as InvestigationInput['measurements']
+    duplicateBootstrap.measurementFacts = [duplicateFacts[0]!, duplicateFacts[0]!]
+    await expect(duplicate.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+
+    const wrongScope = createHarness(inputs, handoff)
+    measurementFactFor(wrongScope, 'inv-atyrau-2025-05').id = 'measurement-outside-scope'
+    await expect(wrongScope.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+  })
+
+  it('fails closed for unrelated measurement excerpt or immutable DB conflicts', async () => {
+    const conflicts: Array<(measurement: TestMeasurementRow) => void> = [
+      (measurement): void => { measurement.sourceExcerpt = 'Unrelated excerpt' },
+      (measurement): void => {
+        measurement.value = { toString: (): string => '999' }
+      },
+      (measurement): void => { measurement.sourcePage = { pageNumber: 25 } },
+      (measurement): void => { measurement.stationId = 'station-conflict' },
+    ]
+
+    for (const mutate of conflicts) {
+      const harness = createHarness(inputs, handoff)
+      const measurement = harness.measurementRows.find(
+        ({ id }) => id === 'm-2025-05-asa-above',
+      )
+      expect(measurement).toBeDefined()
+      mutate(measurement!)
+      await expect(harness.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+    }
   })
 
   it('fails closed when immutable source identity conflicts with the scoped fact', async () => {
@@ -348,6 +440,7 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     const runtimeBootstrap = {
       version: 1,
       fixtureInputHash: result.inputHash,
+      measurementFacts: input!.measurements,
       sourceDocumentFacts: input!.sourceDocuments,
       stationRelationFacts,
       candidateObjectFacts,
@@ -504,6 +597,7 @@ function createHarness(inputs: InvestigationInput[], handoff: HandoffManifest): 
       value: { toString: (): string => measurement.value },
       sampledAt: isoDate(measurement.sampledAt),
       sourcePage: measurement.sourcePage === null ? null : { pageNumber: measurement.sourcePage },
+      sourceExcerpt: canonicalMeasurementExcerpt(measurement.id, measurement.sourceExcerpt),
       verificationStatus: measurement.verified ? 'OFFICIAL' : 'UNVERIFIED',
       metadata: {},
     })),
@@ -565,6 +659,7 @@ function createHarness(inputs: InvestigationInput[], handoff: HandoffManifest): 
         candidateObjectIds: input.candidateObjects.map(({ id }) => id),
         sourceDocumentIds: input.sourceDocuments.map(({ id }) => id),
         runtimeBootstrap: {
+          measurementFacts: structuredClone(input.measurements),
           sourceDocumentFacts: structuredClone(input.sourceDocuments),
           stationRelationFacts: input.stationRelations.map((relation) => ({
             relationId: canonicalRelationId(relation),
@@ -622,6 +717,7 @@ function createHarness(inputs: InvestigationInput[], handoff: HandoffManifest): 
     incidentRows,
     evidenceRows,
     candidateRows,
+    measurementRows,
     sourceRows,
   }
 }
@@ -649,6 +745,17 @@ function sourceFactFor(
   const facts = runtimeBootstrapFor(harness, incidentId).sourceDocumentFacts
   if (!Array.isArray(facts) || facts.length === 0) {
     throw new Error(`Missing source document facts ${incidentId}`)
+  }
+  return facts[0] as Record<string, unknown>
+}
+
+function measurementFactFor(
+  harness: TestHarness,
+  incidentId: string,
+): Record<string, unknown> {
+  const facts = runtimeBootstrapFor(harness, incidentId).measurementFacts
+  if (!Array.isArray(facts) || facts.length === 0) {
+    throw new Error(`Missing measurement facts ${incidentId}`)
   }
   return facts[0] as Record<string, unknown>
 }
@@ -689,6 +796,22 @@ function evidenceBasis(basis: string): string {
   return basis === 'Официальная парная маркировка выше/ниже одного сброса'
     ? 'OFFICIAL_PAIRED_ABOVE_BELOW_LABELS'
     : 'OFFICIAL_MONITORING_TABLE_SEQUENCE_AND_STATION_LABELS'
+}
+
+function canonicalMeasurementExcerpt(
+  measurementId: string,
+  scopedExcerpt: string | null,
+): string | null {
+  const prefixById: Record<string, string> = {
+    'm-2025-05-asa-above': 'г.Атырау, 0,5 км выше сброса КГП «Атырау су арнасы»',
+    'm-2025-05-asa-below': 'г.Атырау, 0,5 км ниже сброса КГП «Атырау су арнасы»',
+    'm-2025-09-asa-above': 'г.Атырау, 0,5 км выше сброса КГП «Атырау су арнасы»',
+    'm-2025-09-asa-below': 'г.Атырау, 0,5 км ниже сброса КГП «Атырау су арнасы»',
+  }
+  const prefix = prefixById[measurementId]
+  return prefix === undefined || scopedExcerpt === null
+    ? scopedExcerpt
+    : `${prefix} — ${scopedExcerpt}`
 }
 
 function isoDate(value: string | null): Date | null {

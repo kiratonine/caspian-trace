@@ -39,6 +39,7 @@ type RuntimeBootstrapScopes = {
   measurementIds: string[]
   candidateObjectIds: string[]
   sourceDocumentIds: string[]
+  measurementFacts: InvestigationInput['measurements']
   sourceDocumentFacts: SourceDocumentFact[]
   stationRelationFacts: ScopedStationRelationFact[]
   candidateObjectFacts: ScopedCandidateObjectFact[]
@@ -66,6 +67,23 @@ type SourceDocumentRecord = {
   cachePath: string | null
   status: string
   extractionMetadata: unknown
+}
+
+type MeasurementRecord = {
+  id: string
+  stationId: string
+  sourceDocumentId: string
+  indicator: string
+  matrix: string
+  value: { toString(): string }
+  rawValueText: string
+  unit: string
+  sampledAt: Date | null
+  sampledPeriod: string | null
+  sourcePage: { pageNumber: number } | null
+  sourceExcerpt: string | null
+  verificationStatus: string
+  metadata: unknown
 }
 
 @Injectable()
@@ -130,6 +148,18 @@ export class PrismaInvestigationRepository
       ) ||
       !containsExactlyScopedIds(measurements, scopes.measurementIds) ||
       !containsExactlyScopedIds(candidates, scopes.candidateObjectIds)
+    ) {
+      return null
+    }
+
+    const measurementById = new Map(
+      measurements.map((measurement) => [measurement.id, measurement]),
+    )
+    if (
+      scopes.measurementFacts.some((fact) => {
+        const measurement = measurementById.get(fact.id)
+        return measurement === undefined || !matchesScopedMeasurement(measurement, fact)
+      })
     ) {
       return null
     }
@@ -244,23 +274,7 @@ export class PrismaInvestigationRepository
           waterBody: station.waterBody,
         })),
         stationRelations,
-        measurements: measurements.map((measurement) => ({
-          id: measurement.id,
-          stationId: measurement.stationId,
-          indicator: measurement.indicator,
-          matrix: measurement.matrix,
-          value: measurement.value.toString(),
-          rawValueText: measurement.rawValueText,
-          unit: measurement.unit,
-          sampledAt: toIso(measurement.sampledAt),
-          sampledPeriod: measurement.sampledPeriod,
-          sourceDocumentId: measurement.sourceDocumentId,
-          sourcePage:
-            measurement.sourcePage?.pageNumber ??
-            readNumber(asRecord(measurement.metadata).sourcePage),
-          sourceExcerpt: measurement.sourceExcerpt,
-          verified: isVerified(measurement.verificationStatus),
-        })),
+        measurements: scopes.measurementFacts,
         candidateObjects,
         sourceDocuments: scopes.sourceDocumentFacts,
       })
@@ -750,6 +764,54 @@ function basisMatchesEvidence(factBasis: string, evidenceBasis: string): boolean
   return factBasis === evidenceBasis || relationEvidenceBasisByFact.get(factBasis) === evidenceBasis
 }
 
+function matchesScopedMeasurement(
+  measurement: MeasurementRecord,
+  fact: InvestigationInput['measurements'][number],
+): boolean {
+  const sourcePage =
+    measurement.sourcePage?.pageNumber ??
+    readNumber(asRecord(measurement.metadata).sourcePage)
+  return (
+    measurement.id === fact.id &&
+    measurement.stationId === fact.stationId &&
+    measurement.sourceDocumentId === fact.sourceDocumentId &&
+    measurement.indicator === fact.indicator &&
+    measurement.matrix === fact.matrix &&
+    decimalMatches(measurement.value, fact.value) &&
+    measurement.rawValueText === fact.rawValueText &&
+    measurement.unit === fact.unit &&
+    measurementDateMatches(measurement.sampledAt, fact.sampledAt) &&
+    measurement.sampledPeriod === fact.sampledPeriod &&
+    sourcePage === fact.sourcePage &&
+    isVerified(measurement.verificationStatus) === fact.verified &&
+    measurementExcerptMatches(measurement.sourceExcerpt, fact.sourceExcerpt)
+  )
+}
+
+function decimalMatches(value: { toString(): string }, fact: string): boolean {
+  try {
+    return new Prisma.Decimal(value.toString()).equals(new Prisma.Decimal(fact))
+  } catch {
+    return false
+  }
+}
+
+function measurementDateMatches(value: Date | null, fact: string | null): boolean {
+  if (value === null || fact === null) return value === null && fact === null
+  return new Date(value.toISOString()).getTime() === new Date(fact).getTime()
+}
+
+function measurementExcerptMatches(
+  value: string | null,
+  fact: string | null,
+): boolean {
+  return value === fact || (
+    value !== null &&
+    fact !== null &&
+    value.endsWith(fact)
+  )
+}
+
 function mapSourceDocument(source: SourceDocumentRecord): SourceDocumentFact {
   const metadata = asRecord(source.extractionMetadata)
   return {
@@ -933,10 +995,18 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
   const sourceDocumentFacts = readScopedSourceDocumentFacts(
     metadata.runtimeBootstrap.sourceDocumentFacts,
   )
+  const measurementFacts = sourceDocumentFacts === null
+    ? null
+    : readScopedMeasurementFacts(
+        metadata.runtimeBootstrap.measurementFacts,
+        stationIds,
+        sourceDocumentFacts,
+      )
   if (
     stationRelationFacts === null ||
     candidateObjectFacts === null ||
     sourceDocumentFacts === null ||
+    measurementFacts === null ||
     !containsExactlyScopedIds(
       stationRelationFacts.map(({ relationId }) => ({ id: relationId })),
       stationRelationIds,
@@ -948,6 +1018,10 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
     !containsExactlyScopedIds(
       sourceDocumentFacts,
       sourceDocumentIds,
+    ) ||
+    !containsExactlyScopedIds(
+      measurementFacts,
+      measurementIds,
     )
   ) {
     return null
@@ -959,9 +1033,40 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
     measurementIds,
     candidateObjectIds,
     sourceDocumentIds,
+    measurementFacts,
     sourceDocumentFacts,
     stationRelationFacts,
     candidateObjectFacts,
+  }
+}
+
+function readScopedMeasurementFacts(
+  value: unknown,
+  stationIds: string[],
+  sourceDocumentFacts: SourceDocumentFact[],
+): InvestigationInput['measurements'] | null {
+  if (!Array.isArray(value)) return null
+  try {
+    return parseInvestigationInput({
+      incident: {
+        id: 'runtime-bootstrap-measurement-facts',
+        title: 'Runtime bootstrap measurement facts',
+        region: 'atyrau',
+        indicator: 'runtime-bootstrap-validation',
+      },
+      signals: [],
+      stations: stationIds.map((id) => ({
+        id,
+        name: id,
+        waterBody: 'runtime-bootstrap-validation',
+      })),
+      stationRelations: [],
+      measurements: value,
+      candidateObjects: [],
+      sourceDocuments: sourceDocumentFacts,
+    }).measurements
+  } catch {
+    return null
   }
 }
 

@@ -22,8 +22,11 @@
       "sourceSha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
       "sourcePage": 24,
       "sourceExcerpt": "г.Атырау, 0,5 км выше сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,114 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "m-2025-05-asa-below",
@@ -39,8 +42,11 @@
       "sourceSha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
       "sourcePage": 24,
       "sourceExcerpt": "г.Атырау, 0,5 км ниже сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,193 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     }
   ]
 }

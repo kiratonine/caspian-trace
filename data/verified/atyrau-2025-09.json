@@ -22,8 +22,11 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "1 км выше г.Атырау 5 класс Нефтепродукты – 0,234 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "m-2025-09-asa-above",
@@ -39,8 +42,11 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "г.Атырау, 0,5 км выше сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,058 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "m-2025-09-asa-below",
@@ -56,8 +62,11 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "г.Атырау, 0,5 км ниже сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,054 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "m-2025-09-1km-below-atyrau",
@@ -73,8 +82,11 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "1 км ниже г.Атырау 4 класс Нефтепродукты – 0,167 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "m-2025-09-sturgeon-above",
@@ -90,8 +102,11 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "0,5 км выше сброса РГКП «Урало-Атырауский осетровый завод» — Нефтепродукты – 0,066 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "m-2025-09-sturgeon-below",
@@ -107,8 +122,11 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "3 км ниже сброса РГКП «Урало-Атырауский осетровый завод» — Нефтепродукты – 0,063 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "m-2025-09-damba",
@@ -124,8 +142,11 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "пос.Дамба — Нефтепродукты – 0,067 мг/дм3",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev"
+      ],
+      "checkedAt": "2026-08-06"
     }
   ]
 }

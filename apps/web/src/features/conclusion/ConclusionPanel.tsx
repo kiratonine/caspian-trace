@@ -13,7 +13,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DOSSIER_LINK_LABEL, DOSSIER_OPEN_ACTION } from "@/constants/dossier"
-import { EVIDENCE_LEVEL_META } from "@/constants/evidence"
 import {
   CONCLUSION_SECTIONS,
   PANEL_NO_FACTS,
@@ -242,15 +241,11 @@ function SectionBody({
     case "evidenceLevel": {
       // Уровень на текущем шаге реплея приходит в payload шага (запрет 6:
       // фронт уровни не вычисляет — ни финальные, ни промежуточные).
+      // Расшифровка §13 остаётся видимой — её несёт сам бейдж («L2 Источник
+      // локализован до участка»); абзац-определение печатается в его тултипе,
+      // третьей копией одного факта он на экране не нужен.
       const level = replayFrame?.evidenceLevel ?? investigation.evidenceLevel
-      return (
-        <div className="flex flex-col items-start gap-1.5">
-          <EvidenceLevelBadge level={level} />
-          <p className="text-xs text-pretty text-muted-foreground">
-            {EVIDENCE_LEVEL_META[level].description}
-          </p>
-        </div>
-      )
+      return <EvidenceLevelBadge level={level} />
     }
     case "supportedFacts":
       if (replayFrame && !replayFrame.inferenceReached) {

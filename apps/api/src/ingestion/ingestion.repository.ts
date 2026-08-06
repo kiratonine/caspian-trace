@@ -5,7 +5,6 @@ import {
   IngestionAdapter,
   IngestionRunStatus,
   SourceDocumentStatus,
-  SourceHealthStatus,
 } from '../generated/prisma/enums'
 import { PrismaService } from '../prisma/prisma.service'
 import { kazhydrometError } from './ingestion.errors'
@@ -43,7 +42,7 @@ const cachedSourceSelect = {
 
 @Injectable()
 export class IngestionRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   createRun(id: string, request: NormalizedKazhydrometRequest): Promise<unknown> {
     return this.prisma.ingestionRun.create({
@@ -102,72 +101,6 @@ export class IngestionRepository {
     })
   }
 
-  async markPublicHealthAttempt(input: {
-    sourceId: 'gdelt' | 'direct-sources'
-    displayName: string
-    at: Date
-  }): Promise<void> {
-    await this.prisma.sourceHealth.upsert({
-      where: { sourceId: input.sourceId },
-      create: {
-        sourceId: input.sourceId,
-        displayName: input.displayName,
-        status: SourceHealthStatus.NEVER_RUN,
-        lastAttemptAt: input.at,
-      },
-      update: { lastAttemptAt: input.at },
-      select: { sourceId: true },
-    })
-  }
-
-  async finalizePublicHealth(input: {
-    sourceId: 'gdelt' | 'direct-sources'
-    displayName: string
-    at: Date
-    status: SourceHealthStatus
-    lastHttpStatus: number | null
-    cacheAvailable: boolean
-    detail: string | null
-    actualError: boolean
-    success: boolean
-    metadata: Prisma.InputJsonObject
-  }): Promise<void> {
-    await this.prisma.$transaction(async (transaction) => {
-      const current = await transaction.sourceHealth.findUnique({
-        where: { sourceId: input.sourceId },
-        select: { metadata: true, consecutiveErrors: true },
-      })
-      await transaction.sourceHealth.upsert({
-        where: { sourceId: input.sourceId },
-        create: {
-          sourceId: input.sourceId,
-          displayName: input.displayName,
-          status: input.status,
-          lastAttemptAt: input.at,
-          lastSuccessAt: input.success ? input.at : null,
-          lastHttpStatus: input.lastHttpStatus,
-          cacheAvailable: input.cacheAvailable,
-          consecutiveErrors: input.actualError ? 1 : 0,
-          detail: input.detail,
-          metadata: { ...jsonObject(current?.metadata), ...input.metadata },
-        },
-        update: {
-          displayName: input.displayName,
-          status: input.status,
-          lastAttemptAt: input.at,
-          ...(input.success ? { lastSuccessAt: input.at } : {}),
-          lastHttpStatus: input.lastHttpStatus,
-          cacheAvailable: input.cacheAvailable,
-          consecutiveErrors: input.actualError
-            ? (current?.consecutiveErrors ?? 0) + 1
-            : input.success ? 0 : current?.consecutiveErrors ?? 0,
-          detail: input.detail,
-          metadata: { ...jsonObject(current?.metadata), ...input.metadata },
-        },
-        select: { sourceId: true },
-      })
-    })
-  }
 
   async hasAcceptedPublicRun(
     adapter: typeof IngestionAdapter.GDELT | typeof IngestionAdapter.DIRECT_SOURCE,
@@ -308,10 +241,12 @@ export class IngestionRepository {
       if (article.parserStatus === 'succeeded') return
       await transaction.sourceDocument.update({
         where: { id: sourceDocumentId },
-        data: { extractionMetadata: {
-          ...root,
-          publicArticle: { ...article, parserVersion: 1, parserStatus: 'failed', lastParsedAt: parsedAt.toISOString() },
-        } },
+        data: {
+          extractionMetadata: {
+            ...root,
+            publicArticle: { ...article, parserVersion: 1, parserStatus: 'failed', lastParsedAt: parsedAt.toISOString() },
+          }
+        },
         select: { id: true },
       })
     })
@@ -343,68 +278,7 @@ export class IngestionRepository {
     })
   }
 
-  async markHealthAttempt(at: Date): Promise<void> {
-    await this.prisma.sourceHealth.upsert({
-      where: { sourceId: 'kazhydromet' },
-      create: {
-        sourceId: 'kazhydromet',
-        displayName: 'Казгидромет',
-        status: SourceHealthStatus.NEVER_RUN,
-        lastAttemptAt: at,
-      },
-      update: { lastAttemptAt: at },
-      select: { sourceId: true },
-    })
-  }
 
-  async finalizeHealth(input: {
-    at: Date
-    status: SourceHealthStatus
-    lastHttpStatus: number | null
-    cacheAvailable: boolean
-    detail: string | null
-    actualError: boolean
-    success: boolean
-    metadata: Prisma.InputJsonObject
-  }): Promise<void> {
-    await this.prisma.$transaction(async (transaction) => {
-      const current = await transaction.sourceHealth.findUnique({
-        where: { sourceId: 'kazhydromet' },
-        select: { metadata: true, consecutiveErrors: true },
-      })
-      const metadata = { ...jsonObject(current?.metadata), ...input.metadata }
-      await transaction.sourceHealth.upsert({
-        where: { sourceId: 'kazhydromet' },
-        create: {
-          sourceId: 'kazhydromet',
-          displayName: 'Казгидромет',
-          status: input.status,
-          lastAttemptAt: input.at,
-          lastSuccessAt: input.success ? input.at : null,
-          lastHttpStatus: input.lastHttpStatus,
-          cacheAvailable: input.cacheAvailable,
-          consecutiveErrors: input.actualError ? 1 : 0,
-          detail: input.detail,
-          metadata,
-        },
-        update: {
-          status: input.status,
-          lastAttemptAt: input.at,
-          ...(input.success ? { lastSuccessAt: input.at } : {}),
-          lastHttpStatus: input.lastHttpStatus,
-          cacheAvailable: input.cacheAvailable,
-          consecutiveErrors: input.actualError
-            ? (current?.consecutiveErrors ?? 0) + 1
-            : input.success
-              ? 0
-              : current?.consecutiveErrors ?? 0,
-          detail: input.detail,
-          metadata,
-        },
-        select: { sourceId: true },
-      })
-    })
-  }
 
   async ensureSourceDocument(
     input: SourceDocumentIdentityInput,

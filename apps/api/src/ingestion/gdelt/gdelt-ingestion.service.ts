@@ -5,7 +5,11 @@ import { ConfigService } from '@nestjs/config'
 
 import { SafeFetchError } from '../../common/http/safe-fetch/safe-fetch.errors'
 import type { PlatformEnvironment } from '../../config/environment'
-import { IngestionAdapter, IngestionRunStatus, SourceHealthStatus } from '../../generated/prisma/enums'
+import {
+  IngestionAdapter,
+  IngestionRunStatus,
+} from '../../generated/prisma/enums'
+import { SourceHealthService } from '../../sources/source-health/source-health.service'
 import type { RunGdeltIngestionDto } from '../dto/run-gdelt-ingestion.dto'
 import { DirectSourceAdapter } from '../direct-sources/direct-source.adapter'
 import { DirectSourceService } from '../direct-sources/direct-source.service'
@@ -54,9 +58,11 @@ export class GdeltIngestionService {
     private readonly directSources: DirectSourceService,
     private readonly articles: ArticleIngestionService,
     private readonly signalEnrichment: ArticleSignalEnrichmentRunner,
+    private readonly sourceHealth: SourceHealthService,
     private readonly repository: IngestionRepository,
     config: ConfigService<PlatformEnvironment, true>,
-    @Inject(INGESTION_CLOCK) private readonly clock: IngestionClock,
+    @Inject(INGESTION_CLOCK)
+    private readonly clock: IngestionClock,
   ) {
     this.maxRecords = config.getOrThrow('GDELT_MAX_RECORDS')
     this.maxArticles = config.getOrThrow('GDELT_MAX_ARTICLES_PER_RUN')
@@ -75,7 +81,10 @@ export class GdeltIngestionService {
       adapter: IngestionAdapter.GDELT,
       metadata: requestMetadata(request),
     })
-    await this.repository.markPublicHealthAttempt({ sourceId: 'gdelt', displayName: 'GDELT DOC 2.0', at: startedAt })
+    await this.sourceHealth.startAttempt(
+      'gdelt',
+      startedAt,
+    )
 
     const state: GdeltRunState = {
       sourceStatus: null, cacheStatus: null, httpStatus: null, fetchedCount: 0,
@@ -200,24 +209,18 @@ export class GdeltIngestionService {
         enrichmentFailedCount: state.enrichmentFailedCount,
       },
     })
-    const gdeltCacheAvailable = state.accepted.length > 0 ||
-      await this.repository.hasAcceptedPublicRun(IngestionAdapter.GDELT)
-    await this.repository.finalizePublicHealth({
-      sourceId: 'gdelt', displayName: 'GDELT DOC 2.0', at: finishedAt,
-      status: gdeltHealthStatus(state), lastHttpStatus: state.httpStatus,
-      cacheAvailable: gdeltCacheAvailable,
-      detail: state.error ? `${state.error.code}: ${state.error.message}` : null,
-      actualError:
-        state.sourceStatus !== 'healthy' ||
-        state.rejectedCount > 0 ||
-        state.parserFailureCount > 0,
-      success: state.responseUsable,
-      metadata: {
-        lastRunId: runId,
-        cacheStatus: state.cacheStatus ?? 'none',
-        originFresh: state.cacheStatus === 'miss' && state.sourceStatus === 'healthy',
-      },
-    })
+    const gdeltCacheAvailable =
+      state.accepted.length > 0 ||
+      await this.repository.hasAcceptedPublicRun(
+        IngestionAdapter.GDELT,
+      )
+
+    await this.finalizeGdeltHealth(
+      state,
+      finishedAt,
+      runId,
+      gdeltCacheAvailable,
+    )
 
     const direct = await this.runDirectFallback(request, gdeltCandidates, state.accepted)
     const documents = [...state.accepted.map((item) => item.document), ...direct.documents]
@@ -251,6 +254,151 @@ export class GdeltIngestionService {
       signalCandidates,
       documents,
     }
+  }
+
+  private async finalizeGdeltHealth(
+    state: GdeltRunState,
+    at: Date,
+    runId: string,
+    cacheAvailable: boolean,
+  ): Promise<void> {
+    const baseInput = {
+      at,
+      lastHttpStatus: state.httpStatus,
+      cacheAvailable,
+      metadata: {
+        lastRunId: runId,
+        cacheStatus: state.cacheStatus ?? 'none',
+        originFresh:
+          state.cacheStatus === 'miss' &&
+          state.sourceStatus === 'healthy',
+      },
+    }
+
+    if (state.sourceStatus === 'rate_limited') {
+      await this.sourceHealth.markRateLimited(
+        'gdelt',
+        {
+          ...baseInput,
+          success: state.responseUsable,
+          error:
+            state.error ?? {
+              code: 'GDELT_RATE_LIMITED',
+              message:
+                'GDELT source is rate limited',
+            },
+        },
+      )
+      return
+    }
+
+    const actualError =
+      state.sourceStatus !== 'healthy' ||
+      state.rejectedCount > 0 ||
+      state.parserFailureCount > 0
+
+    const degraded =
+      state.sourceStatus === 'degraded' ||
+      state.rejectedCount > 0 ||
+      state.parserFailureCount > 0 ||
+      state.accepted.some(
+        (item) =>
+          item.sourceStatus !== 'healthy',
+      )
+
+    if (actualError) {
+      await this.sourceHealth.markFailure(
+        'gdelt',
+        {
+          ...baseInput,
+          degraded: state.responseUsable,
+          success: state.responseUsable,
+          error:
+            state.error ?? {
+              code: 'GDELT_INGESTION_FAILED',
+              message: 'GDELT ingestion failed',
+            },
+        },
+      )
+      return
+    }
+
+    await this.sourceHealth.markSuccess(
+      'gdelt',
+      {
+        ...baseInput,
+        degraded,
+        detail:
+          state.error === null
+            ? null
+            : `${state.error.code}: ${state.error.message}`,
+      },
+    )
+  }
+
+  private async finalizeDirectHealth(input: {
+    status: PublicRunStatus
+    at: Date
+    runId: string
+    lastHttpStatus: number | null
+    cacheAvailable: boolean
+    actualError: boolean
+    success: boolean
+    error: {
+      code: string
+      message: string
+    } | null
+  }): Promise<void> {
+    const baseInput = {
+      at: input.at,
+      lastHttpStatus: input.lastHttpStatus,
+      cacheAvailable: input.cacheAvailable,
+      metadata: {
+        lastRunId: input.runId,
+      },
+    }
+
+    if (input.status === 'rate_limited') {
+      await this.sourceHealth.markRateLimited(
+        'direct-sources',
+        {
+          ...baseInput,
+          success: input.success,
+          error:
+            input.error ?? {
+              code: 'DIRECT_SOURCE_RATE_LIMITED',
+              message:
+                'One or more direct public sources are rate limited',
+            },
+        },
+      )
+      return
+    }
+
+    if (input.actualError) {
+      await this.sourceHealth.markFailure(
+        'direct-sources',
+        {
+          ...baseInput,
+          degraded:
+            input.status === 'partial',
+          success: input.success,
+          error:
+            input.error ?? {
+              code:
+                'DIRECT_SOURCE_INGESTION_FAILED',
+              message:
+                'One or more direct public sources could not be fully processed',
+            },
+        },
+      )
+      return
+    }
+
+    await this.sourceHealth.markSuccess(
+      'direct-sources',
+      baseInput,
+    )
   }
 
   private async runDirectFallback(
@@ -308,9 +456,10 @@ export class GdeltIngestionService {
       id: runId, adapter: IngestionAdapter.DIRECT_SOURCE,
       metadata: { ...requestMetadata(request), candidateCount: candidates.length },
     })
-    await this.repository.markPublicHealthAttempt({
-      sourceId: 'direct-sources', displayName: 'Прямые публичные источники', at: startedAt,
-    })
+    await this.sourceHealth.startAttempt(
+      'direct-sources',
+      startedAt,
+    )
     const result = await this.directSources.process(candidates, runId, {
       from: request.from,
       to: request.to,
@@ -345,15 +494,22 @@ export class GdeltIngestionService {
         enrichmentFailedCount: result.enrichmentFailedCount,
       },
     })
-    const cacheAvailable = result.accepted.length > 0 ||
-      await this.repository.hasAcceptedPublicRun(IngestionAdapter.DIRECT_SOURCE)
-    await this.repository.finalizePublicHealth({
-      sourceId: 'direct-sources', displayName: 'Прямые публичные источники', at: finishedAt,
-      status: actualError ? directHealthStatus(status) : SourceHealthStatus.HEALTHY,
+    const cacheAvailable =
+      result.accepted.length > 0 ||
+      await this.repository.hasAcceptedPublicRun(
+        IngestionAdapter.DIRECT_SOURCE,
+      )
+
+    await this.finalizeDirectHealth({
+      status,
+      at: finishedAt,
+      runId,
       lastHttpStatus: result.lastHttpStatus,
-      cacheAvailable, detail: error ? `${error.code}: ${error.message}` : null,
-      actualError, success: result.successfulFetchCount > 0,
-      metadata: { lastRunId: runId },
+      cacheAvailable,
+      actualError,
+      success:
+        result.successfulFetchCount > 0,
+      error,
     })
     return {
       used: true,
@@ -461,30 +617,6 @@ function gdeltRunStatus(state: GdeltRunState): PublicRunStatus {
   return 'failed'
 }
 
-function gdeltHealthStatus(
-  state: GdeltRunState,
-): SourceHealthStatus {
-  if (state.sourceStatus === 'rate_limited') {
-    return SourceHealthStatus.RATE_LIMITED
-  }
-
-  if (!state.responseUsable) {
-    return SourceHealthStatus.FAILED
-  }
-
-  if (
-    state.sourceStatus === 'degraded' ||
-    state.rejectedCount > 0 ||
-    state.parserFailureCount > 0 ||
-    state.accepted.some(
-      (item) => item.sourceStatus !== 'healthy',
-    )
-  ) {
-    return SourceHealthStatus.DEGRADED
-  }
-
-  return SourceHealthStatus.HEALTHY
-}
 
 function directRunStatus(
   accepted: number,
@@ -498,14 +630,6 @@ function directRunStatus(
   return 'failed'
 }
 
-function directHealthStatus(status: PublicRunStatus): SourceHealthStatus {
-  return {
-    succeeded: SourceHealthStatus.HEALTHY,
-    partial: SourceHealthStatus.DEGRADED,
-    failed: SourceHealthStatus.FAILED,
-    rate_limited: SourceHealthStatus.RATE_LIMITED,
-  }[status]
-}
 
 function dbRunStatus(status: PublicRunStatus): IngestionRunStatus {
   return {

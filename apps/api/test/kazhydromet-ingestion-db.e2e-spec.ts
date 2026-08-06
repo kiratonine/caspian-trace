@@ -6,6 +6,7 @@ import { Test } from '@nestjs/testing'
 import { AppModule } from '../src/app.module'
 import { IngestionRepository } from '../src/ingestion/ingestion.repository'
 import { PrismaService } from '../src/prisma/prisma.service'
+import { SourceHealthService } from '../src/sources/source-health/source-health.service'
 import { SourcesService } from '../src/sources/sources.service'
 import { SOURCE_STORAGE } from '../src/sources/storage/storage.constants'
 import type { SourceStoragePort } from '../src/sources/storage/storage.port'
@@ -52,6 +53,7 @@ describe('Kazhydromet ingestion persistence (disposable PostgreSQL e2e)', () => 
   let app: INestApplication
   let prisma: PrismaService
   let repository: IngestionRepository
+  let sourceHealth: SourceHealthService
   let sources: SourcesService
 
   beforeAll(async () => {
@@ -61,34 +63,146 @@ describe('Kazhydromet ingestion persistence (disposable PostgreSQL e2e)', () => 
     await app.init()
     prisma = app.get(PrismaService)
     repository = app.get(IngestionRepository)
+    sourceHealth = app.get(SourceHealthService)
     sources = app.get(SourcesService)
+    await prisma.sourceHealth.deleteMany({
+      where: {
+        sourceId: 'kazhydromet',
+      },
+    })
   })
 
   afterAll(async () => {
     if (prisma) {
-      await prisma.ingestionRun.deleteMany({ where: { id: { startsWith: prefix } } })
-      await prisma.sourceDocument.deleteMany({ where: { id: { startsWith: prefix } } })
+      await prisma.ingestionRun.deleteMany({
+        where: {
+          id: {
+            startsWith: prefix,
+          },
+        },
+      })
+
+      await prisma.sourceDocument.deleteMany({
+        where: {
+          id: {
+            startsWith: prefix,
+          },
+        },
+      })
+
+      await prisma.sourceHealth.deleteMany({
+        where: {
+          sourceId: 'kazhydromet',
+        },
+      })
     }
-    if (app) await app.close()
+
+    if (app) {
+      await app.close()
+    }
   })
 
   it('creates and finalizes a run row and updates source health', async () => {
-    const request = { from: '2025-09', to: '2025-09', regions: ['atyrau'] as ['atyrau'], maxDocuments: 1 }
-    const finishedAt = new Date(Date.now() + 1_000)
-    await repository.createRun(ids.run, request)
-    await repository.markHealthAttempt(new Date())
+    const request = {
+      from: '2025-09',
+      to: '2025-09',
+      regions: ['atyrau'] as ['atyrau'],
+      maxDocuments: 1,
+    }
+
+    await repository.createRun(
+      ids.run,
+      request,
+    )
+
+    const createdRun =
+      await prisma.ingestionRun.findUniqueOrThrow({
+        where: {
+          id: ids.run,
+        },
+        select: {
+          startedAt: true,
+        },
+      })
+
+    const attemptedAt = createdRun.startedAt
+
+    const finishedAt = new Date(
+      createdRun.startedAt.getTime() + 1_000,
+    )
+
+    await sourceHealth.startAttempt(
+      'kazhydromet',
+      attemptedAt,
+    )
+
     await repository.finalizeRun({
-      id: ids.run, status: 'SUCCEEDED', fetchedCount: 1, acceptedCount: 1, rejectedCount: 0,
-      errorCode: null, errorMessage: null, metadata: { testPart: 7 }, finishedAt,
+      id: ids.run,
+      status: 'SUCCEEDED',
+      fetchedCount: 1,
+      acceptedCount: 1,
+      rejectedCount: 0,
+      errorCode: null,
+      errorMessage: null,
+      metadata: {
+        testPart: 7,
+      },
+      finishedAt,
     })
-    await repository.finalizeHealth({
-      at: finishedAt, status: 'HEALTHY', lastHttpStatus: 200,
-      cacheAvailable: true, detail: null, actualError: false, success: true, metadata: { preserved: true },
+
+    await sourceHealth.markSuccess(
+      'kazhydromet',
+      {
+        at: finishedAt,
+        lastHttpStatus: 200,
+        cacheAvailable: true,
+        metadata: {
+          preserved: true,
+        },
+      },
+    )
+
+    await expect(
+      prisma.ingestionRun.findUniqueOrThrow({
+        where: {
+          id: ids.run,
+        },
+        select: {
+          status: true,
+          acceptedCount: true,
+        },
+      }),
+    ).resolves.toEqual({
+      status: 'SUCCEEDED',
+      acceptedCount: 1,
     })
-    await expect(prisma.ingestionRun.findUniqueOrThrow({ where: { id: ids.run }, select: { status: true, acceptedCount: true } }))
-      .resolves.toEqual({ status: 'SUCCEEDED', acceptedCount: 1 })
-    await expect(prisma.sourceHealth.findUniqueOrThrow({ where: { sourceId: 'kazhydromet' }, select: { status: true, cacheAvailable: true, metadata: true } }))
-      .resolves.toMatchObject({ status: 'HEALTHY', cacheAvailable: true, metadata: { preserved: true } })
+
+    await expect(
+      prisma.sourceHealth.findUniqueOrThrow({
+        where: {
+          sourceId: 'kazhydromet',
+        },
+        select: {
+          status: true,
+          lastAttemptAt: true,
+          lastSuccessAt: true,
+          lastHttpStatus: true,
+          cacheAvailable: true,
+          consecutiveErrors: true,
+          metadata: true,
+        },
+      }),
+    ).resolves.toEqual({
+      status: 'HEALTHY',
+      lastAttemptAt: finishedAt,
+      lastSuccessAt: finishedAt,
+      lastHttpStatus: 200,
+      cacheAvailable: true,
+      consecutiveErrors: 0,
+      metadata: {
+        preserved: true,
+      },
+    })
   })
 
   it('creates a source, attaches immutable snapshot, and persists pages', async () => {
@@ -171,22 +285,65 @@ describe('Kazhydromet ingestion persistence (disposable PostgreSQL e2e)', () => 
   })
 
   it('increments health errors for partial accepted runs with actual errors', async () => {
-    const baseline = new Date('2026-08-06T10:00:00Z')
-    await repository.finalizeHealth({
-      at: baseline, status: 'HEALTHY', lastHttpStatus: 200, cacheAvailable: true,
-      detail: null, actualError: false, success: true, metadata: { part07HealthRegression: true },
-    })
-    await repository.finalizeHealth({
-      at: new Date(baseline.getTime() + 1_000), status: 'DEGRADED', lastHttpStatus: null,
-      cacheAvailable: true, detail: 'KAZHYDROMET_ORIGIN_UNAVAILABLE: safe detail',
-      actualError: true, success: true, metadata: { part07HealthRegression: true },
-    })
-    await expect(prisma.sourceHealth.findUniqueOrThrow({
-      where: { sourceId: 'kazhydromet' },
-      select: { status: true, consecutiveErrors: true, detail: true },
-    })).resolves.toEqual({
-      status: 'DEGRADED', consecutiveErrors: 1,
-      detail: 'KAZHYDROMET_ORIGIN_UNAVAILABLE: safe detail',
+    const baseline = new Date(
+      '2026-08-06T10:00:00.000Z',
+    )
+
+    const degradedAt = new Date(
+      baseline.getTime() + 1_000,
+    )
+
+    await sourceHealth.markSuccess(
+      'kazhydromet',
+      {
+        at: baseline,
+        lastHttpStatus: 200,
+        cacheAvailable: true,
+        metadata: {
+          part07HealthRegression: true,
+        },
+      },
+    )
+
+    await sourceHealth.markFailure(
+      'kazhydromet',
+      {
+        at: degradedAt,
+        degraded: true,
+        success: true,
+        lastHttpStatus: null,
+        cacheAvailable: true,
+        error: {
+          code:
+            'KAZHYDROMET_ORIGIN_UNAVAILABLE',
+          message: 'safe detail',
+        },
+        metadata: {
+          part07HealthRegression: true,
+        },
+      },
+    )
+
+    await expect(
+      prisma.sourceHealth.findUniqueOrThrow({
+        where: {
+          sourceId: 'kazhydromet',
+        },
+        select: {
+          status: true,
+          lastSuccessAt: true,
+          cacheAvailable: true,
+          consecutiveErrors: true,
+          detail: true,
+        },
+      }),
+    ).resolves.toEqual({
+      status: 'DEGRADED',
+      lastSuccessAt: degradedAt,
+      cacheAvailable: true,
+      consecutiveErrors: 1,
+      detail:
+        'KAZHYDROMET_ORIGIN_UNAVAILABLE: safe detail',
     })
   })
 

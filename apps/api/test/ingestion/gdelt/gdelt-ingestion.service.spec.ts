@@ -35,9 +35,16 @@ describe('GdeltIngestionService run and health semantics', () => {
   const signalEnrichment = {
     run: jest.fn(),
   }
+  const sourceHealth = {
+    startAttempt: jest.fn(),
+    markSuccess: jest.fn(),
+    markFailure: jest.fn(),
+    markRateLimited: jest.fn(),
+  }
   const repository = {
-    createPublicRun: jest.fn(), markPublicHealthAttempt: jest.fn(), finalizeRun: jest.fn(),
-    finalizePublicHealth: jest.fn(), hasAcceptedPublicRun: jest.fn(),
+    createPublicRun: jest.fn(),
+    finalizeRun: jest.fn(),
+    hasAcceptedPublicRun: jest.fn(),
   }
   const service = new GdeltIngestionService(
     gdelt as never,
@@ -45,6 +52,7 @@ describe('GdeltIngestionService run and health semantics', () => {
     directSources as never,
     articles as never,
     signalEnrichment as never,
+    sourceHealth as never,
     repository as never,
     createSafeFetchConfig(),
     clock,
@@ -53,9 +61,22 @@ describe('GdeltIngestionService run and health semantics', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     repository.createPublicRun.mockResolvedValue({})
-    repository.markPublicHealthAttempt.mockResolvedValue(undefined)
     repository.finalizeRun.mockResolvedValue(undefined)
-    repository.finalizePublicHealth.mockResolvedValue(undefined)
+    sourceHealth.startAttempt.mockResolvedValue(
+      undefined,
+    )
+
+    sourceHealth.markSuccess.mockResolvedValue(
+      undefined,
+    )
+
+    sourceHealth.markFailure.mockResolvedValue(
+      undefined,
+    )
+
+    sourceHealth.markRateLimited.mockResolvedValue(
+      undefined,
+    )
     repository.hasAcceptedPublicRun.mockResolvedValue(false)
     gdelt.discover.mockResolvedValue(discovery('healthy', 'miss'))
     articles.process.mockResolvedValue(processed)
@@ -111,14 +132,30 @@ describe('GdeltIngestionService run and health semantics', () => {
     })
 
     expect(
-      repository.finalizePublicHealth,
+      sourceHealth.startAttempt,
     ).toHaveBeenCalledWith(
+      'gdelt',
+      expect.any(Date),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).toHaveBeenCalledWith(
+      'gdelt',
       expect.objectContaining({
-        sourceId: 'gdelt',
-        status: 'HEALTHY',
-        actualError: false,
+        degraded: false,
+        lastHttpStatus: 200,
+        cacheAvailable: true,
       }),
     )
+
+    expect(
+      sourceHealth.markFailure,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
 
     expect(
       repository.finalizeRun,
@@ -150,9 +187,29 @@ describe('GdeltIngestionService run and health semantics', () => {
     expect(repository.finalizeRun).toHaveBeenCalledWith(expect.objectContaining({
       status: 'RATE_LIMITED', acceptedCount: 1, errorCode: 'GDELT_RATE_LIMITED',
     }))
-    expect(repository.finalizePublicHealth).toHaveBeenCalledWith(expect.objectContaining({
-      sourceId: 'gdelt', status: 'RATE_LIMITED', success: true, actualError: true,
-    }))
+    expect(
+      sourceHealth.markRateLimited,
+    ).toHaveBeenCalledWith(
+      'gdelt',
+      expect.objectContaining({
+        success: true,
+        cacheAvailable: true,
+        lastHttpStatus: 200,
+        error: {
+          code: 'GDELT_RATE_LIMITED',
+          message:
+            'GDELT source is rate limited; cached response was used',
+        },
+      }),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markFailure,
+    ).not.toHaveBeenCalled()
   })
 
   it('runs a separate direct fallback after 429 and never overwrites GDELT health', async () => {
@@ -195,8 +252,48 @@ describe('GdeltIngestionService run and health semantics', () => {
       status: 'partial', gdelt: { status: 'rate_limited', acceptedCount: 0 },
       directFallback: { used: true, status: 'succeeded', acceptedCount: 1 },
     })
-    expect(repository.finalizePublicHealth).toHaveBeenNthCalledWith(1, expect.objectContaining({ sourceId: 'gdelt', status: 'RATE_LIMITED' }))
-    expect(repository.finalizePublicHealth).toHaveBeenNthCalledWith(2, expect.objectContaining({ sourceId: 'direct-sources', status: 'HEALTHY' }))
+    expect(
+      sourceHealth.startAttempt,
+    ).toHaveBeenNthCalledWith(
+      1,
+      'gdelt',
+      expect.any(Date),
+    )
+
+    expect(
+      sourceHealth.startAttempt,
+    ).toHaveBeenNthCalledWith(
+      2,
+      'direct-sources',
+      expect.any(Date),
+    )
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).toHaveBeenCalledWith(
+      'gdelt',
+      expect.objectContaining({
+        success: false,
+        lastHttpStatus: 429,
+      }),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).toHaveBeenCalledWith(
+      'direct-sources',
+      expect.objectContaining({
+        lastHttpStatus: 200,
+        cacheAvailable: true,
+      }),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).not.toHaveBeenCalledWith(
+      'gdelt',
+      expect.anything(),
+    )
     expect(repository.finalizeRun).not.toHaveBeenCalledWith(expect.objectContaining({ errorMessage: 'raw upstream detail' }))
     expect(directSources.process).toHaveBeenCalledWith(
       [directCandidate],
@@ -335,14 +432,27 @@ describe('GdeltIngestionService run and health semantics', () => {
       )
 
       expect(
-        repository.finalizePublicHealth,
+        sourceHealth.markSuccess,
       ).toHaveBeenLastCalledWith(
+        'direct-sources',
         expect.objectContaining({
-          sourceId: 'direct-sources',
-          status: 'HEALTHY',
-          actualError: false,
-          success: true,
+          lastHttpStatus: 200,
+          cacheAvailable: true,
         }),
+      )
+
+      expect(
+        sourceHealth.markFailure,
+      ).not.toHaveBeenCalledWith(
+        'direct-sources',
+        expect.anything(),
+      )
+
+      expect(
+        sourceHealth.markRateLimited,
+      ).not.toHaveBeenCalledWith(
+        'direct-sources',
+        expect.anything(),
       )
     },
   )
@@ -388,9 +498,29 @@ describe('GdeltIngestionService run and health semantics', () => {
       status: 'FAILED', errorCode: 'GDELT_RESPONSE_INVALID',
       errorMessage: 'GDELT response does not match the expected schema',
     }))
-    expect(repository.finalizePublicHealth).toHaveBeenCalledWith(expect.objectContaining({
-      sourceId: 'gdelt', status: 'FAILED', success: false, actualError: true,
-    }))
+    expect(
+      sourceHealth.markFailure,
+    ).toHaveBeenCalledWith(
+      'gdelt',
+      expect.objectContaining({
+        degraded: false,
+        success: false,
+        cacheAvailable: false,
+        error: {
+          code: 'GDELT_RESPONSE_INVALID',
+          message:
+            'GDELT response does not match the expected schema',
+        },
+      }),
+    )
+
+    expect(
+      sourceHealth.markSuccess,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
   })
 
   it('keeps an explicit empty articles response usable but returns no-results failed', async () => {
@@ -402,9 +532,26 @@ describe('GdeltIngestionService run and health semantics', () => {
     await expect(service.run({ ...body(), includeDirectFallback: false })).resolves.toMatchObject({
       status: 'failed', documents: [], gdelt: { acceptedCount: 0, discoveredCount: 0 },
     })
-    expect(repository.finalizePublicHealth).toHaveBeenCalledWith(expect.objectContaining({
-      sourceId: 'gdelt', status: 'HEALTHY', success: true, actualError: false,
-    }))
+    expect(
+      sourceHealth.markSuccess,
+    ).toHaveBeenCalledWith(
+      'gdelt',
+      expect.objectContaining({
+        degraded: false,
+        lastHttpStatus: 200,
+        cacheAvailable: false,
+        detail:
+          'GDELT_NO_ALLOWED_ARTICLES: GDELT returned no allowed articles for the requested coverage',
+      }),
+    )
+
+    expect(
+      sourceHealth.markFailure,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
   })
   it(
     'does not accept a same-region GDELT article without a pollution marker',
@@ -465,11 +612,20 @@ describe('GdeltIngestionService run and health semantics', () => {
         },
       })
 
-      expect(repository.finalizePublicHealth).toHaveBeenCalledWith(
+      expect(
+        sourceHealth.markFailure,
+      ).toHaveBeenCalledWith(
+        'gdelt',
         expect.objectContaining({
-          sourceId: 'gdelt',
-          status: 'DEGRADED',
-          actualError: true,
+          degraded: true,
+          success: true,
+          cacheAvailable: false,
+          error: {
+            code:
+              'PUBLIC_ARTICLE_INGESTION_FAILED',
+            message:
+              'A public article was cached but could not be fully processed',
+          },
         }),
       )
 
@@ -564,14 +720,22 @@ describe('GdeltIngestionService run and health semantics', () => {
     })
 
     expect(
-      repository.finalizePublicHealth,
+      sourceHealth.markSuccess,
     ).toHaveBeenCalledWith(
+      'gdelt',
       expect.objectContaining({
-        sourceId: 'gdelt',
-        status: 'HEALTHY',
-        actualError: false,
+        degraded: false,
+        cacheAvailable: true,
       }),
     )
+
+    expect(
+      sourceHealth.markFailure,
+    ).not.toHaveBeenCalled()
+
+    expect(
+      sourceHealth.markRateLimited,
+    ).not.toHaveBeenCalled()
 
     expect(
       repository.finalizeRun,

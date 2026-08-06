@@ -274,6 +274,7 @@ git commit -m "refactor(feed): убрать метастроку карточк�
 - Modify: `apps/web/src/features/river-scheme/OrderedStations.tsx`
 - Modify: `apps/web/src/features/river-scheme/UnorderedStations.tsx`
 - Modify: `apps/web/src/features/river-scheme/RiverScheme.tsx`
+- Modify: `apps/web/src/features/comparison/comparison-model.ts`
 - Modify: `apps/web/src/features/comparison/PeriodSwitcher.tsx`
 
 **Interfaces:**
@@ -287,6 +288,10 @@ git commit -m "refactor(feed): убрать метастроку карточк�
     необязательный проп `showUnit?: boolean` (по умолчанию `true`).
   - `RiverSchemeContent` — новый необязательный проп
     `hasPeriodSwitcher?: boolean` (по умолчанию `false`).
+  - `hasComparablePeriods(periods: readonly IncidentSummary[]): boolean`
+    в `comparison-model.ts` — единственное место, где живёт порог «пара
+    и более». Его читают и `PeriodSwitcher` (показываться ли), и
+    `RiverScheme` (печатать ли дату в строке контекста).
 
 - [ ] **Step 1: Посчитать общую единицу события в модели схемы**
 
@@ -498,12 +503,84 @@ export function MeasurementValue({
           )}
 ```
 
-В контейнере `RiverScheme` передать новый проп:
+- [ ] **Step 5: Вынести порог «есть пара периодов» в один предикат**
+
+Условие «переключатель показывается» нужно теперь двоим — самому
+`PeriodSwitcher` и строке контекста схемы. Держать `periods.length >= 2`
+в двух файлах нельзя: разъедутся при первой же правке.
+
+`apps/web/src/features/comparison/comparison-model.ts` — добавить в конец:
+
+```ts
+/**
+ * Переключатель периодов имеет смысл только при паре и более. Предикат
+ * общий: по нему `PeriodSwitcher` решает, показываться ли, а схема — печатать
+ * ли дату отбора (когда кнопок нет, период иначе исчез бы с экрана).
+ */
+export function hasComparablePeriods(
+  periods: readonly IncidentSummary[]
+): boolean {
+  return periods.length >= 2
+}
+```
+
+Тип `IncidentSummary` в этом файле уже импортирован — проверить и добавить
+только если его нет.
+
+`apps/web/src/features/comparison/PeriodSwitcher.tsx` — перевести на предикат
+и заодно убрать видимый заголовок над кнопками (`aria-label` на `<nav>`
+остаётся: две кнопки с месяцем и уровнем объясняют себя глазу, но группе
+нужно имя для скринридера):
+
+```tsx
+import type { IncidentSummary } from "@/api/contracts"
+import { EvidenceLevelBadge } from "@/components/common"
+import { COMPARISON_SWITCHER_LABEL } from "@/constants/comparison"
+import { formatMonth } from "@/lib/format"
+import { cn } from "@/lib/utils"
+import { hasComparablePeriods } from "./comparison-model"
+
+type PeriodSwitcherProps = {
+  periods: IncidentSummary[]
+  selectedIncidentId: string | null
+  onSelect: (id: string) => void
+}
+
+/**
+ * Переключатель периодов одного участка (ТЗ §5, §14). Уровень стоит прямо
+ * на кнопке: переключение периода — это смена вывода, а не смена фильтра,
+ * и разница L2/L3 должна быть видна ещё до клика.
+ */
+export function PeriodSwitcher({
+  periods,
+  selectedIncidentId,
+  onSelect,
+}: PeriodSwitcherProps) {
+  if (!hasComparablePeriods(periods)) return null
+
+  return (
+    <nav aria-label={COMPARISON_SWITCHER_LABEL}>
+      <ul className="flex flex-wrap gap-2">
+```
+
+(остальное тело `<ul>` не меняется)
+
+`apps/web/src/features/river-scheme/RiverScheme.tsx` — импортировать предикат
+рядом с уже импортируемым `findComparablePeriods`:
+
+```tsx
+import {
+  findComparablePeriods,
+  hasComparablePeriods,
+} from "@/features/comparison/comparison-model"
+```
+
+и передать новый проп:
 
 ```tsx
         <RiverSchemeContent
           detail={shownDetail}
-          hasPeriodSwitcher={periods.length >= 2}
+          hasPeriodSwitcher={hasComparablePeriods(periods)}
           periodSwitcher={
             <PeriodSwitcher
               periods={periods}
@@ -513,31 +590,6 @@ export function MeasurementValue({
           }
         />
 ```
-
-`periods.length >= 2` — то же условие, по которому `PeriodSwitcher`
-возвращает `null` (см. его первую строку). Держать порог в двух местах
-неприятно, но альтернатива — заставить контейнер знать внутренности
-компонента; порог зафиксирован комментарием в обоих файлах.
-
-Добавить в `PeriodSwitcher.tsx` над `if (periods.length < 2) return null`:
-
-```tsx
-  // Порог продублирован в RiverScheme (hasPeriodSwitcher): строка контекста
-  // схемы печатает дату только тогда, когда кнопок нет.
-```
-
-- [ ] **Step 5: Убрать заголовок над кнопками периодов**
-
-`apps/web/src/features/comparison/PeriodSwitcher.tsx` — удалить видимый
-абзац, оставив `aria-label` на `<nav>`: две кнопки с месяцем и уровнем
-объясняют себя сами, а для скринридера название группы нужно.
-
-```tsx
-    <nav aria-label={COMPARISON_SWITCHER_LABEL} className="flex flex-col gap-1">
-      <ul className="flex flex-wrap gap-2">
-```
-
-Импорт `COMPARISON_SWITCHER_LABEL` остаётся — он всё ещё нужен для `aria-label`.
 
 - [ ] **Step 6: Проверить сборку**
 
@@ -1345,24 +1397,30 @@ export function MeasurementTable({ rows }: MeasurementTableProps) {
 подряд (тот же приём, что у расшифровок статусов в поповере, решение
 сессии 15):
 
+Сначала — функция, чтобы основание считалось в одном месте (сравнивать
+с соседом, повторив выражение, значит завести две копии одной логики):
+
+```tsx
+/** Документы-основания одной строкой; отсутствие оснований — тоже значение. */
+function objectBasis(entry: DossierObjectEntry): string {
+  return entry.evidenceDocuments.length > 0
+    ? entry.evidenceDocuments.map((document) => document.title).join("; ")
+    : DOSSIER_OBJECT_NO_BASIS
+}
+```
+
+Затем тело списка:
+
 ```tsx
   return (
     <ul className="flex flex-col gap-3">
-      {entries.map(({ object, evidenceDocuments }, index) => {
-        const basis =
-          evidenceDocuments.length > 0
-            ? evidenceDocuments.map((document) => document.title).join("; ")
-            : DOSSIER_OBJECT_NO_BASIS
+      {entries.map((entry, index) => {
+        const { object } = entry
+        const basis = objectBasis(entry)
         // Одинаковое основание у соседей печатается один раз: два подряд
-        // идентичных абзаца — шум, а не подсказка.
+        // идентичных абзаца — шум, а не подсказка (решение сессии 15).
         const previous = entries[index - 1]
-        const previousBasis = previous
-          ? previous.evidenceDocuments.length > 0
-            ? previous.evidenceDocuments
-                .map((document) => document.title)
-                .join("; ")
-            : DOSSIER_OBJECT_NO_BASIS
-          : null
+        const previousBasis = previous ? objectBasis(previous) : null
 
         return (
           <li key={object.id} className="flex break-inside-avoid flex-col gap-1">

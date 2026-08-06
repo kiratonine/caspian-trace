@@ -10,11 +10,11 @@
       "title": "Необычная зелёная окраска воды в Жайыке",
       "observedAt": null,
       "observedPeriod": "2025-09",
-      "reportedAt": "2025-09-09T10:16:00.000Z",
+      "reportedAt": "2025-09-09T15:16:00+05:00",
       "location": null,
       "locationText": "река Жайык, Атырау",
       "phenomenon": "color_change",
-      "excerpt": "Жителей Атырау встревожила необычная зеленая окраска воды",
+      "excerpt": "Жителей Атырау в начале сентября встревожила необычная зеленая окраска воды в реке Жайык.",
       "sourceDocumentId": "doc-zakon-green-water",
       "extractionMode": "verified_seed",
       "verificationStatus": "corroborated"
@@ -91,7 +91,6 @@
     {
       "id": "evidence-no-increase-rel-sep-asa-pair-m-2025-09-asa-above-m-2025-09-asa-below",
       "code": "NO_LOCAL_INCREASE_IN_PAIR",
-      "sortOrder": 0,
       "kind": "contradicts",
       "text": "В сопоставимой паре изменение составляет -0,004 мг/дм³; эта пара не подтверждает дополнительное поступление внутри интервала в данном временном срезе.",
       "measurementIds": [
@@ -101,12 +100,12 @@
       "sourceDocumentIds": [
         "doc-kazhydromet-2025-09"
       ],
-      "generatedBy": "rule_engine"
+      "generatedBy": "rule_engine",
+      "sortOrder": 0
     },
     {
       "id": "evidence-maximum-upstream-obj-atyrau-su-arnasy",
       "code": "MAXIMUM_UPSTREAM_OF_OBJECT",
-      "sortOrder": 1,
       "kind": "contradicts",
       "text": "Объект для проверки «КГП «Атырау су арнасы»» расположен ниже максимального вышележащего измерения и не объясняет этот максимум обычным переносом вниз по течению. Это не оценивает другие события или участки ниже объекта.",
       "measurementIds": [
@@ -115,7 +114,8 @@
       "sourceDocumentIds": [
         "doc-kazhydromet-2025-09"
       ],
-      "generatedBy": "rule_engine"
+      "generatedBy": "rule_engine",
+      "sortOrder": 1
     }
   ],
   "unknowns": [
@@ -153,10 +153,10 @@
     },
     {
       "id": "doc-zakon-green-water",
-      "title": "Необычная зелёная вода в Жайыке",
+      "title": "В Атырау зеленая вода в реке оказалась следом нефтяного загрязнения",
       "publisher": "Zakon.kz",
       "url": "https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html",
-      "publishedAt": "2025-09-09T10:16:00.000Z",
+      "publishedAt": "2025-09-09T15:16:00+05:00",
       "fetchedAt": null,
       "contentType": "html",
       "sha256": null,
@@ -164,6 +164,6 @@
       "status": "unverified"
     }
   ],
-  "inputHash": "00d6119475363025b059e1ccffa051dc6208242c09504bd0dc3e843b6761225f",
-  "rulesetVersion": "1.2.1"
+  "inputHash": "e67da6c034952846a579df64727558b1ec2bf17de48b420a98a1f351c8637b99",
+  "rulesetVersion": "1.2.0"
 }

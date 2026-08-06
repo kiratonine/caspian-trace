@@ -13,11 +13,14 @@ import "maplibre-gl/dist/maplibre-gl.css"
 
 import {
   MAP_FIT_PADDING,
+  MAP_FLOW_DASH_FRAMES,
+  MAP_FLOW_FRAME_MS,
   MAP_INITIAL_CENTER,
   MAP_INITIAL_ZOOM,
   MAP_TILE_ATTRIBUTION,
   MAP_TILE_URL,
 } from "@/constants/map"
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 import { MapObjectPin } from "./MapObjectPin"
 import { MapStationPin } from "./MapStationPin"
 import type { MapModel } from "./map-model"
@@ -50,6 +53,7 @@ const BASE_STYLE: StyleSpecification = {
 
 const RIVER_LAYER = "river"
 const CORRIDOR_LAYER = "corridor"
+const FLOW_LAYER = "flow"
 
 const EMPTY_LINE: Feature<LineString> = {
   type: "Feature",
@@ -74,6 +78,7 @@ export function MapLibreMap({ model, notices, overlay }: MapLibreMapProps) {
   // экземпляре. С ref он этого не замечал, и линии оставались пустыми,
   // хотя слои были заведены.
   const [map, setMap] = useState<MapLibreGl | null>(null)
+  const prefersReducedMotion = usePrefersReducedMotion()
   const [stationSlots, setStationSlots] = useState<MarkerSlot[]>([])
   const [objectSlots, setObjectSlots] = useState<MarkerSlot[]>([])
 
@@ -120,6 +125,18 @@ export function MapLibreMap({ model, notices, overlay }: MapLibreMapProps) {
         },
         RIVER_LAYER
       )
+      // Слой сноса поверх русла: тот же путь, но бегущим пунктиром.
+      instance.addLayer({
+        id: FLOW_LAYER,
+        type: "line",
+        source: RIVER_LAYER,
+        layout: { "line-join": "round", "line-cap": "round" },
+        paint: {
+          "line-color": "#e2e8f0",
+          "line-width": 2,
+          "line-dasharray": [0, 4, 3],
+        },
+      })
       if (import.meta.env.DEV) {
         ;(window as unknown as Record<string, unknown>).__caspianMap = instance
       }
@@ -186,6 +203,26 @@ export function MapLibreMap({ model, notices, overlay }: MapLibreMapProps) {
       map.fitBounds(bounds, { padding: MAP_FIT_PADDING, duration: 0 })
     }
   }, [map, model])
+
+  // Снос вниз по течению. Это не украшение, а содержание: перенос идёт
+  // сверху вниз, поэтому источник ищут выше участка. При prefers-reduced-motion
+  // движение гасится, но пунктир остаётся — направление продолжает читаться
+  // (тот же принцип, что у реплея, решение сессии 17).
+  useEffect(() => {
+    if (!map || prefersReducedMotion) return
+    let frame = 0
+    const timer = window.setInterval(() => {
+      frame = (frame + 1) % MAP_FLOW_DASH_FRAMES.length
+      if (map.getLayer(FLOW_LAYER)) {
+        map.setPaintProperty(
+          FLOW_LAYER,
+          "line-dasharray",
+          MAP_FLOW_DASH_FRAMES[frame]
+        )
+      }
+    }, MAP_FLOW_FRAME_MS)
+    return () => window.clearInterval(timer)
+  }, [map, prefersReducedMotion])
 
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border">

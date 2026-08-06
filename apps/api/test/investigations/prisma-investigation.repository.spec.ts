@@ -276,6 +276,48 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     }
   })
 
+  it('uses the extended Serializable interactive transaction timeout', async () => {
+    const input = inputs.find(({ incident }) => incident.id === 'inv-atyrau-2025-05')
+    const result = await readJson<InvestigationResult>(
+      'data/fixtures/investigation/may-golden.json',
+    )
+    expect(input).toBeDefined()
+
+    const transaction = {
+      investigation: {
+        findFirst: jest.fn(() => Promise.resolve({
+          id: 'inv-atyrau-2025-05@1.2.1:existing',
+          isCurrent: true,
+          generatedAt: new Date('2026-08-07T00:00:00.000Z'),
+        })),
+        updateMany: jest.fn(() => Promise.resolve({ count: 0 })),
+      },
+    }
+    const prismaTransaction = jest.fn(
+      (
+        operation: (client: typeof transaction) => Promise<unknown>,
+        options: unknown,
+      ): Promise<unknown> => {
+        void options
+        return operation(transaction)
+      },
+    )
+    const repository = new PrismaInvestigationRepository({
+      $transaction: prismaTransaction,
+    } as unknown as PrismaService)
+
+    await repository.saveVersioned(input!.incident.id, input!, result)
+
+    expect(prismaTransaction).toHaveBeenCalledWith(
+      expect.any(Function),
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        maxWait: 10_000,
+        timeout: 30_000,
+      },
+    )
+  })
+
   it('persists a runtime bootstrap relation through its canonical ID without creating a duplicate edge', async () => {
     const input = inputs.find(({ incident }) => incident.id === 'inv-atyrau-2025-05')
     expect(input).toBeDefined()

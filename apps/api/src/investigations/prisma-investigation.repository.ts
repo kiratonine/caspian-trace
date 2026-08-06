@@ -403,7 +403,11 @@ export class PrismaInvestigationRepository
             }
             return snapshot(investigationId, input, result, created.id, created.generatedAt)
           },
-          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+          {
+            isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+            maxWait: 10_000,
+            timeout: 30_000,
+          },
         )
       } catch (error) {
         if (!isConcurrentWrite(error) || attempt === 2) throw error

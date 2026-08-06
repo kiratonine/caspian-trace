@@ -72,6 +72,12 @@ describe('runtime bootstrap persistence plan', () => {
 
         expect(
             aktau.metadata
+                .runtimeBootstrap
+                .measurementFacts,
+        ).toEqual([])
+
+        expect(
+            aktau.metadata
                 .stationRelationIds,
         ).toEqual([])
 
@@ -107,6 +113,69 @@ describe('runtime bootstrap persistence plan', () => {
                 .runtimeBootstrap
                 .candidateObjectFacts,
         ).toEqual([])
+    })
+
+    it('preserves exact per-incident measurement facts', async () => {
+        const loaded =
+            await loadRuntimeBootstrap()
+
+        const validated =
+            validateRuntimeBootstrap(loaded)
+
+        for (
+            const validatedCase
+            of validated.cases
+        ) {
+            const incident =
+                requiredById(
+                    plan.incidents,
+                    validatedCase.input.incident.id,
+                )
+
+            expect(
+                incident.metadata
+                    .runtimeBootstrap
+                    .measurementFacts,
+            ).toEqual(
+                validatedCase.input.measurements,
+            )
+        }
+    })
+
+    it('keeps the exact scoped May measurement excerpts', () => {
+        const may =
+            requiredById(
+                plan.incidents,
+                'inv-atyrau-2025-05',
+            )
+
+        expect(
+            may.metadata
+                .runtimeBootstrap
+                .measurementFacts
+                .map(
+                    ({
+                        id,
+                        sourceExcerpt,
+                    }) => ({
+                        id,
+                        sourceExcerpt,
+                    }),
+                ),
+        ).toEqual([
+            {
+                id:
+                    'm-2025-05-asa-above',
+                sourceExcerpt:
+                    'Нефтепродукты – 0,114 мг/дм3',
+            },
+            {
+                id:
+                    'm-2025-05-asa-below',
+                sourceExcerpt:
+                    'Нефтепродукты – 0,193 мг/дм3',
+            },
+        ])
     })
 
     it('merges both official source links for the shared candidate', () => {

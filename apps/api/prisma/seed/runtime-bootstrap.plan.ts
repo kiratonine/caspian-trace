@@ -54,12 +54,17 @@ export interface RuntimeBootstrapIncidentPlan {
             RuntimeBootstrapScopedCandidateFactPlan[]
             sourceDocumentFacts:
             RuntimeBootstrapScopedSourceFactPlan[]
+            measurementFacts:
+            RuntimeBootstrapScopedMeasurementFactPlan[]
             fixtureInputHash: string
             rulesetVersion: string
             signalAbsenceReason: string | null
         }
     }
 }
+
+export type RuntimeBootstrapScopedMeasurementFactPlan =
+    InvestigationInput['measurements'][number]
 
 export interface RuntimeBootstrapScopedRelationFactPlan {
     relationId: string
@@ -432,6 +437,8 @@ function buildIncidentPlan(
                     structuredClone(
                         input.sourceDocuments,
                     ),
+                measurementFacts:
+                    structuredClone(input.measurements),
                 fixtureInputHash:
                     handoff.expectedResult
                         .fixtureInputHash,

@@ -375,6 +375,64 @@ function plan(): RuntimeBootstrapPlan {
                 status: 'unverified',
               },
             ],
+            measurementFacts: [
+              {
+                id:
+                  'measurement-a',
+                stationId:
+                  'st-asa-0-5km-above',
+                indicator:
+                  'нефтепродукты',
+                matrix:
+                  'water',
+                value:
+                  '0.114',
+                rawValueText:
+                  '0,114',
+                unit:
+                  'mg/dm3',
+                sampledAt:
+                  null,
+                sampledPeriod:
+                  '2025-05',
+                sourceDocumentId:
+                  'doc-kazhydromet-2025-05',
+                sourcePage:
+                  24,
+                sourceExcerpt:
+                  'Нефтепродукты – 0,114 мг/дм3',
+                verified:
+                  true,
+              },
+              {
+                id:
+                  'measurement-b',
+                stationId:
+                  'st-asa-0-5km-below',
+                indicator:
+                  'нефтепродукты',
+                matrix:
+                  'water',
+                value:
+                  '0.193',
+                rawValueText:
+                  '0,193',
+                unit:
+                  'mg/dm3',
+                sampledAt:
+                  null,
+                sampledPeriod:
+                  '2025-05',
+                sourceDocumentId:
+                  'doc-kazhydromet-2025-05',
+                sourcePage:
+                  24,
+                sourceExcerpt:
+                  'Нефтепродукты – 0,193 мг/дм3',
+                verified:
+                  true,
+              },
+            ],
             fixtureInputHash: 'b'.repeat(64),
             rulesetVersion: '1.2.1',
             signalAbsenceReason: null,

@@ -309,7 +309,11 @@ let PrismaInvestigationRepository = class PrismaInvestigationRepository {
                         });
                     }
                     return snapshot(investigationId, input, result, created.id, created.generatedAt);
-                }, { isolationLevel: client_1.Prisma.TransactionIsolationLevel.Serializable });
+                }, {
+                    isolationLevel: client_1.Prisma.TransactionIsolationLevel.Serializable,
+                    maxWait: 10_000,
+                    timeout: 30_000,
+                });
             }
             catch (error) {
                 if (!isConcurrentWrite(error) || attempt === 2)

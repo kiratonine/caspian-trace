@@ -25,6 +25,17 @@ export const MAP_PLACEHOLDER_STATION_COORDS: Record<string, [number, number]> =
  */
 export const MAP_OPEN_CORRIDOR_EXTENSION_DEG = 0.035
 
+// Подложка — растровые тайлы OpenStreetMap (решение владельца продукта
+// 06.08.2026: «давай онлайн-тайлы»). ЭТО ОСОЗНАННОЕ ОТСТУПЛЕНИЕ от критерия
+// приёмки «демо работает без интернета»: без сети подложка не загрузится.
+// Остальной экран, включая наши слои и маркеры, офлайн продолжает работать —
+// тайлы просто не появятся, карта останется на пустом фоне.
+export const MAP_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+
+/** Условие использования тайлов OSM — атрибуция обязательна. */
+export const MAP_TILE_ATTRIBUTION =
+  '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>'
+
 /** Стартовый центр до первого `fitBounds`, [lon, lat]. */
 export const MAP_INITIAL_CENTER: [number, number] = [51.9138, 47.1279]
 

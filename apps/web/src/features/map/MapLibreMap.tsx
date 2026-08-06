@@ -16,24 +16,36 @@ import {
   MAP_INITIAL_CENTER,
   MAP_INITIAL_ZOOM,
   MAP_PLACEHOLDER_WARNING,
+  MAP_TILE_ATTRIBUTION,
+  MAP_TILE_URL,
 } from "@/constants/map"
 import { MapObjectPin } from "./MapObjectPin"
 import { MapStationPin } from "./MapStationPin"
 import type { MapModel } from "./map-model"
 
-// Стиль задан инлайн и содержит ТОЛЬКО фоновый слой: карта не делает ни
-// одного сетевого запроса. Критерий приёмки — демо работает офлайн, без CDN,
-// а внешние тайлы это ровно запрос в сеть. По той же причине подписи —
-// HTML-маркеры, а не symbol-слои: symbol требует шрифтовых PBF по `glyphs`.
-const BLANK_STYLE: StyleSpecification = {
+// Подложка — растровые тайлы OSM (решение владельца продукта 06.08.2026).
+// Без сети тайлы не придут, и карта останется на пустом фоне: наши слои,
+// маркеры и весь остальной экран при этом работают, то есть офлайн ломается
+// только картинка подложки, а не демо. Подписи всё равно рисуются
+// HTML-маркерами, а не symbol-слоями: symbol требует шрифтовых PBF
+// по `glyphs`, и это был бы второй сетевой источник.
+const BASE_STYLE: StyleSpecification = {
   version: 8,
-  sources: {},
+  sources: {
+    osm: {
+      type: "raster",
+      tiles: [MAP_TILE_URL],
+      tileSize: 256,
+      attribution: MAP_TILE_ATTRIBUTION,
+    },
+  },
   layers: [
     {
       id: "background",
       type: "background",
       paint: { "background-color": "transparent" },
     },
+    { id: "osm", type: "raster", source: "osm" },
   ],
 }
 
@@ -63,12 +75,18 @@ export function MapLibreMap({ model }: { model: MapModel }) {
     if (!containerRef.current) return
     const instance = new MapLibreGl({
       container: containerRef.current,
-      style: BLANK_STYLE,
+      style: BASE_STYLE,
       center: MAP_INITIAL_CENTER,
       zoom: MAP_INITIAL_ZOOM,
-      attributionControl: false,
+      // Атрибуция OSM обязательна условиями использования тайлов.
+      attributionControl: { compact: true },
     })
     instance.addControl(new NavigationControl({ showCompass: false }))
+    // Без сети тайлы не придут. Это не поломка приложения, а отсутствие
+    // подложки: гасим ошибку, чтобы она не сыпалась в консоль на каждый тайл.
+    instance.on("error", (event) => {
+      if (import.meta.env.DEV) console.warn("MapLibre:", event.error?.message)
+    })
 
     instance.on("load", () => {
       instance.addSource(RIVER_LAYER, { type: "geojson", data: EMPTY_LINE })
@@ -166,7 +184,10 @@ export function MapLibreMap({ model }: { model: MapModel }) {
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border">
       <div ref={containerRef} className="size-full" />
-      <p className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-background/90 px-3 py-2 text-center text-xs text-muted-foreground">
+      {/* На настоящей подложке демонстрационные координаты начинают выглядеть
+          как проверенные, поэтому оговорка стоит сплошной плашкой поверх
+          карты, а не служебной серой строкой, и закрыть её нельзя. */}
+      <p className="pointer-events-none absolute inset-x-0 top-0 z-10 border-b bg-background px-3 py-2 text-center text-xs font-medium">
         {MAP_PLACEHOLDER_WARNING}
       </p>
       {stationSlots.map((slot) => {

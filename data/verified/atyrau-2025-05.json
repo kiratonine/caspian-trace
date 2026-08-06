@@ -24,7 +24,8 @@
       "sourceExcerpt": "г.Атырау, 0,5 км выше сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,114 мг/дм3",
       "checkedBy": [
         "codex-automated-source-verification",
-        "aapolezhayev"
+        "aapolezhayev",
+        "denisthe12"
       ],
       "checkedAt": "2026-08-06"
     },
@@ -44,7 +45,8 @@
       "sourceExcerpt": "г.Атырау, 0,5 км ниже сброса КГП «Атырау су арнасы» — Нефтепродукты – 0,193 мг/дм3",
       "checkedBy": [
         "codex-automated-source-verification",
-        "aapolezhayev"
+        "aapolezhayev",
+        "denisthe12"
       ],
       "checkedAt": "2026-08-06"
     }

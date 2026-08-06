@@ -17,7 +17,8 @@
       "sourceExcerpt": "Реконструкция последовательности строк официальной таблицы: 1 км выше г. Атырау; г. Атырау, 0,5 км выше сброса КГП «Атырау су арнасы».",
       "checkedBy": [
         "codex-automated-source-verification",
-        "aapolezhayev"
+        "aapolezhayev",
+        "denisthe12"
       ],
       "checkedAt": "2026-08-06"
     },
@@ -31,7 +32,8 @@
       "sourceExcerpt": "Официальная парная маркировка: 0,5 км выше и 0,5 км ниже одного сброса КГП «Атырау су арнасы».",
       "checkedBy": [
         "codex-automated-source-verification",
-        "aapolezhayev"
+        "aapolezhayev",
+        "denisthe12"
       ],
       "checkedAt": "2026-08-06"
     },
@@ -45,7 +47,8 @@
       "sourceExcerpt": "Реконструкция последовательности строк официальной таблицы: 0,5 км ниже сброса КГП «Атырау су арнасы»; 1 км ниже г. Атырау.",
       "checkedBy": [
         "codex-automated-source-verification",
-        "aapolezhayev"
+        "aapolezhayev",
+        "denisthe12"
       ],
       "checkedAt": "2026-08-06"
     }

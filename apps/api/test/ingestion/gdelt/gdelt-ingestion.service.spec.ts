@@ -21,6 +21,8 @@ const processed = {
     parserStatus: 'succeeded' as const, relevant: true,
     matchedRequestedRegions: ['atyrau'] as ['atyrau'], coverage: candidate.coverage,
   },
+  sourceText:
+    'Атырау: обнаружена нефтяная плёнка.',
   parserFailed: false, requestedRegionMatched: true,
   sourceStatus: 'healthy' as const, cacheStatus: 'miss' as const, httpStatus: 200,
 }
@@ -30,13 +32,22 @@ describe('GdeltIngestionService run and health semantics', () => {
   const directAdapter = { candidates: jest.fn() }
   const directSources = { process: jest.fn() }
   const articles = { process: jest.fn() }
+  const signalEnrichment = {
+    run: jest.fn(),
+  }
   const repository = {
     createPublicRun: jest.fn(), markPublicHealthAttempt: jest.fn(), finalizeRun: jest.fn(),
     finalizePublicHealth: jest.fn(), hasAcceptedPublicRun: jest.fn(),
   }
   const service = new GdeltIngestionService(
-    gdelt as never, directAdapter as never, directSources as never, articles as never,
-    repository as never, createSafeFetchConfig(), clock,
+    gdelt as never,
+    directAdapter as never,
+    directSources as never,
+    articles as never,
+    signalEnrichment as never,
+    repository as never,
+    createSafeFetchConfig(),
+    clock,
   )
 
   beforeEach(() => {
@@ -48,24 +59,87 @@ describe('GdeltIngestionService run and health semantics', () => {
     repository.hasAcceptedPublicRun.mockResolvedValue(false)
     gdelt.discover.mockResolvedValue(discovery('healthy', 'miss'))
     articles.process.mockResolvedValue(processed)
+    signalEnrichment.run.mockResolvedValue({
+      candidate: null,
+      failed: false,
+    })
     directAdapter.candidates.mockReturnValue([])
     directSources.process.mockResolvedValue({
-      accepted: [], rejectedCount: 0, rateLimitedCount: 0, regionMismatchCount: 0,
+      accepted: [],
+      signalCandidates: [],
+      enrichmentAttemptedCount: 0,
+      enrichmentCandidateCount: 0,
+      enrichmentFailedCount: 0,
+      rejectedCount: 0,
+      rateLimitedCount: 0,
+      regionMismatchCount: 0,
       irrelevantCount: 0,
-      temporalMismatchCount: 0, temporalUnknownCount: 0,
-      parserFailureCount: 0, degradedCount: 0,
-      successfulFetchCount: 0, lastHttpStatus: null,
+      temporalMismatchCount: 0,
+      temporalUnknownCount: 0,
+      parserFailureCount: 0,
+      degradedCount: 0,
+      successfulFetchCount: 0,
+      lastHttpStatus: null,
     })
   })
 
   it('marks a healthy bounded GDELT-only run succeeded', async () => {
-    await expect(service.run(body())).resolves.toMatchObject({
-      status: 'succeeded', gdelt: { status: 'succeeded', acceptedCount: 1 },
-      directFallback: { used: false },
+    const result = await service.run(body())
+
+    expect(result).toMatchObject({
+      status: 'succeeded',
+      gdelt: {
+        status: 'succeeded',
+        acceptedCount: 1,
+      },
+      directFallback: {
+        used: false,
+      },
+      enrichment: {
+        attemptedCount: 1,
+        candidateCount: 0,
+        failedCount: 0,
+      },
+      signalCandidates: [],
     })
-    expect(repository.finalizePublicHealth).toHaveBeenCalledWith(expect.objectContaining({
-      sourceId: 'gdelt', status: 'HEALTHY', actualError: false,
-    }))
+
+    expect(signalEnrichment.run).toHaveBeenCalledWith({
+      sourceDocumentId:
+        'doc-article-azh-kz-test',
+      sourceText:
+        'Атырау: обнаружена нефтяная плёнка.',
+    })
+
+    expect(
+      repository.finalizePublicHealth,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceId: 'gdelt',
+        status: 'HEALTHY',
+        actualError: false,
+      }),
+    )
+
+    expect(
+      repository.finalizeRun,
+    ).toHaveBeenCalled()
+
+    const serializedFinalizeRunCalls =
+      JSON.stringify(
+        repository.finalizeRun.mock.calls,
+      )
+
+    expect(serializedFinalizeRunCalls).toContain(
+      '"enrichmentAttemptedCount":1',
+    )
+
+    expect(serializedFinalizeRunCalls).toContain(
+      '"enrichmentCandidateCount":0',
+    )
+
+    expect(serializedFinalizeRunCalls).toContain(
+      '"enrichmentFailedCount":0',
+    )
   })
 
   it('processes stale 429 articles but keeps run/health explicitly rate_limited', async () => {
@@ -89,18 +163,32 @@ describe('GdeltIngestionService run and health semantics', () => {
     const directCandidate = { ...candidate, discoveryMode: 'direct_fallback' as const }
     directAdapter.candidates.mockReturnValueOnce([directCandidate])
     directSources.process.mockResolvedValueOnce({
-      accepted: [{
-        ...processed, document: {
-          ...processed.document,
-          discoveryMode: 'direct_fallback' as const,
-          publishedAt: '2025-09-09T10:16:00.000Z',
-        }
-      }],
-      rejectedCount: 0, rateLimitedCount: 0, regionMismatchCount: 0,
+      accepted: [
+        {
+          ...processed,
+          document: {
+            ...processed.document,
+            discoveryMode:
+              'direct_fallback' as const,
+            publishedAt:
+              '2025-09-09T10:16:00.000Z',
+          },
+        },
+      ],
+      signalCandidates: [],
+      enrichmentAttemptedCount: 1,
+      enrichmentCandidateCount: 0,
+      enrichmentFailedCount: 0,
+      rejectedCount: 0,
+      rateLimitedCount: 0,
+      regionMismatchCount: 0,
       irrelevantCount: 0,
-      temporalMismatchCount: 0, temporalUnknownCount: 0,
-      parserFailureCount: 0, degradedCount: 0,
-      successfulFetchCount: 1, lastHttpStatus: 200,
+      temporalMismatchCount: 0,
+      temporalUnknownCount: 0,
+      parserFailureCount: 0,
+      degradedCount: 0,
+      successfulFetchCount: 1,
+      lastHttpStatus: 200,
     })
     const result = await service.run(body())
     expect(result).toMatchObject({
@@ -117,48 +205,147 @@ describe('GdeltIngestionService run and health semantics', () => {
     )
   })
 
-  it('marks mixed direct temporal coverage partial while keeping health healthy and returning only matched', async () => {
-    gdelt.discover.mockRejectedValueOnce(new SafeFetchError({
-      code: 'SAFE_FETCH_NETWORK_ERROR', safeMessage: 'unavailable', sourceStatus: 'degraded', retryable: true,
-    }))
-    const directCandidates = [0, 1, 2].map((index) => ({
-      ...candidate,
-      discoveryMode: 'direct_fallback' as const,
-      originalUrl: `https://azh.kz/direct-${index}`,
-    }))
-    directAdapter.candidates.mockReturnValueOnce(directCandidates)
-    const matched = {
-      ...processed,
-      document: {
-        ...processed.document,
-        discoveryMode: 'direct_fallback' as const,
-        canonicalUrl: directCandidates[0]!.originalUrl,
-        publishedAt: '2025-09-09T10:16:00.000Z',
-      },
-    }
-    directSources.process.mockResolvedValueOnce({
-      accepted: [matched], rejectedCount: 0, rateLimitedCount: 0, regionMismatchCount: 0,
-      irrelevantCount: 0,
-      temporalMismatchCount: 1, temporalUnknownCount: 1,
-      parserFailureCount: 0, degradedCount: 0,
-      successfulFetchCount: 3, lastHttpStatus: 200,
-    })
+  it(
+    'marks mixed direct temporal coverage partial while keeping health healthy and returning only matched',
+    async () => {
+      gdelt.discover.mockRejectedValueOnce(
+        new SafeFetchError({
+          code: 'SAFE_FETCH_NETWORK_ERROR',
+          safeMessage: 'unavailable',
+          sourceStatus: 'degraded',
+          retryable: true,
+        }),
+      )
 
-    const result = await service.run({ ...body(), maxArticles: 3 })
-    expect(result).toMatchObject({
-      directFallback: { used: true, status: 'partial', acceptedCount: 1 },
-      documents: [{ canonicalUrl: directCandidates[0]!.originalUrl }],
-    })
-    expect(repository.finalizeRun).toHaveBeenLastCalledWith(expect.objectContaining({
-      status: 'PARTIAL', acceptedCount: 1, rejectedCount: 0,
-      errorCode: null, errorMessage: null,
-    }))
-    expect(JSON.stringify(repository.finalizeRun.mock.calls.at(-1))).toContain('"temporalMismatchCount":1')
-    expect(JSON.stringify(repository.finalizeRun.mock.calls.at(-1))).toContain('"temporalUnknownCount":1')
-    expect(repository.finalizePublicHealth).toHaveBeenLastCalledWith(expect.objectContaining({
-      sourceId: 'direct-sources', status: 'HEALTHY', actualError: false, success: true,
-    }))
-  })
+      const directCandidates = [0, 1, 2].map(
+        (index) => ({
+          ...candidate,
+          discoveryMode:
+            'direct_fallback' as const,
+          originalUrl:
+            `https://azh.kz/direct-${index}`,
+        }),
+      )
+
+      directAdapter.candidates.mockReturnValueOnce(
+        directCandidates,
+      )
+
+      const matched = {
+        ...processed,
+        document: {
+          ...processed.document,
+          discoveryMode:
+            'direct_fallback' as const,
+          canonicalUrl:
+            directCandidates[0]!.originalUrl,
+          publishedAt:
+            '2025-09-09T10:16:00.000Z',
+        },
+      }
+
+      directSources.process.mockResolvedValueOnce({
+        accepted: [matched],
+        signalCandidates: [],
+        enrichmentAttemptedCount: 1,
+        enrichmentCandidateCount: 0,
+        enrichmentFailedCount: 0,
+        rejectedCount: 0,
+        rateLimitedCount: 0,
+        regionMismatchCount: 0,
+        irrelevantCount: 0,
+        temporalMismatchCount: 1,
+        temporalUnknownCount: 1,
+        parserFailureCount: 0,
+        degradedCount: 0,
+        successfulFetchCount: 3,
+        lastHttpStatus: 200,
+      })
+
+      const result = await service.run({
+        ...body(),
+        maxArticles: 3,
+      })
+
+      expect(directSources.process).toHaveBeenCalledTimes(
+        1,
+      )
+
+      expect(result).toMatchObject({
+        directFallback: {
+          used: true,
+          status: 'partial',
+          acceptedCount: 1,
+        },
+        enrichment: {
+          attemptedCount: 1,
+          candidateCount: 0,
+          failedCount: 0,
+        },
+        signalCandidates: [],
+        documents: [
+          {
+            canonicalUrl:
+              directCandidates[0]!.originalUrl,
+          },
+        ],
+      })
+
+      expect(
+        repository.finalizeRun,
+      ).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          status: 'PARTIAL',
+          acceptedCount: 1,
+          rejectedCount: 0,
+          errorCode: null,
+          errorMessage: null,
+        }),
+      )
+
+      const serializedLastFinalizeRunCall =
+        JSON.stringify(
+          repository.finalizeRun.mock.calls.at(-1),
+        )
+
+      expect(
+        serializedLastFinalizeRunCall,
+      ).toContain('"temporalMismatchCount":1')
+
+      expect(
+        serializedLastFinalizeRunCall,
+      ).toContain('"temporalUnknownCount":1')
+
+      expect(
+        serializedLastFinalizeRunCall,
+      ).toContain(
+        '"enrichmentAttemptedCount":1',
+      )
+
+      expect(
+        serializedLastFinalizeRunCall,
+      ).toContain(
+        '"enrichmentCandidateCount":0',
+      )
+
+      expect(
+        serializedLastFinalizeRunCall,
+      ).toContain(
+        '"enrichmentFailedCount":0',
+      )
+
+      expect(
+        repository.finalizePublicHealth,
+      ).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          sourceId: 'direct-sources',
+          status: 'HEALTHY',
+          actualError: false,
+          success: true,
+        }),
+      )
+    },
+  )
 
   it('never converts a no-stale 429 to an empty success', async () => {
     gdelt.discover.mockRejectedValueOnce(new SafeFetchError({
@@ -187,6 +374,7 @@ describe('GdeltIngestionService run and health semantics', () => {
       acceptedCount: 0,
     }))
     expect(JSON.stringify(repository.finalizeRun.mock.calls)).toContain('"regionMismatchCount":1')
+    expect(signalEnrichment.run).not.toHaveBeenCalled()
   })
 
   it('marks a schema-invalid GDELT response failed without a successful health update', async () => {
@@ -245,6 +433,7 @@ describe('GdeltIngestionService run and health semantics', () => {
       expect(
         JSON.stringify(repository.finalizeRun.mock.calls),
       ).toContain('"irrelevantCount":1')
+      expect(signalEnrichment.run).not.toHaveBeenCalled()
     },
   )
   it(
@@ -252,6 +441,7 @@ describe('GdeltIngestionService run and health semantics', () => {
     async () => {
       articles.process.mockResolvedValueOnce({
         ...processed,
+        sourceText: null,
         parserFailed: true,
         requestedRegionMatched: null,
         document: {
@@ -286,8 +476,212 @@ describe('GdeltIngestionService run and health semantics', () => {
       expect(
         JSON.stringify(repository.finalizeRun.mock.calls),
       ).toContain('"parserFailureCount":1')
+      expect(signalEnrichment.run).not.toHaveBeenCalled()
     },
   )
+
+  it('returns a validated transient candidate without persisting its body', async () => {
+    const signalCandidate = {
+      sourceDocumentId:
+        processed.document.sourceDocumentId,
+      extractionMode: 'llm_candidate' as const,
+      verificationStatus: 'unverified' as const,
+      signal: {
+        observedAt: null,
+        observedPeriod: '2025-09',
+        locationText: 'Атырау',
+        phenomenon: 'oil_film' as const,
+        excerpt:
+          'Атырау: обнаружена нефтяная плёнка.',
+        evidenceQuotes: [
+          'обнаружена нефтяная плёнка',
+        ],
+        confidence: 0.91,
+      },
+    }
+
+    signalEnrichment.run.mockResolvedValueOnce({
+      candidate: signalCandidate,
+      failed: false,
+    })
+
+    const result = await service.run({
+      ...body(),
+      includeDirectFallback: false,
+    })
+
+    expect(result).toMatchObject({
+      status: 'succeeded',
+      enrichment: {
+        attemptedCount: 1,
+        candidateCount: 1,
+        failedCount: 0,
+      },
+      signalCandidates: [signalCandidate],
+    })
+
+    const persistedCalls = JSON.stringify(
+      repository.finalizeRun.mock.calls,
+    )
+
+    expect(persistedCalls).not.toContain(
+      'signalCandidates',
+    )
+
+    expect(persistedCalls).not.toContain(
+      signalCandidate.signal.excerpt,
+    )
+
+    expect(persistedCalls).not.toContain(
+      'evidenceQuotes',
+    )
+  })
+
+  it('keeps a successful ingestion when optional enrichment fails', async () => {
+    signalEnrichment.run.mockResolvedValueOnce({
+      candidate: null,
+      failed: true,
+    })
+
+    const result = await service.run({
+      ...body(),
+      includeDirectFallback: false,
+    })
+
+    expect(result).toMatchObject({
+      status: 'succeeded',
+      gdelt: {
+        status: 'succeeded',
+        acceptedCount: 1,
+        rejectedCount: 0,
+      },
+      enrichment: {
+        attemptedCount: 1,
+        candidateCount: 0,
+        failedCount: 1,
+      },
+      signalCandidates: [],
+    })
+
+    expect(
+      repository.finalizePublicHealth,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sourceId: 'gdelt',
+        status: 'HEALTHY',
+        actualError: false,
+      }),
+    )
+
+    expect(
+      repository.finalizeRun,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'SUCCEEDED',
+        acceptedCount: 1,
+        rejectedCount: 0,
+      }),
+    )
+
+    const serializedFinalizeRunCalls =
+      JSON.stringify(
+        repository.finalizeRun.mock.calls,
+      )
+
+    expect(serializedFinalizeRunCalls).toContain(
+      '"enrichmentAttemptedCount":1',
+    )
+
+    expect(serializedFinalizeRunCalls).toContain(
+      '"enrichmentCandidateCount":0',
+    )
+
+    expect(serializedFinalizeRunCalls).toContain(
+      '"enrichmentFailedCount":1',
+    )
+  })
+
+  it('aggregates GDELT and direct enrichment counters', async () => {
+    const directCandidate = {
+      ...candidate,
+      discoveryMode: 'direct_fallback' as const,
+      originalUrl:
+        'https://azh.kz/direct-enrichment',
+    }
+
+    directAdapter.candidates.mockReturnValueOnce([
+      directCandidate,
+    ])
+
+    const directSignalCandidate = {
+      sourceDocumentId: 'direct-doc',
+      extractionMode: 'llm_candidate' as const,
+      verificationStatus: 'unverified' as const,
+      signal: {
+        observedAt: null,
+        observedPeriod: '2025-09',
+        locationText: 'Атырау',
+        phenomenon: 'oil_film' as const,
+        excerpt:
+          'На реке обнаружена нефтяная плёнка.',
+        evidenceQuotes: [
+          'обнаружена нефтяная плёнка',
+        ],
+        confidence: 0.8,
+      },
+    }
+
+    directSources.process.mockResolvedValueOnce({
+      accepted: [
+        {
+          ...processed,
+          document: {
+            ...processed.document,
+            sourceDocumentId: 'direct-doc',
+            discoveryMode:
+              'direct_fallback' as const,
+            canonicalUrl:
+              directCandidate.originalUrl,
+            publishedAt:
+              '2025-09-09T10:16:00.000Z',
+          },
+        },
+      ],
+
+      signalCandidates: [
+        directSignalCandidate,
+      ],
+      enrichmentAttemptedCount: 1,
+      enrichmentCandidateCount: 1,
+      enrichmentFailedCount: 0,
+
+      rejectedCount: 0,
+      rateLimitedCount: 0,
+      regionMismatchCount: 0,
+      irrelevantCount: 0,
+      temporalMismatchCount: 0,
+      temporalUnknownCount: 0,
+      parserFailureCount: 0,
+      degradedCount: 0,
+      successfulFetchCount: 1,
+      lastHttpStatus: 200,
+    })
+
+    const result = await service.run({
+      ...body(),
+      maxArticles: 2,
+    })
+
+    expect(result.enrichment).toEqual({
+      attemptedCount: 2,
+      candidateCount: 1,
+      failedCount: 0,
+    })
+
+    expect(result.signalCandidates).toEqual([
+      directSignalCandidate,
+    ])
+  })
 })
 
 describe('normalizeGdeltRequest', () => {

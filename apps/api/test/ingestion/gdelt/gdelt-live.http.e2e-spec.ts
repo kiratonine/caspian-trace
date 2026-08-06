@@ -91,12 +91,52 @@ describe('GDELT ingestion and live status HTTP API (e2e)', () => {
   })
 
   it('documents protected ingestion and public live endpoints', () => {
-    const ingestion = swagger.paths['/api/admin/ingestion/gdelt']?.post
-    expect(ingestion?.parameters).toEqual(expect.arrayContaining([
-      expect.objectContaining({ name: 'X-Ingestion-Token', required: true }),
-    ]))
+    const ingestion =
+      swagger.paths[
+        '/api/admin/ingestion/gdelt'
+      ]?.post
+
+    expect(ingestion?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'X-Ingestion-Token',
+          required: true,
+        }),
+      ]),
+    )
+
     expect(ingestion?.requestBody).toBeDefined()
-    expect(swagger.paths['/api/live/status']?.get).toBeDefined()
+
+    const serialized = JSON.stringify(
+      ingestion?.responses?.['200'],
+    )
+
+    expect(serialized).toContain('enrichment')
+    expect(serialized).toContain(
+      'signalCandidates',
+    )
+    expect(serialized).toContain(
+      'verificationStatus',
+    )
+
+    expect(
+      swagger.paths['/api/live/status']?.get,
+    ).toBeDefined()
+  })
+
+  it('returns transient enrichment fields', async () => {
+    const response = await authorized(
+      validBody(),
+    ).expect(200)
+
+    expect(response.body).toMatchObject({
+      enrichment: {
+        attemptedCount: 1,
+        candidateCount: 0,
+        failedCount: 0,
+      },
+      signalCandidates: [],
+    })
   })
 
   function authorized(body: object): SuperTestRequest {
@@ -120,6 +160,12 @@ function responseBody(): GdeltIngestionResponse {
       cacheStatus: 'miss', discoveredCount: 1, allowedCandidateCount: 1, acceptedCount: 1, rejectedCount: 0,
     },
     directFallback: { used: false, runId: null, status: null, attemptedCount: 0, acceptedCount: 0, rejectedCount: 0 },
+    enrichment: {
+      attemptedCount: 1,
+      candidateCount: 0,
+      failedCount: 0,
+    },
+    signalCandidates: [],
     documents: [],
   }
 }

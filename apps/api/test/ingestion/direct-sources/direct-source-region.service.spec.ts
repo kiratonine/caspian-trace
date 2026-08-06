@@ -15,10 +15,26 @@ describe('direct fallback requested-region acceptance', () => {
     DIRECT_SOURCE_ALLOWED_HOSTS: ['www.zakon.kz', 'www.inform.kz', 'azh.kz'],
     DIRECT_SOURCE_FALLBACK_URLS: fallbackUrls,
   }))
-  const process = jest.fn()
-  const service = new DirectSourceService({ process } as never)
 
-  beforeEach(() => jest.clearAllMocks())
+  const process = jest.fn()
+
+  const enrichment = {
+    run: jest.fn(),
+  }
+
+  const service = new DirectSourceService(
+    { process } as never,
+    enrichment as never,
+  )
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+
+    enrichment.run.mockResolvedValue({
+      candidate: null,
+      failed: false,
+    })
+  })
 
   it('does not accept default Atyrau Zakon/Inform articles for Mangystau', async () => {
     const candidates = adapter.candidates(mangystauRequest(), 10, new Set())
@@ -36,23 +52,55 @@ describe('direct fallback requested-region acceptance', () => {
       successfulFetchCount: 2,
       rejectedCount: 0,
     })
+    expect(enrichment.run).not.toHaveBeenCalled()
   })
 
   it('accepts a national article when its extracted text matches Mangystau', async () => {
-    const candidates = adapter.candidates(mangystauRequest(), 1, new Set())
-    process.mockResolvedValueOnce(processed(
-      candidates[0]!.originalUrl,
-      true,
-      ['mangystau'],
-      '2025-09-09T10:16:00.000Z',
-    ))
+    const candidates = adapter.candidates(
+      mangystauRequest(),
+      1,
+      new Set(),
+    )
 
-    await expect(service.process(candidates, 'test-part08-direct-run', septemberWindow())).resolves.toMatchObject({
-      accepted: [expect.objectContaining({ requestedRegionMatched: true })],
-      regionMismatchCount: 0,
-      temporalMismatchCount: 0,
-      temporalUnknownCount: 0,
-      successfulFetchCount: 1,
+    process.mockResolvedValueOnce(
+      processed(
+        candidates[0]!.originalUrl,
+        true,
+        ['mangystau'],
+        '2025-09-09T10:16:00.000Z',
+      ),
+    )
+
+    const result = await service.process(
+      candidates,
+      'test-part08-direct-run',
+      septemberWindow(),
+    )
+
+    expect(result.accepted).toHaveLength(1)
+
+    expect(
+      result.accepted[0]?.requestedRegionMatched,
+    ).toBe(true)
+
+    expect(result).toMatchObject({
+      enrichmentAttemptedCount: 1,
+      enrichmentCandidateCount: 0,
+      enrichmentFailedCount: 0,
+      signalCandidates: [],
+    })
+
+    expect(enrichment.run).toHaveBeenCalledTimes(1)
+
+    expect(result.accepted).toHaveLength(1)
+
+    const acceptedArticle = result.accepted[0]!
+
+    expect(enrichment.run).toHaveBeenCalledWith({
+      sourceDocumentId:
+        acceptedArticle.document.sourceDocumentId,
+      sourceText:
+        'Атырау: обнаружена нефтяная плёнка.',
     })
   })
 
@@ -72,6 +120,7 @@ describe('direct fallback requested-region acceptance', () => {
       successfulFetchCount: 1,
     })
     expect(process).toHaveBeenCalledTimes(1)
+    expect(enrichment.run).not.toHaveBeenCalled()
   })
 
   it('retains a snapshot with unknown publication time but does not accept it', async () => {
@@ -84,6 +133,7 @@ describe('direct fallback requested-region acceptance', () => {
       temporalUnknownCount: 1,
       successfulFetchCount: 1,
     })
+    expect(enrichment.run).not.toHaveBeenCalled()
   })
 
   it('accepts an exact source-derived date at the inclusive September boundary', async () => {
@@ -152,6 +202,7 @@ describe('direct fallback requested-region acceptance', () => {
         parserFailureCount: 0,
         successfulFetchCount: 1,
       })
+      expect(enrichment.run).not.toHaveBeenCalled()
     },
   )
   it(
@@ -171,6 +222,7 @@ describe('direct fallback requested-region acceptance', () => {
       )
 
       article.parserFailed = true
+      article.sourceText = null
       article.requestedRegionMatched = null
       article.document.parserStatus = 'failed'
       article.document.relevant = null
@@ -192,8 +244,105 @@ describe('direct fallback requested-region acceptance', () => {
         temporalUnknownCount: 0,
         successfulFetchCount: 1,
       })
+      expect(enrichment.run).not.toHaveBeenCalled()
     },
   )
+
+  it('returns a transient signal candidate for an accepted article', async () => {
+    const candidates = adapter.candidates(
+      atyrauRequest(),
+      1,
+      new Set(),
+    )
+
+    const article = processed(
+      candidates[0]!.originalUrl,
+      true,
+      [],
+      '2025-09-09T10:16:00.000Z',
+    )
+
+    process.mockResolvedValueOnce(article)
+
+    const signalCandidate = {
+      sourceDocumentId:
+        article.document.sourceDocumentId,
+      extractionMode: 'llm_candidate' as const,
+      verificationStatus: 'unverified' as const,
+      signal: {
+        observedAt: null,
+        observedPeriod: '2025-09',
+        locationText: 'Атырау',
+        phenomenon: 'oil_film' as const,
+        excerpt:
+          'Атырау: обнаружена нефтяная плёнка.',
+        evidenceQuotes: [
+          'обнаружена нефтяная плёнка',
+        ],
+        confidence: 0.91,
+      },
+    }
+
+    enrichment.run.mockResolvedValueOnce({
+      candidate: signalCandidate,
+      failed: false,
+    })
+
+    const result = await service.process(
+      candidates,
+      'test-part08-direct-run',
+      septemberWindow(),
+    )
+
+    expect(result.accepted).toHaveLength(1)
+
+    expect(result).toMatchObject({
+      enrichmentAttemptedCount: 1,
+      enrichmentCandidateCount: 1,
+      enrichmentFailedCount: 0,
+      signalCandidates: [signalCandidate],
+    })
+  })
+
+  it('keeps an accepted article when optional enrichment fails', async () => {
+    const candidates = adapter.candidates(
+      atyrauRequest(),
+      1,
+      new Set(),
+    )
+
+    process.mockResolvedValueOnce(
+      processed(
+        candidates[0]!.originalUrl,
+        true,
+        [],
+        '2025-09-09T10:16:00.000Z',
+      ),
+    )
+
+    enrichment.run.mockResolvedValueOnce({
+      candidate: null,
+      failed: true,
+    })
+
+    const result = await service.process(
+      candidates,
+      'test-part08-direct-run',
+      septemberWindow(),
+    )
+
+    expect(result.accepted).toHaveLength(1)
+
+    expect(result).toMatchObject({
+      enrichmentAttemptedCount: 1,
+      enrichmentCandidateCount: 0,
+      enrichmentFailedCount: 1,
+      signalCandidates: [],
+      rejectedCount: 0,
+      parserFailureCount: 0,
+      degradedCount: 0,
+    })
+  })
 })
 
 function mangystauRequest(): NormalizedGdeltRequest {
@@ -237,6 +386,8 @@ function processed(
       matchedRequestedRegions,
       coverage: ['national'],
     },
+    sourceText:
+      'Атырау: обнаружена нефтяная плёнка.',
     parserFailed: false,
     requestedRegionMatched,
     sourceStatus: 'healthy',

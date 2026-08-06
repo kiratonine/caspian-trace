@@ -17,6 +17,8 @@ import { IngestionRepository } from '../ingestion.repository'
 import type { GdeltIngestionResponse, NormalizedGdeltRequest, PublicRunStatus } from '../ingestion.types'
 import { canonicalizeArticleUrl } from '../article/article-url'
 import { GdeltAdapter } from './gdelt.adapter'
+import type { ArticleSignalCandidate } from '../article/article-signal-candidate'
+import { ArticleSignalEnrichmentRunner } from '../article/article-signal-enrichment-runner.service'
 
 interface GdeltRunState {
   sourceStatus: 'healthy' | 'degraded' | 'rate_limited' | null
@@ -34,6 +36,10 @@ interface GdeltRunState {
   queryHash: string | null
   error: { code: string; message: string } | null
   responseUsable: boolean
+  enrichmentAttemptedCount: number
+  enrichmentCandidateCount: number
+  enrichmentFailedCount: number
+  signalCandidates: ArticleSignalCandidate[]
 }
 
 @Injectable()
@@ -47,6 +53,7 @@ export class GdeltIngestionService {
     private readonly directAdapter: DirectSourceAdapter,
     private readonly directSources: DirectSourceService,
     private readonly articles: ArticleIngestionService,
+    private readonly signalEnrichment: ArticleSignalEnrichmentRunner,
     private readonly repository: IngestionRepository,
     config: ConfigService<PlatformEnvironment, true>,
     @Inject(INGESTION_CLOCK) private readonly clock: IngestionClock,
@@ -77,6 +84,10 @@ export class GdeltIngestionService {
       irrelevantCount: 0,
       parserFailureCount: 0,
       queryHash: null, error: null, responseUsable: false,
+      enrichmentAttemptedCount: 0,
+      enrichmentCandidateCount: 0,
+      enrichmentFailedCount: 0,
+      signalCandidates: [],
     }
     let gdeltCandidates: PublicArticleCandidate[] = []
     try {
@@ -119,6 +130,23 @@ export class GdeltIngestionService {
           }
 
           state.accepted.push(processed)
+          state.enrichmentAttemptedCount += 1
+
+          if (typeof processed.sourceText !== 'string') {
+            state.enrichmentFailedCount += 1
+          } else {
+            const enrichment = await this.signalEnrichment.run({
+              sourceDocumentId: processed.document.sourceDocumentId,
+              sourceText: processed.sourceText,
+            })
+
+            if (enrichment.failed) {
+              state.enrichmentFailedCount += 1
+            } else if (enrichment.candidate !== null) {
+              state.signalCandidates.push(enrichment.candidate)
+              state.enrichmentCandidateCount += 1
+            }
+          }
 
           if (processed.sourceStatus !== 'healthy') {
             state.error ??= {
@@ -167,6 +195,9 @@ export class GdeltIngestionService {
         ...(state.queryHash ? { queryHash: state.queryHash } : {}),
         ...(state.cacheStatus ? { cacheStatus: state.cacheStatus } : {}),
         ...(state.sourceStatus ? { sourceStatus: state.sourceStatus } : {}),
+        enrichmentAttemptedCount: state.enrichmentAttemptedCount,
+        enrichmentCandidateCount: state.enrichmentCandidateCount,
+        enrichmentFailedCount: state.enrichmentFailedCount,
       },
     })
     const gdeltCacheAvailable = state.accepted.length > 0 ||
@@ -190,6 +221,10 @@ export class GdeltIngestionService {
 
     const direct = await this.runDirectFallback(request, gdeltCandidates, state.accepted)
     const documents = [...state.accepted.map((item) => item.document), ...direct.documents]
+    const signalCandidates = [
+      ...state.signalCandidates,
+      ...direct.signalCandidates,
+    ]
     return {
       status: topLevelStatus(gdeltStatus, direct.status, documents.length, direct.used),
       gdelt: {
@@ -202,13 +237,26 @@ export class GdeltIngestionService {
         attemptedCount: direct.attemptedCount, acceptedCount: direct.documents.length,
         rejectedCount: direct.rejectedCount,
       },
+      enrichment: {
+        attemptedCount:
+          state.enrichmentAttemptedCount +
+          direct.enrichmentAttemptedCount,
+        candidateCount:
+          state.enrichmentCandidateCount +
+          direct.enrichmentCandidateCount,
+        failedCount:
+          state.enrichmentFailedCount +
+          direct.enrichmentFailedCount,
+      },
+      signalCandidates,
       documents,
     }
   }
 
   private async runDirectFallback(
     request: NormalizedGdeltRequest,
-    gdeltCandidates: readonly PublicArticleCandidate[],
+    gdeltCandidates:
+      readonly PublicArticleCandidate[],
     accepted: readonly ProcessedArticle[],
   ): Promise<{
     used: boolean
@@ -216,15 +264,43 @@ export class GdeltIngestionService {
     status: PublicRunStatus | null
     attemptedCount: number
     rejectedCount: number
+
+    enrichmentAttemptedCount: number
+    enrichmentCandidateCount: number
+    enrichmentFailedCount: number
+
+    signalCandidates: ArticleSignalCandidate[]
     documents: ArticleDocumentResult[]
   }> {
     if (!request.includeDirectFallback || accepted.length >= request.maxArticles) {
-      return { used: false, runId: null, status: null, attemptedCount: 0, rejectedCount: 0, documents: [] }
+      return {
+        used: false,
+        runId: null,
+        status: null,
+        attemptedCount: 0,
+        rejectedCount: 0,
+        enrichmentAttemptedCount: 0,
+        enrichmentCandidateCount: 0,
+        enrichmentFailedCount: 0,
+        signalCandidates: [],
+        documents: [],
+      }
     }
     const excluded = new Set(gdeltCandidates.map((candidate) => canonicalizeArticleUrl(new URL(candidate.originalUrl))))
     const candidates = this.directAdapter.candidates(request, request.maxArticles - accepted.length, excluded)
     if (candidates.length === 0) {
-      return { used: false, runId: null, status: null, attemptedCount: 0, rejectedCount: 0, documents: [] }
+      return {
+        used: false,
+        runId: null,
+        status: null,
+        attemptedCount: 0,
+        rejectedCount: 0,
+        enrichmentAttemptedCount: 0,
+        enrichmentCandidateCount: 0,
+        enrichmentFailedCount: 0,
+        signalCandidates: [],
+        documents: [],
+      }
     }
     const runId = randomUUID()
     const startedAt = this.clock.now()
@@ -264,6 +340,9 @@ export class GdeltIngestionService {
         irrelevantCount: result.irrelevantCount,
         temporalMismatchCount: result.temporalMismatchCount,
         temporalUnknownCount: result.temporalUnknownCount,
+        enrichmentAttemptedCount: result.enrichmentAttemptedCount,
+        enrichmentCandidateCount: result.enrichmentCandidateCount,
+        enrichmentFailedCount: result.enrichmentFailedCount,
       },
     })
     const cacheAvailable = result.accepted.length > 0 ||
@@ -277,8 +356,24 @@ export class GdeltIngestionService {
       metadata: { lastRunId: runId },
     })
     return {
-      used: true, runId, status, attemptedCount: candidates.length,
-      rejectedCount: result.rejectedCount, documents: result.accepted.map((item) => item.document),
+      used: true,
+      runId,
+      status,
+      attemptedCount: candidates.length,
+      rejectedCount: result.rejectedCount,
+
+      enrichmentAttemptedCount:
+        result.enrichmentAttemptedCount,
+      enrichmentCandidateCount:
+        result.enrichmentCandidateCount,
+      enrichmentFailedCount:
+        result.enrichmentFailedCount,
+
+      signalCandidates: result.signalCandidates,
+
+      documents: result.accepted.map(
+        (item) => item.document,
+      ),
     }
   }
 }

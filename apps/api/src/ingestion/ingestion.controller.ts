@@ -23,7 +23,7 @@ export class IngestionController {
   constructor(
     private readonly kazhydromet: KazhydrometIngestionService,
     private readonly gdelt: GdeltIngestionService,
-  ) {}
+  ) { }
 
   @Post('kazhydromet')
   @HttpCode(200)
@@ -80,14 +80,14 @@ export class IngestionController {
   @UseGuards(IngestionTokenGuard)
   @ApiOperation({
     summary: 'Cache bounded public articles from fixed GDELT/direct sources (internal admin)',
-    description: 'Raw article snapshots remain unverified and no incident signals are created.',
+    description: 'Raw snapshots remain unverified. Optional transient signal candidates may be returned, but no incident signals are created.',
   })
   @ApiHeader({ name: 'X-Ingestion-Token', required: true })
   @ApiOkResponse({
     description: 'GDELT/direct ingestion result with immutable article provenance',
     schema: {
       type: 'object',
-      required: ['status', 'gdelt', 'directFallback', 'documents'],
+      required: ['status', 'gdelt', 'directFallback', 'documents', 'enrichment', 'signalCandidates',],
       properties: {
         status: { type: 'string', enum: ['succeeded', 'partial', 'failed', 'rate_limited'] },
         gdelt: {
@@ -114,6 +114,107 @@ export class IngestionController {
             attemptedCount: { type: 'integer', minimum: 0 },
             acceptedCount: { type: 'integer', minimum: 0 },
             rejectedCount: { type: 'integer', minimum: 0 },
+          },
+        },
+        enrichment: {
+          type: 'object',
+          required: [
+            'attemptedCount',
+            'candidateCount',
+            'failedCount',
+          ],
+          properties: {
+            attemptedCount: {
+              type: 'integer',
+              minimum: 0,
+            },
+            candidateCount: {
+              type: 'integer',
+              minimum: 0,
+            },
+            failedCount: {
+              type: 'integer',
+              minimum: 0,
+            },
+          },
+        },
+        signalCandidates: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: [
+              'sourceDocumentId',
+              'extractionMode',
+              'verificationStatus',
+              'signal',
+            ],
+            properties: {
+              sourceDocumentId: {
+                type: 'string',
+              },
+              extractionMode: {
+                type: 'string',
+                enum: ['llm_candidate'],
+              },
+              verificationStatus: {
+                type: 'string',
+                enum: ['unverified'],
+              },
+              signal: {
+                type: 'object',
+                required: [
+                  'observedAt',
+                  'observedPeriod',
+                  'locationText',
+                  'phenomenon',
+                  'excerpt',
+                  'evidenceQuotes',
+                  'confidence',
+                ],
+                properties: {
+                  observedAt: {
+                    type: 'string',
+                    format: 'date-time',
+                    nullable: true,
+                  },
+                  observedPeriod: {
+                    type: 'string',
+                    pattern: '^\\d{4}-(0[1-9]|1[0-2])$',
+                    nullable: true,
+                  },
+                  locationText: {
+                    type: 'string',
+                  },
+                  phenomenon: {
+                    type: 'string',
+                    enum: [
+                      'oil_film',
+                      'color_change',
+                      'odor',
+                      'fish_kill',
+                      'wastewater',
+                      'other',
+                    ],
+                  },
+                  excerpt: {
+                    type: 'string',
+                  },
+                  evidenceQuotes: {
+                    type: 'array',
+                    minItems: 1,
+                    maxItems: 3,
+                    items: {
+                      type: 'string',
+                    },
+                  },
+                  confidence: {
+                    type: 'number',
+                    minimum: 0,
+                    maximum: 1,
+                  },
+                },
+              },
+            },
           },
         },
         documents: {

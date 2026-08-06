@@ -17,6 +17,7 @@ import type { ArticleDocumentResult, ArticleExtractionResult, PublicArticleCandi
 
 export interface ProcessedArticle {
   document: ArticleDocumentResult
+  sourceText: string | null
   parserFailed: boolean
   requestedRegionMatched: boolean | null
   sourceStatus: 'healthy' | 'degraded' | 'rate_limited'
@@ -102,6 +103,7 @@ export class ArticleIngestionService {
           matchedRequestedRegions: null,
           coverage: source.coverage,
         },
+        sourceText: null,
         parserFailed: true,
         requestedRegionMatched: null,
         sourceStatus: fetched.metadata.sourceStatus,
@@ -129,6 +131,7 @@ export class ArticleIngestionService {
         matchedRequestedRegions: extraction.matchedRequestedRegions,
         coverage: source.coverage,
       },
+      sourceText: extraction.text,
       parserFailed: false,
       requestedRegionMatched: extraction.matchedRequestedRegions.length > 0,
       sourceStatus: fetched.metadata.sourceStatus,

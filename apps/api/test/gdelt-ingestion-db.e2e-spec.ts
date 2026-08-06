@@ -93,7 +93,18 @@ describe('GDELT/direct ingestion persistence (disposable PostgreSQL e2e)', () =>
       where: { id: result.gdelt.runId },
       select: { errorCode: true, errorMessage: true },
     })).resolves.toEqual({ errorCode: null, errorMessage: null })
-    expect(result).toMatchObject({ status: 'succeeded', gdelt: { acceptedCount: 1 } })
+    expect(result).toMatchObject({
+      status: 'succeeded',
+      gdelt: {
+        acceptedCount: 1,
+      },
+      enrichment: {
+        attemptedCount: 1,
+        candidateCount: 0,
+        failedCount: 0,
+      },
+      signalCandidates: [],
+    })
     const document = await prisma.sourceDocument.findUniqueOrThrow({
       where: { id: result.documents[0]!.sourceDocumentId },
       select: { cachePath: true, sha256: true, publishedAt: true, extractionMetadata: true },
@@ -108,9 +119,45 @@ describe('GDELT/direct ingestion persistence (disposable PostgreSQL e2e)', () =>
     })
     await expect(prisma.ingestionRun.findUniqueOrThrow({ where: { id: result.gdelt.runId }, select: { adapter: true, status: true } }))
       .resolves.toEqual({ adapter: 'GDELT', status: 'SUCCEEDED' })
+    const runRow =
+      await prisma.ingestionRun.findUniqueOrThrow({
+        where: {
+          id: result.gdelt.runId,
+        },
+        select: {
+          status: true,
+          acceptedCount: true,
+          metadata: true,
+        },
+      })
+
+    expect(runRow).toMatchObject({
+      status: 'SUCCEEDED',
+      acceptedCount: 1,
+      metadata: {
+        enrichmentAttemptedCount: 1,
+        enrichmentCandidateCount: 0,
+        enrichmentFailedCount: 0,
+      },
+    })
     await expect(prisma.sourceHealth.findUniqueOrThrow({ where: { sourceId: 'gdelt' }, select: { status: true, cacheAvailable: true } }))
       .resolves.toEqual({ status: 'HEALTHY', cacheAvailable: true })
     expect(storage.objects.has(result.documents[0]!.cachePath)).toBe(true)
+    expect(JSON.stringify(result)).not.toContain(
+      'version one',
+    )
+
+    expect(JSON.stringify(runRow.metadata)).not.toContain(
+      'version one',
+    )
+
+    expect(JSON.stringify(runRow.metadata)).not.toContain(
+      'evidenceQuotes',
+    )
+
+    expect(JSON.stringify(runRow.metadata)).not.toContain(
+      'signalCandidates',
+    )
   })
 
   it('reuses the same URL/content and versions changed content without overwrite', async () => {
@@ -143,6 +190,12 @@ describe('GDELT/direct ingestion persistence (disposable PostgreSQL e2e)', () =>
       expect(result).toMatchObject({
         status: 'failed',
         documents: [],
+        signalCandidates: [],
+        enrichment: {
+          attemptedCount: 0,
+          candidateCount: 0,
+          failedCount: 0,
+        },
         gdelt: {
           status: 'failed',
           acceptedCount: 0,
@@ -242,8 +295,21 @@ describe('GDELT/direct ingestion persistence (disposable PostgreSQL e2e)', () =>
     }))
     const result = await run({ includeDirectFallback: true })
     expect(result).toMatchObject({
-      status: 'partial', gdelt: { status: 'rate_limited' },
-      directFallback: { used: true, status: 'succeeded', acceptedCount: 1 },
+      status: 'partial',
+      gdelt: {
+        status: 'rate_limited',
+      },
+      directFallback: {
+        used: true,
+        status: 'succeeded',
+        acceptedCount: 1,
+      },
+      enrichment: {
+        attemptedCount: 1,
+        candidateCount: 0,
+        failedCount: 0,
+      },
+      signalCandidates: [],
     })
     await expect(prisma.sourceHealth.findMany({
       where: { sourceId: { in: ['gdelt', 'direct-sources'] } },
@@ -277,7 +343,19 @@ describe('GDELT/direct ingestion persistence (disposable PostgreSQL e2e)', () =>
     const result = await run({ includeDirectFallback: true, maxArticles: 3 })
     expect(result).toMatchObject({
       status: 'partial',
-      directFallback: { used: true, status: 'partial', attemptedCount: 3, acceptedCount: 1, rejectedCount: 0 },
+      directFallback: {
+        used: true,
+        status: 'partial',
+        attemptedCount: 3,
+        acceptedCount: 1,
+        rejectedCount: 0,
+      },
+      enrichment: {
+        attemptedCount: 1,
+        candidateCount: 0,
+        failedCount: 0,
+      },
+      signalCandidates: [],
     })
     expect(result.documents).toHaveLength(1)
     expect(result.documents[0]!.canonicalUrl).toContain('zakon.kz')
@@ -289,7 +367,13 @@ describe('GDELT/direct ingestion persistence (disposable PostgreSQL e2e)', () =>
     })
     expect(directRun).toMatchObject({
       status: 'PARTIAL', acceptedCount: 1, rejectedCount: 0,
-      metadata: { temporalMismatchCount: 1, temporalUnknownCount: 1 },
+      metadata: {
+        temporalMismatchCount: 1,
+        temporalUnknownCount: 1,
+        enrichmentAttemptedCount: 1,
+        enrichmentCandidateCount: 0,
+        enrichmentFailedCount: 0,
+      },
     })
     await expect(prisma.sourceHealth.findUniqueOrThrow({
       where: { sourceId: 'direct-sources' },
@@ -357,6 +441,13 @@ describe('GDELT/direct ingestion persistence (disposable PostgreSQL e2e)', () =>
       acceptedCount: 0,
       metadata: { regionMismatchCount: 1 },
     })
+    expect(result.enrichment).toEqual({
+      attemptedCount: 0,
+      candidateCount: 0,
+      failedCount: 0,
+    })
+
+    expect(result.signalCandidates).toEqual([])
   })
 
   it('fails closed on an invalid GDELT top-level response without advancing lastSuccessAt', async () => {

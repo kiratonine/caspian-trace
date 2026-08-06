@@ -17,6 +17,7 @@ import { KazhydrometIngestionService } from './kazhydromet/kazhydromet-ingestion
 import { PDFJS_LOADER, PdfTextService, loadPdfJs } from './kazhydromet/pdf-text.service'
 import { LlmModule } from '../llm/llm.module'
 import { ArticleSignalEnricher } from './article/article-signal-enricher.service'
+import { ArticleSignalEnrichmentRunner } from './article/article-signal-enrichment-runner.service'
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ArticleSignalEnricher } from './article/article-signal-enricher.service
     ArticleTextService,
     ArticleIngestionService,
     ArticleSignalEnricher,
+    ArticleSignalEnrichmentRunner,
     DirectSourceAdapter,
     DirectSourceService,
     GdeltAdapter,

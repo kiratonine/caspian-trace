@@ -11,3 +11,14 @@ export interface ArticleSignalEnrichmentInput {
     sourceDocumentId: string
     sourceText: string
 }
+
+export interface ArticleSignalEnrichmentOutcome {
+    candidate: ArticleSignalCandidate | null
+    failed: boolean
+}
+
+export interface ArticleSignalEnrichmentSummary {
+    attemptedCount: number
+    candidateCount: number
+    failedCount: number
+}

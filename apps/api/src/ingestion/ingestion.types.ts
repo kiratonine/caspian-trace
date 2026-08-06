@@ -1,6 +1,10 @@
 import type { SourceDocumentStatus } from '../generated/prisma/enums'
 import type { Prisma } from '../generated/prisma/client'
 import type { ArticleDocumentResult } from './article/article.types'
+import type {
+  ArticleSignalCandidate,
+  ArticleSignalEnrichmentSummary,
+} from './article/article-signal-candidate'
 
 export const KAZHYDROMET_REGIONS = ['atyrau', 'mangystau'] as const
 export type KazhydrometRegion = (typeof KAZHYDROMET_REGIONS)[number]
@@ -100,5 +104,7 @@ export interface GdeltIngestionResponse {
     acceptedCount: number
     rejectedCount: number
   }
+  enrichment: ArticleSignalEnrichmentSummary
+  signalCandidates: ArticleSignalCandidate[]
   documents: ArticleDocumentResult[]
 }

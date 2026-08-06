@@ -3,12 +3,17 @@ import { Injectable } from '@nestjs/common'
 import { ArticleIngestionService, type ProcessedArticle } from '../article/article-ingestion.service'
 import type { PublicArticleCandidate } from '../article/article.types'
 import type { NormalizedGdeltRequest } from '../ingestion.types'
+import type { ArticleSignalCandidate } from '../article/article-signal-candidate'
+import { ArticleSignalEnrichmentRunner } from '../article/article-signal-enrichment-runner.service'
 
 type DirectSourceWindow = Pick<NormalizedGdeltRequest, 'from' | 'to'>
 
 @Injectable()
 export class DirectSourceService {
-  constructor(private readonly articles: ArticleIngestionService) { }
+  constructor(
+    private readonly articles: ArticleIngestionService,
+    private readonly signalEnrichment: ArticleSignalEnrichmentRunner,
+  ) { }
 
   async process(
     candidates: readonly PublicArticleCandidate[],
@@ -26,8 +31,16 @@ export class DirectSourceService {
     degradedCount: number
     successfulFetchCount: number
     lastHttpStatus: number | null
+    signalCandidates: ArticleSignalCandidate[]
+    enrichmentAttemptedCount: number
+    enrichmentCandidateCount: number
+    enrichmentFailedCount: number
   }> {
     const accepted: ProcessedArticle[] = []
+    const signalCandidates: ArticleSignalCandidate[] = []
+    let enrichmentAttemptedCount = 0
+    let enrichmentCandidateCount = 0
+    let enrichmentFailedCount = 0
     let rejectedCount = 0
     let rateLimitedCount = 0
     let regionMismatchCount = 0
@@ -75,8 +88,28 @@ export class DirectSourceService {
           continue
         }
 
-        if (temporalMatch === 'matched') {
-          accepted.push(processed)
+        if (temporalMatch !== 'matched') {
+          continue
+        }
+
+        accepted.push(processed)
+        enrichmentAttemptedCount += 1
+
+        if (typeof processed.sourceText !== 'string') {
+          enrichmentFailedCount += 1
+          continue
+        }
+
+        const enrichment = await this.signalEnrichment.run({
+          sourceDocumentId: processed.document.sourceDocumentId,
+          sourceText: processed.sourceText,
+        })
+
+        if (enrichment.failed) {
+          enrichmentFailedCount += 1
+        } else if (enrichment.candidate !== null) {
+          signalCandidates.push(enrichment.candidate)
+          enrichmentCandidateCount += 1
         }
       } catch (error) {
         rejectedCount += 1
@@ -95,6 +128,10 @@ export class DirectSourceService {
       degradedCount,
       successfulFetchCount,
       lastHttpStatus,
+      signalCandidates,
+      enrichmentAttemptedCount,
+      enrichmentCandidateCount,
+      enrichmentFailedCount,
     }
   }
 }

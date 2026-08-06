@@ -57,6 +57,8 @@ describe('ArticleIngestionService', () => {
   it('caches exact raw bytes before parser and removes tracking from canonical URL', async () => {
     const result = await service.process(candidate, 'test-part08-run')
     expect(result).toMatchObject({ requestedRegionMatched: true })
+    expect(result.sourceText).toBe('not persisted')
+    expect(result.document).not.toHaveProperty('sourceText')
     expect(result.document).toMatchObject({
       canonicalUrl: 'https://azh.kz/article', parserStatus: 'succeeded',
       matchedRequestedRegions: ['atyrau'],
@@ -92,6 +94,7 @@ describe('ArticleIngestionService', () => {
     articleText.extract.mockImplementationOnce(() => { throw new Error('raw parser detail') })
     const result = await service.process(candidate, 'test-part08-run')
     expect(result.parserFailed).toBe(true)
+    expect(result.sourceText).toBeNull()
     expect(result).toMatchObject({ requestedRegionMatched: null })
     expect(result.document).toMatchObject({
       parserStatus: 'failed', relevant: null, matchedRequestedRegions: null,

@@ -9,6 +9,7 @@ export type RuntimeBootstrapErrorCode =
     | 'RUNTIME_BOOTSTRAP_PLAN_CONFLICT'
     | 'RUNTIME_BOOTSTRAP_PREREQUISITE_MISSING'
     | 'RUNTIME_BOOTSTRAP_PREREQUISITE_CONFLICT'
+    | 'RUNTIME_BOOTSTRAP_PERSISTENCE_CONFLICT'
 
 export class RuntimeBootstrapError extends Error {
     constructor(

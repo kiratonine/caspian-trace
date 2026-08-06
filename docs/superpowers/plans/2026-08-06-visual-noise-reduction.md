@@ -1763,7 +1763,170 @@ git commit -m "refactor(live-status): источники группами — п
 
 ---
 
-### Task 10: Сквозная проверка и документы сессии
+### Task 10: Плашка «Вывод изменился» — убрать «Стало»
+
+Задача добавлена по ходу исполнения: владелец продукта заметил плашку на
+скриншоте. Замеры первоначального аудита её не поймали — она появляется только
+при переключении периода, а замеры шли по прямым ссылкам.
+
+Замерено на живом экране (май ← сентябрь, 1440×900):
+
+- текст блока «СТАЛО» **байт в байт совпадает** с текстом блока 1 «Вывод»,
+  который стоит на сантиметр ниже (`staloText === block1` вернуло `true`);
+- бейдж уровня в «СТАЛО» дублирует бейдж блока 2;
+- плашка занимает **241 px из 774 px** высоты панели — треть;
+- заголовок «ВЫВОД ИЗМЕНИЛСЯ» и подписи «БЫЛО»/«СТАЛО» набраны капсом,
+  который Task 1 пропустил: этого файла не было в его списке.
+
+Уникальное содержимое плашки — **прошлый** вывод: его в панели больше нигде нет.
+Актуальный вывод и его уровень панель показывает сама, блоками 1 и 2. Поэтому
+«Стало» удаляется целиком, а контраст становится пространственным: заголовок
+объявляет смену, строка «Было» даёт прошлое состояние, актуальное читается
+прямо под плашкой.
+
+**Files:**
+- Modify: `apps/web/src/features/comparison/VerdictChange.tsx`
+
+**Interfaces:**
+- Consumes: ничего от предыдущих задач.
+- Produces: `VerdictChange` сохраняет пропы `{ before, after, onDismiss }` —
+  вызов в `ConclusionPanel.tsx` не меняется. Проп `after` остаётся в типе,
+  но больше не рендерится: он часть контракта хука `useVerdictChange`,
+  и удалять его из сигнатуры — задача другого масштаба.
+
+- [ ] **Step 1: Убрать строку «Стало» и понизить капс**
+
+`apps/web/src/features/comparison/VerdictChange.tsx`. Заголовок теряет
+`tracking-widest uppercase`, подпись «Было» — `uppercase`, блок `after`
+не рендерится:
+
+```tsx
+export function VerdictChange({
+  before,
+  after,
+  onDismiss,
+}: VerdictChangeProps) {
+  return (
+    <section
+      aria-label={VERDICT_CHANGE_TITLE}
+      className="flex flex-col gap-2 border-b bg-muted/30 px-4 py-3"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="text-xs font-medium">{VERDICT_CHANGE_TITLE}</h3>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onDismiss}
+          aria-label={VERDICT_CHANGE_DISMISS}
+          title={VERDICT_CHANGE_DISMISS}
+          className="-my-1 size-6 shrink-0"
+        >
+          <X />
+        </Button>
+      </div>
+      {/* Показывается только ПРОШЛЫЙ вывод: актуальный дословно печатают блоки
+          1 и 2 панели прямо под плашкой, и вторая его копия здесь была самым
+          крупным дублем экрана. Контраст остаётся, но пространственный:
+          «было» в плашке, «стало» — ниже. */}
+      <VerdictSideRow label={VERDICT_CHANGE_BEFORE} side={before} muted />
+      <p className="text-xs text-pretty text-muted-foreground">
+        {VERDICT_CHANGE_EXPLANATION}
+      </p>
+    </section>
+  )
+}
+```
+
+`VerdictSideRow` теряет проп `muted` (единственный вызов передаёт `true`)
+и капс у подписи:
+
+```tsx
+type VerdictSideRowProps = {
+  label: string
+  side: VerdictSide
+}
+
+// Вывод обрезан до двух строк: плашка — сводка перехода, а целиком прошлый
+// текст остаётся в title (дословная формулировка с бэка не теряется).
+function VerdictSideRow({ label, side }: VerdictSideRowProps) {
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span>{label}</span>
+        {side.period !== null && <span>{formatMonth(side.period)}</span>}
+        <EvidenceLevelBadge level={side.evidenceLevel} compact />
+      </p>
+      <p
+        title={side.conclusion}
+        className="line-clamp-2 text-xs text-pretty text-muted-foreground"
+      >
+        {side.conclusion}
+      </p>
+    </div>
+  )
+}
+```
+
+Проп `after` больше не читается — чтобы `tsc -b` с `noUnusedLocals`
+не ругался на деструктуризацию, его нужно либо не деструктурировать
+(`{ before, onDismiss }`), либо оставить в типе и не извлекать. Выбрать
+первое: тип `VerdictChangeProps` не трогаем (его формирует `useVerdictChange`),
+а из деструктуризации `after` убираем.
+
+**Не удалять `VERDICT_CHANGE_AFTER` из `constants/comparison.ts`** без
+проверки: если после правки на него не осталось ссылок, константа становится
+мёртвой — тогда удалить её вместе с правкой и сказать об этом в отчёте.
+
+- [ ] **Step 2: Проверить сборку**
+
+```bash
+npm run typecheck && npm run build
+cd apps/web && npx eslint . && cd ../..
+```
+
+Ожидается: зелёные. Ошибка про неиспользуемый `after` или `muted` означает,
+что шаг 1 применён не полностью.
+
+- [ ] **Step 3: Замерить плашку на живом экране**
+
+Плашка появляется только при ПЕРЕКЛЮЧЕНИИ периода, прямая ссылка её
+не покажет. Открыть `http://localhost:5173/?incident=inv-atyrau-2025-09`,
+затем нажать кнопку «май 2025 г.» в переключателе над схемой.
+
+```js
+const plashka = document.querySelector('section[aria-label="Вывод изменился"]')
+const block1 = document
+  .querySelectorAll('section[aria-label="Вывод и доказательства"] ol > li')[0]
+  .innerText.replace(/^\s*1\s*Вывод\s*/, "")
+  .trim()
+;({
+  дублирует: plashka.innerText.includes(block1),
+  высота: Math.round(plashka.getBoundingClientRect().height),
+  капс: /ВЫВОД ИЗМЕНИЛСЯ|БЫЛО|СТАЛО/.test(plashka.innerText),
+})
+```
+
+Ожидается: `дублирует: false`, `капс: false`, высота заметно меньше 241 px
+(до правки было 241). Точное число не важно — важно, что дубль исчез.
+
+- [ ] **Step 4: Проверить, что плашка не сломалась**
+
+- Переключение в обе стороны (сентябрь → май и май → сентябрь) показывает
+  плашку с ПРОШЛЫМ периодом и его уровнем.
+- Крестик закрывает; при следующем переключении плашка появляется снова.
+- У Актау переключателя нет, плашки тоже нет.
+- Во время реплея плашка не показывается.
+
+- [ ] **Step 5: Коммит**
+
+```bash
+git add apps/web/src/features/comparison/VerdictChange.tsx
+git commit -m "refactor(comparison): плашка показывает только прошлый вывод"
+```
+
+---
+
+### Task 11: Сквозная проверка и документы сессии
 
 **Files:**
 - Modify: `docs/frontend-plan.md`

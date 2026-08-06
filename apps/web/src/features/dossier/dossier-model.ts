@@ -1,9 +1,13 @@
 import type { IncidentDetail } from "@/api/contracts"
+import { DOSSIER_SOURCE_PAGE_PREFIX } from "@/constants/dossier"
+import { matrixLabel } from "@/constants/units"
 import {
   buildPanelModel,
   type SourceEntry,
   type StatementEntry,
 } from "@/features/conclusion/panel-model"
+import { formatSampledDate } from "@/lib/format"
+import { hasConfirmedPage } from "@/lib/source"
 import type {
   CandidateObject,
   IncidentSignal,
@@ -121,5 +125,56 @@ export function buildDossierModel(detail: IncidentDetail): DossierModel {
     sources: panel.sources,
     corridor: buildCorridor(detail.corridorBounds, stationsById),
     provenance: { rulesetVersion: null, inputHash: null },
+  }
+}
+
+/** «РГП «Казгидромет», стр. 22» — издатель и страница; null, если документа нет. */
+export function measurementSourceLabel(
+  row: DossierMeasurementRow
+): string | null {
+  const { measurement, sourceDocument } = row
+  if (!sourceDocument) return null
+  return [
+    sourceDocument.publisher,
+    hasConfirmedPage(sourceDocument, measurement.sourcePage) &&
+      `${DOSSIER_SOURCE_PAGE_PREFIX} ${measurement.sourcePage}`,
+  ]
+    .filter((part): part is string => typeof part === "string")
+    .join(", ")
+}
+
+/**
+ * Колонки, значение которых одинаково во всех строках события: их печатают
+ * один раз подзаголовком таблицы. null — строки различаются (или значения
+ * нет), тогда колонка печатается как есть. Свёртка выводится из данных,
+ * а не задаётся списком: у события с разными показателями или датами
+ * таблица обязана остаться полной.
+ */
+export type SharedMeasurementColumns = {
+  indicator: string | null
+  matrix: string | null
+  sampledDate: string | null
+  source: string | null
+}
+
+function sharedValue(
+  rows: DossierMeasurementRow[],
+  pick: (row: DossierMeasurementRow) => string | null
+): string | null {
+  const [first, ...rest] = rows
+  if (!first) return null
+  const value = pick(first)
+  if (value === null) return null
+  return rest.every((row) => pick(row) === value) ? value : null
+}
+
+export function sharedMeasurementColumns(
+  rows: DossierMeasurementRow[]
+): SharedMeasurementColumns {
+  return {
+    indicator: sharedValue(rows, (row) => row.measurement.indicator),
+    matrix: sharedValue(rows, (row) => matrixLabel(row.measurement.matrix)),
+    sampledDate: sharedValue(rows, (row) => formatSampledDate(row.measurement)),
+    source: sharedValue(rows, measurementSourceLabel),
   }
 }

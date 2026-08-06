@@ -3,6 +3,7 @@ import {
   MAP_VIEWBOX_HEIGHT,
   MAP_VIEWBOX_WIDTH,
 } from "@/constants/map"
+import { MapCorridorBand, MapCorridorLabel } from "./MapCorridor"
 import { MapStationLabel } from "./MapStationLabel"
 import type { MapModel } from "./map-model"
 import { riverPathD } from "./river-geometry"
@@ -32,8 +33,20 @@ export function GeoSchemeMap({ model }: { model: MapModel }) {
             vectorEffect="non-scaling-stroke"
             className="stroke-border"
           />
+          {model.corridorBottomY !== null && (
+            <MapCorridorBand
+              topY={model.corridorTopY}
+              bottomY={model.corridorBottomY}
+            />
+          )}
         </svg>
         <div className="pointer-events-none absolute inset-0">
+          {model.corridorBottomY !== null && (
+            <MapCorridorLabel
+              topY={model.corridorTopY}
+              bottomY={model.corridorBottomY}
+            />
+          )}
           {model.nodes.map((node) => (
             <MapStationLabel
               key={node.station.id}

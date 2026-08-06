@@ -13,6 +13,9 @@ export const MAP_RIVER_X = 42
 /** Размах меандра русла в единицах viewBox. */
 export const MAP_RIVER_AMPLITUDE = 7
 
+/** Полуширина ленты участка в единицах viewBox. */
+export const MAP_CORRIDOR_HALF_WIDTH = 4
+
 export const MAP_CAPTION =
   "Географическая схема. Порядок створов подтверждён документами; точные координаты не переданы и на схеме не утверждаются."
 

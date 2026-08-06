@@ -27,3 +27,27 @@ export function riverPathD(steps = 48): string {
   })
   return `M ${points.join(" L ")}`
 }
+
+/**
+ * Замкнутая лента вдоль русла между двумя высотами — участок рисуется
+ * отрезком САМОЙ реки, а не прямоугольником поверх неё: коридор это часть
+ * течения, и прямоугольник читался бы как отдельный элемент схемы.
+ */
+export function riverBandPathD(
+  topY: number,
+  bottomY: number,
+  halfWidth: number,
+  steps = 24
+): string {
+  const ys = Array.from(
+    { length: steps + 1 },
+    (_, index) => topY + ((bottomY - topY) / steps) * index
+  )
+  const leftEdge = ys.map(
+    (y) => `${(riverXAt(y) - halfWidth).toFixed(2)} ${y.toFixed(2)}`
+  )
+  const rightEdge = [...ys]
+    .reverse()
+    .map((y) => `${(riverXAt(y) + halfWidth).toFixed(2)} ${y.toFixed(2)}`)
+  return `M ${leftEdge.join(" L ")} L ${rightEdge.join(" L ")} Z`
+}

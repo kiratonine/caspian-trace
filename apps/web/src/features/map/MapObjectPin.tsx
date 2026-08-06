@@ -1,13 +1,10 @@
+import { useTranslation } from "react-i18next"
+
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  MAP_CANDIDATE_LABEL,
-  MAP_OBJECT_INSIDE_CORRIDOR,
-  MAP_OBJECT_OUTSIDE_CORRIDOR,
-} from "@/constants/map"
 import type { MapObjectMarker } from "./map-model"
 
 /**
@@ -17,6 +14,7 @@ import type { MapObjectMarker } from "./map-model"
  * Основание положения — в тултипе, а не умалчивается.
  */
 export function MapObjectPin({ marker }: { marker: MapObjectMarker }) {
+  const { t } = useTranslation()
   return (
     <Tooltip>
       <TooltipTrigger
@@ -25,10 +23,10 @@ export function MapObjectPin({ marker }: { marker: MapObjectMarker }) {
             <span className="rounded bg-background/85 px-1.5 py-0.5 text-right text-xs">
               <span className="font-medium">{marker.object.name}</span>
               <span className="block text-muted-foreground">
-                {MAP_CANDIDATE_LABEL} ·{" "}
+                {t("map.candidateLabel")} ·{" "}
                 {marker.insideCorridor
-                  ? MAP_OBJECT_INSIDE_CORRIDOR
-                  : MAP_OBJECT_OUTSIDE_CORRIDOR}
+                  ? t("map.objectInsideCorridor")
+                  : t("map.objectOutsideCorridor")}
               </span>
             </span>
             <span className="size-2.5 shrink-0 rotate-45 border-[1.5px] border-foreground bg-background" />

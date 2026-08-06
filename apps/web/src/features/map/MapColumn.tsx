@@ -50,8 +50,8 @@ export function MapColumn() {
   }
 
   const mapModel = useMemo(
-    () => (shownDetail ? buildMapModel(shownDetail) : null),
-    [shownDetail]
+    () => (shownDetail ? buildMapModel(shownDetail, t) : null),
+    [shownDetail, t]
   )
 
   if (!shownDetail || !mapModel) {

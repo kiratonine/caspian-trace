@@ -7,12 +7,6 @@ import type { IncidentDetail } from "@/api/contracts"
 import { incidentsQueryOptions } from "@/api/queries"
 import { Skeleton } from "@/components/ui/skeleton"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
-import {
-  SCHEME_PARTIAL_ORDER_HINT,
-  SCHEME_UNCONFIRMED_ORDER_HINT,
-  SCHEME_UPSTREAM_HINT,
-} from "@/constants/scheme"
-import { unitLabel } from "@/constants/units"
 import { InsufficientDataScreen } from "@/features/aktau/InsufficientDataScreen"
 import { PeriodSwitcher } from "@/features/comparison/PeriodSwitcher"
 import {
@@ -25,6 +19,7 @@ import {
 } from "@/features/replay/replay-frame"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
 import { useFormat } from "@/i18n/use-format"
+import { useUnitLabel } from "@/i18n/use-labels"
 import { OrderedStations } from "./OrderedStations"
 import { UnorderedStations } from "./UnorderedStations"
 import { buildSchemeModel } from "./scheme-model"
@@ -104,7 +99,9 @@ export function RiverSchemeContent({
   periodSwitcher = null,
   hasPeriodSwitcher = false,
 }: RiverSchemeContentProps) {
+  const { t } = useTranslation()
   const { formatSampledDate } = useFormat()
+  const unitLabel = useUnitLabel()
   const model = useMemo(() => buildSchemeModel(detail), [detail])
   const hasUnordered = model.unordered.length > 0
 
@@ -120,10 +117,10 @@ export function RiverSchemeContent({
   // течению» обещать нельзя. Но если часть створов всё-таки выстроена
   // проверенными связями, «порядок не подтверждён» тоже неправда.
   const orderHint = !hasUnordered
-    ? SCHEME_UPSTREAM_HINT
+    ? t("scheme.upstreamHint")
     : model.ordered.length > 0
-      ? SCHEME_PARTIAL_ORDER_HINT
-      : SCHEME_UNCONFIRMED_ORDER_HINT
+      ? t("scheme.partialOrderHint")
+      : t("scheme.unconfirmedOrderHint")
   const subtitle = [waterBody, orderHint].filter(Boolean).join(" · ") || null
   const firstMeasurement = detail.measurements[0] ?? null
   // Период уже стоит на активной кнопке переключателя — второй раз его здесь

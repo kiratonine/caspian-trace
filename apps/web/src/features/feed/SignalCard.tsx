@@ -8,11 +8,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import {
-  phenomenonLabel,
-  VERIFICATION_STATUS_META,
-} from "@/constants/phenomena"
 import { useFormat } from "@/i18n/use-format"
+import { usePhenomenonLabel } from "@/i18n/use-labels"
 import { cn } from "@/lib/utils"
 import type { IncidentSignal, SourceDocument } from "@/types"
 
@@ -31,6 +28,7 @@ type SignalCardProps = {
  */
 export function SignalCard({ signal, sourceDocument }: SignalCardProps) {
   const { t } = useTranslation()
+  const phenomenonLabel = usePhenomenonLabel()
   const [open, setOpen] = useState(false)
   const { formatDateTime, formatObservedDate } = useFormat()
 
@@ -47,7 +45,7 @@ export function SignalCard({ signal, sourceDocument }: SignalCardProps) {
     <article className="flex flex-col gap-1">
       <h4 className="text-sm font-medium text-pretty">{signal.title}</h4>
       <p className="text-xs text-muted-foreground">
-        {VERIFICATION_STATUS_META[signal.verificationStatus].label} ·{" "}
+        {t(`phenomena.verificationStatus.${signal.verificationStatus}`)} ·{" "}
         {t("feed.signalReportedPrefix")} {formatDateTime(signal.reportedAt)}
       </p>
       <Collapsible open={open} onOpenChange={setOpen}>

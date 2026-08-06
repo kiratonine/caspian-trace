@@ -1,13 +1,12 @@
+import { useTranslation } from "react-i18next"
+
 import {
   DOSSIER_NO_SIGNALS,
   DOSSIER_TIMELINE_OBSERVED,
   DOSSIER_TIMELINE_REPORTED,
 } from "@/constants/dossier"
-import {
-  phenomenonLabel,
-  VERIFICATION_STATUS_META,
-} from "@/constants/phenomena"
 import { useFormat } from "@/i18n/use-format"
+import { usePhenomenonLabel } from "@/i18n/use-labels"
 import type { DossierSignalEntry } from "./dossier-model"
 
 type SignalTimelineProps = {
@@ -20,6 +19,8 @@ type SignalTimelineProps = {
  * дата наблюдения просто не выводится, а не заменяется датой публикации.
  */
 export function SignalTimeline({ entries }: SignalTimelineProps) {
+  const { t } = useTranslation()
+  const phenomenonLabel = usePhenomenonLabel()
   const { formatDateTime, formatObservedDate } = useFormat()
   if (entries.length === 0) {
     return <p className="text-muted-foreground">{DOSSIER_NO_SIGNALS}</p>
@@ -47,7 +48,7 @@ export function SignalTimeline({ entries }: SignalTimelineProps) {
             <p className="text-xs text-muted-foreground">
               {[
                 phenomenonLabel(signal.phenomenon),
-                VERIFICATION_STATUS_META[signal.verificationStatus].label,
+                t(`phenomena.verificationStatus.${signal.verificationStatus}`),
                 signal.locationText,
               ].join(" · ")}
             </p>

@@ -1,10 +1,10 @@
+import type { TFunction } from "i18next"
+
 import type { IncidentDetail } from "@/api/contracts"
 import {
   MAP_OBJECT_PLACEMENT,
   MAP_OPEN_CORRIDOR_EXTENSION_DEG,
   MAP_PLACEHOLDER_STATION_COORDS,
-  MAP_VERDICT_BETWEEN_PREFIX,
-  MAP_VERDICT_OPEN_UPSTREAM_PREFIX,
 } from "@/constants/map"
 import type {
   CandidateObject,
@@ -58,7 +58,8 @@ export type MapModel = {
  */
 export function buildCorridorLabel(
   detail: IncidentDetail,
-  model: MapModel
+  model: MapModel,
+  t: TFunction
 ): string | null {
   const bounds = detail.corridorBounds
   if (!bounds || model.corridorLine.length === 0) return null
@@ -70,15 +71,15 @@ export function buildCorridorLabel(
   if (!downstream) return null
 
   if (!bounds.upstreamStationId) {
-    return `${MAP_VERDICT_OPEN_UPSTREAM_PREFIX} ${downstream}`
+    return `${t("map.verdictOpenUpstreamPrefix")} ${downstream}`
   }
   const upstream = nameOf(bounds.upstreamStationId)
   return upstream
-    ? `${MAP_VERDICT_BETWEEN_PREFIX} ${upstream} и ${downstream}`
-    : `${MAP_VERDICT_OPEN_UPSTREAM_PREFIX} ${downstream}`
+    ? `${t("map.verdictBetweenPrefix")} ${upstream} и ${downstream}`
+    : `${t("map.verdictOpenUpstreamPrefix")} ${downstream}`
 }
 
-export function buildMapModel(detail: IncidentDetail): MapModel {
+export function buildMapModel(detail: IncidentDetail, t: TFunction): MapModel {
   const documentsById = new Map(
     detail.sourceDocuments.map((document) => [document.id, document])
   )
@@ -180,7 +181,9 @@ export function buildMapModel(detail: IncidentDetail): MapModel {
       markers.push({
         object,
         coords,
-        basis: placement.basis,
+        // object.id — свободная строка данных (не закрытый enum), поэтому
+        // лукап с fallback: неизвестный id не должен уронить рендер.
+        basis: t(`map.objectPlacementBasis.${object.id}`, { defaultValue: "" }),
         insideCorridor:
           bottomOrder !== null &&
           objectOrder <= bottomOrder &&

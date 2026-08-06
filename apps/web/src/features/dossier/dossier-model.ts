@@ -1,6 +1,7 @@
+import type { TFunction } from "i18next"
+
 import type { IncidentDetail } from "@/api/contracts"
 import { DOSSIER_SOURCE_PAGE_PREFIX } from "@/constants/dossier"
-import { matrixLabel } from "@/constants/units"
 import {
   buildPanelModel,
   type SourceEntry,
@@ -171,11 +172,16 @@ function sharedValue(
 
 export function sharedMeasurementColumns(
   rows: DossierMeasurementRow[],
-  locale: Locale
+  locale: Locale,
+  t: TFunction
 ): SharedMeasurementColumns {
   return {
     indicator: sharedValue(rows, (row) => row.measurement.indicator),
-    matrix: sharedValue(rows, (row) => matrixLabel(row.measurement.matrix)),
+    matrix: sharedValue(rows, (row) =>
+      t(`matrix.${row.measurement.matrix}`, {
+        defaultValue: row.measurement.matrix,
+      })
+    ),
     sampledDate: sharedValue(rows, (row) =>
       formatSampledDate(row.measurement, locale)
     ),

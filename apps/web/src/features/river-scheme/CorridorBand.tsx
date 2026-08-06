@@ -1,10 +1,7 @@
 import { ArrowUp } from "lucide-react"
 import type { ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 
-import {
-  SCHEME_CORRIDOR_LABEL,
-  SCHEME_CORRIDOR_OPEN_UP_NOTE,
-} from "@/constants/scheme"
 import { cn } from "@/lib/utils"
 
 type CorridorBandProps = {
@@ -28,12 +25,13 @@ const FADE_UP =
  * монохромная заливка — это не «зона опасности» (запрет 4).
  */
 export function CorridorBand({ openUp, children }: CorridorBandProps) {
+  const { t } = useTranslation()
   return (
     <div className="-mx-3">
       <p className="flex items-center justify-end gap-1 px-3 pb-1 text-[10px] font-medium text-muted-foreground">
         {openUp && <ArrowUp aria-hidden className="size-3 shrink-0" />}
-        {SCHEME_CORRIDOR_LABEL}
-        {openUp && <span>· {SCHEME_CORRIDOR_OPEN_UP_NOTE}</span>}
+        {t("scheme.corridorLabel")}
+        {openUp && <span>· {t("scheme.corridorOpenUpNote")}</span>}
       </p>
       <div className="relative px-3 pb-1">
         {/* Декоративные слои маскируются отдельно от содержимого: маска на

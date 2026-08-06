@@ -23,7 +23,6 @@ import {
   DOSSIER_UPDATED_AT_LABEL,
   type DossierSectionId,
 } from "@/constants/dossier"
-import { REGION_LABELS } from "@/constants/regions"
 import { StatementList } from "@/features/conclusion/StatementList"
 import { useFormat } from "@/i18n/use-format"
 import { CandidateObjectList } from "./CandidateObjectList"
@@ -118,7 +117,7 @@ function SectionBody({
           </h1>
           <dl className="flex flex-col gap-0.5 text-xs text-muted-foreground">
             <MetaRow label={DOSSIER_REGION_LABEL}>
-              {REGION_LABELS[detail.region]}
+              {t(`regions.${detail.region}`)}
             </MetaRow>
             {/* Периода может не быть вовсе (кейс «недостаточно данных») —
                 тогда строки в шапке просто нет. */}

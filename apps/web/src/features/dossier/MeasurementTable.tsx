@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+
 import { MeasurementValue } from "@/components/common"
 import {
   DOSSIER_MEASUREMENT_COLUMNS,
@@ -5,8 +7,8 @@ import {
   DOSSIER_NO_DATE,
   DOSSIER_NO_MEASUREMENTS,
 } from "@/constants/dossier"
-import { matrixLabel, unitLabel } from "@/constants/units"
 import { useFormat } from "@/i18n/use-format"
+import { useMatrixLabel, useUnitLabel } from "@/i18n/use-labels"
 import { useLocale } from "@/i18n/use-locale"
 import {
   measurementSourceLabel,
@@ -30,14 +32,17 @@ type MeasurementTableProps = {
  * разнородное событие получит полную таблицу.
  */
 export function MeasurementTable({ rows }: MeasurementTableProps) {
+  const { t } = useTranslation()
   const { formatMeasurement, formatSampledDate } = useFormat()
   const { locale } = useLocale()
+  const unitLabel = useUnitLabel()
+  const matrixLabel = useMatrixLabel()
 
   if (rows.length === 0) {
     return <p className="text-muted-foreground">{DOSSIER_NO_MEASUREMENTS}</p>
   }
 
-  const shared = sharedMeasurementColumns(rows, locale)
+  const shared = sharedMeasurementColumns(rows, locale, t)
   const sharedParts = [
     shared.indicator,
     shared.matrix,

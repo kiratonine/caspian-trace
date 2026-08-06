@@ -3,8 +3,8 @@
 // ВНИМАНИЕ. Подтверждённых координат в данных нет: у всех створов и объектов
 // `location: null`, в `data/verified/**` координат не передавали вовсе.
 // Поэтому позиции ниже — ДЕМОНСТРАЦИОННЫЕ, поставлены для показа и ничего
-// не утверждают о реальном положении точек на местности. На экране это
-// сказано плашкой MAP_PLACEHOLDER_WARNING, которую нельзя закрыть.
+// не утверждают о реальном положении точек на местности. Оговорка об этом —
+// в i18n-ресурсе (map.placeholderWarning, stubs.mapCoordsDisclaimer).
 //
 // Когда бэк отдаст `Station.location` / `CandidateObject.location`, удаляется
 // ровно эта таблица: остальной код уже читает координаты из модели.
@@ -68,56 +68,21 @@ export const MAP_FLOW_DASH_FRAMES: readonly number[][] = [
 
 export const MAP_FLOW_FRAME_MS = 60
 
-/** Короткая метка на карте; полная формулировка — в её тултипе. */
-export const MAP_PLACEHOLDER_CHIP = "демо-координаты"
-
-export const MAP_PLACEHOLDER_WARNING =
-  "Координаты на карте демонстрационные: подтверждённых координат створов в данных нет. Порядок створов вниз по течению подтверждён документами, положение точек на местности — нет."
-
-export const MAP_UNPLACED_CHIP = "положение не подтверждено"
-
-export const MAP_CORRIDOR_OPEN_UPSTREAM_LABEL =
-  "участок открыт вверх по течению"
-
-export const MAP_UNPLACED_NOTE =
-  "Для этих створов и объектов место в цепочке течения не подтверждено документами, поэтому на карте они не размещены."
-
-/** ТЗ §4: имя объекта допустимо только с этой подписью и документами-основаниями. */
-export const MAP_CANDIDATE_LABEL = "объект для проверки"
-
-export const MAP_VERDICT_CORRIDOR_PREFIX = "Участок:"
-
-export const MAP_VERDICT_OPEN_UPSTREAM_PREFIX = "выше створа"
-
-export const MAP_VERDICT_BETWEEN_PREFIX = "между створами"
-
-export const MAP_VERDICT_EXCLUDED_PREFIX = "Исключено фактами:"
-
-export const MAP_VERDICT_DOSSIER_LINK = "Досье"
-
-/** Кнопка, открывающая список замеров поверх карты. */
-export const MAP_MEASUREMENTS_TRIGGER = "Измерения"
-
-export const MAP_OBJECT_OUTSIDE_CORRIDOR = "вне участка"
-
-export const MAP_OBJECT_INSIDE_CORRIDOR = "в границах участка"
-
 /**
  * Основание, по которому объект размещается между створами. Координат у
  * объектов нет, но подписи створов бюллетеня называют сброс по имени — и это
  * проверенные данные со страницы 22. Положение выводится из них, и это
- * печатается пользователю в подписи маркера, а не умалчивается.
+ * печатается пользователю в подписи маркера, а не умалчивается (текст
+ * основания — в i18n-ресурсе, map.objectPlacementBasis, тем же ключом id).
  *
  * Удаляется вместе с таблицей координат, когда бэк отдаст `location`
  * объекта либо `candidateObjects[].stationId` в контракте.
  */
 export const MAP_OBJECT_PLACEMENT: Record<
   string,
-  { betweenStationIds: readonly [string, string]; basis: string }
+  { betweenStationIds: readonly [string, string] }
 > = {
   "obj-atyrau-su-arnasy": {
     betweenStationIds: ["st-asa-0-5km-above", "st-asa-0-5km-below"],
-    basis:
-      "Положение выведено из подписей створов бюллетеня Казгидромета («0,5 км выше сброса» и «0,5 км ниже сброса», стр. 22), а не из координат: координаты объекта не переданы.",
   },
 }

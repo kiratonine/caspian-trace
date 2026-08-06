@@ -1,14 +1,11 @@
 import { Info } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  SCHEME_UNORDERED_LABEL,
-  SCHEME_UNORDERED_NOTE,
-} from "@/constants/scheme"
 import { StationNode } from "./StationNode"
 import type { SchemeModel, StationSchemeEntry } from "./scheme-model"
 
@@ -29,6 +26,7 @@ export function UnorderedStations({
   corridor,
   showUnit = true,
 }: UnorderedStationsProps) {
+  const { t } = useTranslation()
   const openUp = corridor?.upstreamStationId == null
 
   return (
@@ -41,12 +39,12 @@ export function UnorderedStations({
           render={
             <p className="flex w-fit cursor-help items-center gap-2 border-l-2 py-1 pl-3 text-xs text-muted-foreground">
               <Info aria-hidden className="size-3.5 shrink-0" />
-              {SCHEME_UNORDERED_LABEL}
+              {t("scheme.unorderedLabel")}
             </p>
           }
         />
         <TooltipContent>
-          <p className="max-w-72 text-pretty">{SCHEME_UNORDERED_NOTE}</p>
+          <p className="max-w-72 text-pretty">{t("scheme.unorderedNote")}</p>
         </TooltipContent>
       </Tooltip>
       <div className="flex flex-col divide-y divide-border/60">

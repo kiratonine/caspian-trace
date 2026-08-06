@@ -15,8 +15,12 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "Реконструкция последовательности строк официальной таблицы: 1 км выше г. Атырау; г. Атырау, 0,5 км выше сброса КГП «Атырау су арнасы».",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev",
+        "denisthe12"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "rel-sep-asa-pair",
@@ -26,8 +30,12 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "Официальная парная маркировка: 0,5 км выше и 0,5 км ниже одного сброса КГП «Атырау су арнасы».",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev",
+        "denisthe12"
+      ],
+      "checkedAt": "2026-08-06"
     },
     {
       "id": "rel-sep-asa-below-to-city-below",
@@ -37,8 +45,12 @@
       "sourceSha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb",
       "sourcePage": 22,
       "sourceExcerpt": "Реконструкция последовательности строк официальной таблицы: 0,5 км ниже сброса КГП «Атырау су арнасы»; 1 км ниже г. Атырау.",
-      "checkedBy": ["codex-automated-source-verification"],
-      "checkedAt": "2026-08-04"
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev",
+        "denisthe12"
+      ],
+      "checkedAt": "2026-08-06"
     }
   ]
 }

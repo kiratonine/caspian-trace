@@ -35,6 +35,13 @@ Vite 8. Проверка — `typecheck` / `lint` / `prettier` / `build` + Playw
 - Все команды — из корня репозитория. `lint` запускать из `apps/web`
   (конфиг там; корневая обёртка ищет конфиг в корне).
 - Рабочая ветка — `frontend`.
+- **`npm run format` — это `prettier --write`, а не проверка.** Он молча
+  переформатирует любой файл в `apps/web`, который лежал неотформатированным
+  (такие есть: два вызова в `ReplayTimeline.tsx` приехали из сессии 17).
+  Поэтому: **никогда не коммитить `git add apps/web/src` целиком** — добавлять
+  только файлы, названные в задаче. Если `format` тронул посторонний файл,
+  вынести его отдельным коммитом `style: …` с честным сообщением, не смешивая
+  с задачей. Перед коммитом сверяться с `git status --short`.
 
 ### Замер повторов (используется во многих задачах)
 
@@ -158,7 +165,7 @@ document.body.innerText.split("\n").filter((line) => {
 - [ ] **Step 6: Коммит**
 
 ```bash
-git add apps/web/src
+git add apps/web/src/components/common/InsufficientData.tsx apps/web/src/features/conclusion/ConclusionPanel.tsx apps/web/src/features/feed/SignalFeed.tsx apps/web/src/features/river-scheme/CorridorBand.tsx apps/web/src/features/river-scheme/RiverScheme.tsx
 git commit -m "refactor(ui): понизить капс-заголовки колонок и подписи коридора"
 ```
 
@@ -645,7 +652,7 @@ const c = (needle) => scheme.innerText.split(needle).length - 1
 - [ ] **Step 10: Коммит**
 
 ```bash
-git add apps/web/src
+git add apps/web/src/features/river-scheme/scheme-model.ts apps/web/src/features/river-scheme/StationNode.tsx apps/web/src/features/river-scheme/OrderedStations.tsx apps/web/src/features/river-scheme/UnorderedStations.tsx apps/web/src/features/river-scheme/RiverScheme.tsx apps/web/src/components/common/MeasurementValue.tsx apps/web/src/features/comparison/comparison-model.ts apps/web/src/features/comparison/PeriodSwitcher.tsx
 git commit -m "refactor(scheme): единица измерения один раз, период только на кнопке"
 ```
 
@@ -1508,7 +1515,7 @@ Chrome → Печать → «Сохранить как PDF», A4. Ожидае�
 - [ ] **Step 10: Коммит**
 
 ```bash
-git add apps/web/src
+git add apps/web/src/constants/dossier.ts apps/web/src/features/dossier/dossier-model.ts apps/web/src/features/dossier/MeasurementTable.tsx apps/web/src/features/dossier/CandidateObjectList.tsx
 git commit -m "refactor(dossier): константные колонки таблицы — один раз подзаголовком"
 ```
 
@@ -1732,7 +1739,7 @@ const count = (needle) => popover.innerText.split(needle).length - 1
 - [ ] **Step 6: Коммит**
 
 ```bash
-git add apps/web/src/features/live-status
+git add apps/web/src/features/live-status/live-status-model.ts apps/web/src/features/live-status/SourceStatusList.tsx
 git commit -m "refactor(live-status): источники группами — подпись состояния один раз"
 ```
 

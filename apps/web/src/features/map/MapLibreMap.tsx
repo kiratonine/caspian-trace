@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import type { Feature, LineString } from "geojson"
 import {
@@ -15,7 +15,6 @@ import {
   MAP_FIT_PADDING,
   MAP_INITIAL_CENTER,
   MAP_INITIAL_ZOOM,
-  MAP_PLACEHOLDER_WARNING,
   MAP_TILE_ATTRIBUTION,
   MAP_TILE_URL,
 } from "@/constants/map"
@@ -60,7 +59,14 @@ const EMPTY_LINE: Feature<LineString> = {
 
 type MarkerSlot = { key: string; element: HTMLElement }
 
-export function MapLibreMap({ model }: { model: MapModel }) {
+type MapLibreMapProps = {
+  model: MapModel
+  /** Метки-оговорки и заключение, лежащие поверх карты. */
+  notices?: ReactNode
+  overlay?: ReactNode
+}
+
+export function MapLibreMap({ model, notices, overlay }: MapLibreMapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const markersRef = useRef<Marker[]>([])
   // Карта живёт в state, а не в ref: в StrictMode эффект монтируется дважды,
@@ -184,12 +190,12 @@ export function MapLibreMap({ model }: { model: MapModel }) {
   return (
     <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg border">
       <div ref={containerRef} className="size-full" />
-      {/* На настоящей подложке демонстрационные координаты начинают выглядеть
-          как проверенные, поэтому оговорка стоит сплошной плашкой поверх
-          карты, а не служебной серой строкой, и закрыть её нельзя. */}
-      <p className="pointer-events-none absolute inset-x-0 top-0 z-10 border-b bg-background px-3 py-2 text-center text-xs font-medium">
-        {MAP_PLACEHOLDER_WARNING}
-      </p>
+      {notices}
+      {overlay && (
+        <div className="pointer-events-none absolute right-3 bottom-8 left-3 z-10 flex justify-end">
+          {overlay}
+        </div>
+      )}
       {stationSlots.map((slot) => {
         const node = model.nodes.find((n) => n.station.id === slot.key)
         return node

@@ -43,22 +43,34 @@ export const MAP_INITIAL_ZOOM = 11.5
 
 export const MAP_FIT_PADDING = 96
 
+/** Короткая метка на карте; полная формулировка — в её тултипе. */
+export const MAP_PLACEHOLDER_CHIP = "демо-координаты"
+
 export const MAP_PLACEHOLDER_WARNING =
   "Координаты на карте демонстрационные: подтверждённых координат створов в данных нет. Порядок створов вниз по течению подтверждён документами, положение точек на местности — нет."
 
-export const MAP_CAPTION =
-  "Порядок створов подтверждён документами; точные координаты не переданы и на карте не утверждаются."
+export const MAP_UNPLACED_CHIP = "положение не подтверждено"
 
 export const MAP_CORRIDOR_OPEN_UPSTREAM_LABEL =
   "участок открыт вверх по течению"
-
-export const MAP_UNPLACED_TITLE = "Положение не подтверждено"
 
 export const MAP_UNPLACED_NOTE =
   "Для этих створов и объектов место в цепочке течения не подтверждено документами, поэтому на карте они не размещены."
 
 /** ТЗ §4: имя объекта допустимо только с этой подписью и документами-основаниями. */
 export const MAP_CANDIDATE_LABEL = "объект для проверки"
+
+export const MAP_VERDICT_CORRIDOR_PREFIX = "Участок:"
+
+export const MAP_VERDICT_OPEN_UPSTREAM_PREFIX = "выше створа"
+
+export const MAP_VERDICT_BETWEEN_PREFIX = "между створами"
+
+export const MAP_VERDICT_EXCLUDED_PREFIX = "Исключено фактами:"
+
+export const MAP_VERDICT_EVIDENCE_LINK = "Разбор и доказательства"
+
+export const MAP_VERDICT_DOSSIER_LINK = "Досье"
 
 export const MAP_OBJECT_OUTSIDE_CORRIDOR = "вне участка"
 

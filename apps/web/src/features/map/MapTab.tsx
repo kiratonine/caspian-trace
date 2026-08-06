@@ -1,12 +1,13 @@
 import { useMemo } from "react"
 
-import { MAP_CAPTION } from "@/constants/map"
 import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { InsufficientDataScreen } from "@/features/aktau/InsufficientDataScreen"
+import { useSelectedTab } from "@/features/tabs/use-selected-tab"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
 import { MapLibreMap } from "./MapLibreMap"
-import { UnplacedList } from "./UnplacedList"
-import { buildMapModel } from "./map-model"
+import { MapNotices } from "./MapNotices"
+import { MapVerdict } from "./MapVerdict"
+import { buildCorridorLabel, buildMapModel } from "./map-model"
 
 /**
  * Вкладка «Историческое событие»: вывод расследования на карте.
@@ -15,7 +16,12 @@ import { buildMapModel } from "./map-model"
  */
 export function MapTab() {
   const { detail, isError } = useSelectedIncidentDetail()
+  const { selectTab } = useSelectedTab()
   const model = useMemo(() => (detail ? buildMapModel(detail) : null), [detail])
+  const corridorLabel = useMemo(
+    () => (detail && model ? buildCorridorLabel(detail, model) : null),
+    [detail, model]
+  )
 
   if (isError) {
     return (
@@ -34,15 +40,23 @@ export function MapTab() {
   }
 
   return (
-    <div className="flex min-h-0 flex-col gap-3 p-4 lg:p-6">
-      <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-        <MapLibreMap model={model} />
-        <UnplacedList
-          stations={model.unplacedStations}
-          objects={model.unplacedObjects}
-        />
-      </div>
-      <p className="text-center text-xs text-muted-foreground">{MAP_CAPTION}</p>
+    <div className="flex min-h-0 flex-col p-4 lg:p-6">
+      <MapLibreMap
+        model={model}
+        notices={
+          <MapNotices
+            unplacedStations={model.unplacedStations}
+            unplacedObjects={model.unplacedObjects}
+          />
+        }
+        overlay={
+          <MapVerdict
+            detail={detail}
+            corridorLabel={corridorLabel}
+            onOpenEvidence={() => selectTab("evidence")}
+          />
+        }
+      />
     </div>
   )
 }

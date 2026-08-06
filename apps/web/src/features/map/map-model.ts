@@ -3,6 +3,8 @@ import {
   MAP_OBJECT_PLACEMENT,
   MAP_OPEN_CORRIDOR_EXTENSION_DEG,
   MAP_PLACEHOLDER_STATION_COORDS,
+  MAP_VERDICT_BETWEEN_PREFIX,
+  MAP_VERDICT_OPEN_UPSTREAM_PREFIX,
 } from "@/constants/map"
 import type {
   CandidateObject,
@@ -47,6 +49,33 @@ export type MapModel = {
   /** Участок открыт вверх по течению: верхней границы у него нет. */
   corridorOpenUpstream: boolean
   commonUnit: string | null
+}
+
+/**
+ * Подпись участка для заключения. Имена створов не берутся в кавычки:
+ * у них уже есть свои («Атырау су арнасы»), и вложенные ёлочки читаются
+ * как опечатка (решение сессии 12).
+ */
+export function buildCorridorLabel(
+  detail: IncidentDetail,
+  model: MapModel
+): string | null {
+  const bounds = detail.corridorBounds
+  if (!bounds || model.corridorLine.length === 0) return null
+
+  const nameOf = (id: string) =>
+    model.nodes.find((node) => node.station.id === id)?.station.name ?? null
+
+  const downstream = nameOf(bounds.downstreamStationId)
+  if (!downstream) return null
+
+  if (!bounds.upstreamStationId) {
+    return `${MAP_VERDICT_OPEN_UPSTREAM_PREFIX} ${downstream}`
+  }
+  const upstream = nameOf(bounds.upstreamStationId)
+  return upstream
+    ? `${MAP_VERDICT_BETWEEN_PREFIX} ${upstream} и ${downstream}`
+    : `${MAP_VERDICT_OPEN_UPSTREAM_PREFIX} ${downstream}`
 }
 
 export function buildMapModel(detail: IncidentDetail): MapModel {

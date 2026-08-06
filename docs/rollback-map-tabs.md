@@ -1,82 +1,78 @@
-# Откат: убрать карту и вкладки
+# Откат: убрать карту
 
 Файл заведён 06.08.2026 по просьбе владельца продукта: «если вдруг не
 понравится им — сохрани промпт, чтобы убрать агента и карту».
 
-Карта и вкладки сделаны так, чтобы сноситься целиком, не задевая ничего
-из сессий 1–18. Ниже два способа: быстрый (git) и ручной (промпт).
+**Вкладок и вкладки агента в итоге не осталось** — их сняли в ходе той же
+сессии (см. `d79a90b`), поэтому откатывать нужно только карту: она стоит
+центральной колонкой вместо линейной схемы реки.
 
-## Что именно было добавлено
+## Что было добавлено
 
-- `apps/web/src/features/map/**` — геосхема, слои, заключение поверх карты.
-- `apps/web/src/features/tabs/**` — таб-бар и вкладка-заглушка агента.
-- `apps/web/src/constants/map.ts`, `apps/web/src/constants/tabs.ts` — строки
-  и параметры, ни одного лейбла в JSX.
-- Правки в существующих файлах — только два: `apps/web/src/App.tsx`
-  (обёртка вкладок вокруг нынешнего экрана) и
-  `apps/web/src/constants/routing.ts` (параметр `?tab=`).
+- `apps/web/src/features/map/**` — карта MapLibre, модель позиций, маркеры.
+- `apps/web/src/constants/map.ts` — координаты, тайлы, строки, кадры анимации.
+- Зависимость `maplibre-gl` в `apps/web/package.json` и `package-lock.json`.
+- `apps/web/vite.config.ts` — `optimizeDeps.exclude: ['maplibre-gl']`
+  и `worker.format: 'es'` (без них воркер MapLibre не поднимается).
+- Оговорка про демо-координаты в `apps/web/src/constants/stubs.ts`
+  (`MAP_COORDS_DISCLAIMER*`) и её вывод в
+  `apps/web/src/features/live-status/DataModeNotice.tsx`.
+- В `apps/web/src/App.tsx` центральная колонка — `MapColumn` вместо
+  `RiverScheme`.
 
-Трёхколоночный экран, лента, панель вывода, реплей и печатное досье при
-откате не затрагиваются: они не знают о вкладках ничего.
+Линейная схема реки (`features/river-scheme/**`) **не удалялась**: она цела,
+покрыта дев-превью `/dev/river-scheme` и возвращается одной строкой в `App.tsx`.
 
-## Способ 1 — git (быстрый)
+## Способ 1 — git
 
-Коммиты этой работы (заполняется по мере реализации):
-
-<!-- ХЭШИ: заполнить в конце сессии 19 -->
+Работа сессии 19 — коммиты от `c4deb13` до `d79a90b` включительно
+(`e0f7389` — не про карту, это хвост форматирования сессии 18, его не трогать).
 
 ```bash
-# посмотреть, что именно уйдёт
-git log --oneline <первый-коммит>^..<последний-коммит>
-
-# снять всё разом, сохранив историю
-git revert --no-commit <первый-коммит>^..<последний-коммит>
-git commit -m "revert: убрать карту и вкладки по решению владельца продукта"
+git log --oneline c4deb13^..d79a90b
+git revert --no-commit c4deb13^..d79a90b
+git commit -m "revert: убрать карту по решению владельца продукта"
+npm install
+npm run typecheck -w web && npm run lint -w web && npm run build -w web
 ```
 
-После отката прогнать: `npm run typecheck -w web`, `npm run lint -w web`,
-`npm run build -w web`.
-
-## Способ 2 — промпт (если история разъехалась)
+## Способ 2 — промпт
 
 Скопировать целиком в новую сессию:
 
-> Убери из фронтенда «Каспийского следа» карту и вкладки, добавленные
-> в сессии 19 (06.08.2026). Читай `docs/rollback-map-tabs.md` и
-> `docs/superpowers/specs/2026-08-06-map-tabs-design.md`, чтобы понять
-> состав работы.
+> Убери из фронтенда «Каспийского следа» карту, добавленную в сессии 19
+> (06.08.2026). Читай `docs/rollback-map-tabs.md` и
+> `docs/superpowers/specs/2026-08-06-map-tabs-design.md`.
 >
 > Что сделать:
-> 1. Удалить папки `apps/web/src/features/map/` и
->    `apps/web/src/features/tabs/` целиком, вместе с их дев-превью
->    в `apps/web/src/dev/`, если они появились.
-> 2. Удалить `apps/web/src/constants/map.ts` и
->    `apps/web/src/constants/tabs.ts`.
-> 3. Вернуть `apps/web/src/App.tsx` к трёхколоночному виду без обёртки
->    вкладок: шапка, `main` с `SignalFeed` / `RiverScheme` /
->    `ConclusionPanel`, снизу `ReplayTimeline`.
-> 4. Убрать параметр `?tab=` и всё, что с ним связано, из
->    `apps/web/src/constants/routing.ts` и из роутера; `?incident=`
->    не трогать — он с сессии 5 и к вкладкам отношения не имеет.
-> 5. Проверить, что нигде не осталось импортов удалённых модулей.
+> 1. В `apps/web/src/App.tsx` вернуть в центральную колонку `RiverScheme`
+>    вместо `MapColumn` (компонент схемы цел, ничего восстанавливать не надо).
+> 2. Удалить папку `apps/web/src/features/map/` и `apps/web/src/constants/map.ts`.
+> 3. Убрать из `apps/web/src/constants/stubs.ts` константы
+>    `MAP_COORDS_DISCLAIMER_TITLE` и `MAP_COORDS_DISCLAIMER`, а из
+>    `apps/web/src/features/live-status/DataModeNotice.tsx` — блок, который
+>    их печатает.
+> 4. Удалить зависимость `maplibre-gl` из `apps/web/package.json`, выполнить
+>    `npm install` из корня, чтобы обновился lockfile.
+> 5. Убрать из `apps/web/vite.config.ts` `optimizeDeps.exclude` с
+>    `maplibre-gl` и блок `worker` — они нужны только карте.
+> 6. Проверить, что нигде не осталось импортов удалённых модулей.
 >
-> Чего НЕ делать: не трогать ленту, схему реки, правую панель, реплей,
-> печатное досье, `src/api/**`, `apps/api/**`, `packages/**` и
-> `package-lock.json`. Новых зависимостей при добавлении карты не
-> появилось, удалять из lockfile нечего.
+> Чего НЕ делать: не трогать ленту, правую панель, реплей, печатное досье,
+> `src/api/**`, `apps/api/**`, `packages/**`. Не трогать коммит `e0f7389` —
+> он про форматирование, а не про карту.
 >
-> Проверить после правок: `npm run typecheck -w web`,
-> `npm run lint -w web`, `npx prettier --check "apps/web/src/**/*.{ts,tsx,css}"`,
-> `npm run build -w web` — все зелёные; главный экран открывается сразу
-> трёхколоночным; `?incident=` и `/dossier/:id` работают.
+> Проверить: `npm run typecheck -w web`, `npm run lint -w web`,
+> `npx prettier --check "apps/web/src/**/*.{ts,tsx,css}"`,
+> `npm run build -w web` — зелёные; на главном экране в центре снова
+> линейная схема; `?incident=` и `/dossier/:id` работают; бандл вернулся
+> примерно к 944 kB.
 >
 > В конце обновить `docs/frontend-plan.md` и `docs/decisions.md`: записать,
-> что карта и вкладки сняты по решению владельца продукта, и удалить этот
-> файл вместе со спекой.
+> что карта снята по решению владельца продукта, и удалить этот файл.
 
-## Если надо убрать только вкладку агента, оставив карту
+## Если надо убрать только подложку OSM, оставив карту
 
-Удалить `apps/web/src/features/tabs/AgentTabPlaceholder.tsx` и её пункт
-из массива вкладок в `apps/web/src/constants/tabs.ts`. Массив и есть
-контракт состава вкладок — правка в одном месте, как у
-`CONCLUSION_SECTIONS` и `DOSSIER_SECTIONS`.
+В `apps/web/src/features/map/MapLibreMap.tsx` убрать из `BASE_STYLE` источник
+`osm` и одноимённый слой, оставив только `background`. Демо снова станет
+полностью офлайновым, карта останется с нашими слоями на пустом фоне.

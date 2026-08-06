@@ -1,5 +1,6 @@
+import { useTranslation } from "react-i18next"
+
 import { SourceLink } from "@/components/common"
-import { PANEL_NO_SOURCES } from "@/constants/panel"
 import type { SourceEntry } from "./panel-model"
 
 type SourcesListProps = {
@@ -8,8 +9,11 @@ type SourcesListProps = {
 
 /** Блок 6 §13: кликабельные документы; страница — из ссылающегося измерения. */
 export function SourcesList({ entries }: SourcesListProps) {
+  const { t } = useTranslation()
   if (entries.length === 0) {
-    return <p className="text-sm text-muted-foreground">{PANEL_NO_SOURCES}</p>
+    return (
+      <p className="text-sm text-muted-foreground">{t("panel.noSources")}</p>
+    )
   }
 
   return (

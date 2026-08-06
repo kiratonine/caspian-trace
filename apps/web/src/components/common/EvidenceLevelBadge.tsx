@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next"
+
 import { Badge } from "@/components/ui/badge"
 import {
   Tooltip,
@@ -35,7 +37,10 @@ export function EvidenceLevelBadge({
   compact = false,
   className,
 }: EvidenceLevelBadgeProps) {
+  const { t } = useTranslation()
   const meta = EVIDENCE_LEVEL_META[level]
+  const label = t(`evidence.${level}.label`)
+  const description = t(`evidence.${level}.description`)
 
   return (
     <Tooltip>
@@ -46,16 +51,16 @@ export function EvidenceLevelBadge({
             className={cn(TONE_CLASSES[meta.tone], className)}
           >
             <span className="font-semibold">{meta.code}</span>
-            {!compact && <span className="truncate">{meta.label}</span>}
+            {!compact && <span className="truncate">{label}</span>}
           </Badge>
         }
       />
       <TooltipContent>
         <p className="max-w-64 text-pretty">
           <span className="font-semibold">
-            {meta.code} — {meta.label}.
+            {meta.code} — {label}.
           </span>{" "}
-          {meta.description}
+          {description}
         </p>
       </TooltipContent>
     </Tooltip>

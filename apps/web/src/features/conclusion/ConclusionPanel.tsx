@@ -14,13 +14,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DOSSIER_LINK_LABEL, DOSSIER_OPEN_ACTION } from "@/constants/dossier"
-import {
-  CONCLUSION_SECTIONS,
-  PANEL_NO_FACTS,
-  PANEL_NO_REJECTED,
-  PANEL_NO_UNKNOWNS,
-  type ConclusionSectionId,
-} from "@/constants/panel"
+import { CONCLUSION_SECTIONS, type ConclusionSectionId } from "@/constants/panel"
 import { REPLAY_PENDING } from "@/constants/replay"
 import { dossierPath } from "@/constants/routing"
 import { VerdictChange } from "@/features/comparison/VerdictChange"
@@ -116,6 +110,7 @@ export function ConclusionPanelContent({
   detail,
   replayFrame = null,
 }: ConclusionPanelContentProps) {
+  const { t } = useTranslation()
   const model = useMemo(() => buildPanelModel(detail), [detail])
   // Что зритель открыл руками. `undefined` = решает автоматика, поэтому
   // раскрытый блок остаётся раскрытым и при смене события.
@@ -126,6 +121,7 @@ export function ConclusionPanelContent({
   return (
     <ol className="flex flex-col p-4">
       {CONCLUSION_SECTIONS.map((section, index) => {
+        const title = t(`panel.section.${section.id}.title`)
         const body = (
           <SectionBody
             sectionId={section.id}
@@ -139,7 +135,7 @@ export function ConclusionPanelContent({
         // панели. Блоки 3–6 — обоснование, оно раскрывается по требованию.
         if (!COLLAPSIBLE_SECTIONS.has(section.id)) {
           return (
-            <SectionItem key={section.id} index={index} title={section.title}>
+            <SectionItem key={section.id} index={index} title={title}>
               {body}
             </SectionItem>
           )
@@ -156,7 +152,7 @@ export function ConclusionPanelContent({
           <CollapsibleSectionItem
             key={section.id}
             index={index}
-            title={section.title}
+            title={title}
             count={count}
             // Во время реплея блок раскрывается сам, как только в нём
             // появляется содержимое: иначе главный эффект демо — «факт
@@ -227,6 +223,7 @@ function SectionBody({
   model,
   replayFrame,
 }: SectionBodyProps) {
+  const { t } = useTranslation()
   switch (sectionId) {
     case "conclusion": {
       if (replayFrame && !replayFrame.conclusionReached) {
@@ -257,7 +254,7 @@ function SectionBody({
       return (
         <StatementList
           entries={model.supportedFacts}
-          emptyText={PANEL_NO_FACTS}
+          emptyText={t("panel.noFacts")}
         />
       )
     case "contradictedHypotheses":
@@ -267,7 +264,7 @@ function SectionBody({
       return (
         <StatementList
           entries={model.contradictedHypotheses}
-          emptyText={PANEL_NO_REJECTED}
+          emptyText={t("panel.noRejected")}
         />
       )
     case "unknowns":
@@ -285,7 +282,7 @@ function SectionBody({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">{PANEL_NO_UNKNOWNS}</p>
+        <p className="text-sm text-muted-foreground">{t("panel.noUnknowns")}</p>
       )
     case "sources":
       return <SourcesList entries={model.sources} />
@@ -367,10 +364,15 @@ function CollapsibleSectionItem({
 }
 
 function PanelSkeleton() {
+  const { t } = useTranslation()
   return (
     <ol className="flex flex-col p-4">
       {CONCLUSION_SECTIONS.map((section, index) => (
-        <SectionItem key={section.id} index={index} title={section.title}>
+        <SectionItem
+          key={section.id}
+          index={index}
+          title={t(`panel.section.${section.id}.title`)}
+        >
           <div aria-hidden className="flex flex-col gap-2">
             <Skeleton className="h-3 w-full" />
             <Skeleton className="h-3 w-2/3" />

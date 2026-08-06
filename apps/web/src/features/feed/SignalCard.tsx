@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { ChevronRight } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { SourceLink } from "@/components/common"
 import {
@@ -7,11 +8,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import {
-  FEED_SIGNAL_DETAILS_LABEL,
-  FEED_SIGNAL_OBSERVED_PREFIX,
-  FEED_SIGNAL_REPORTED_PREFIX,
-} from "@/constants/feed"
 import {
   phenomenonLabel,
   VERIFICATION_STATUS_META,
@@ -34,6 +30,7 @@ type SignalCardProps = {
  * занимают колонку целиком.
  */
 export function SignalCard({ signal, sourceDocument }: SignalCardProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const { formatDateTime, formatObservedDate } = useFormat()
 
@@ -43,7 +40,7 @@ export function SignalCard({ signal, sourceDocument }: SignalCardProps) {
   const details = [
     phenomenonLabel(signal.phenomenon),
     signal.locationText,
-    observedDate !== null && `${FEED_SIGNAL_OBSERVED_PREFIX} ${observedDate}`,
+    observedDate !== null && `${t("feed.signalObservedPrefix")} ${observedDate}`,
   ].filter((part): part is string => typeof part === "string")
 
   return (
@@ -51,7 +48,7 @@ export function SignalCard({ signal, sourceDocument }: SignalCardProps) {
       <h4 className="text-sm font-medium text-pretty">{signal.title}</h4>
       <p className="text-xs text-muted-foreground">
         {VERIFICATION_STATUS_META[signal.verificationStatus].label} ·{" "}
-        {FEED_SIGNAL_REPORTED_PREFIX} {formatDateTime(signal.reportedAt)}
+        {t("feed.signalReportedPrefix")} {formatDateTime(signal.reportedAt)}
       </p>
       <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
@@ -59,7 +56,7 @@ export function SignalCard({ signal, sourceDocument }: SignalCardProps) {
             aria-hidden
             className={cn("size-3 transition-transform", open && "rotate-90")}
           />
-          {FEED_SIGNAL_DETAILS_LABEL}
+          {t("feed.signalDetailsLabel")}
         </CollapsibleTrigger>
         <CollapsibleContent className="flex flex-col gap-1.5 pt-1.5">
           {signal.excerpt && (

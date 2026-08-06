@@ -1,13 +1,8 @@
 import { X } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { EvidenceLevelBadge } from "@/components/common"
 import { Button } from "@/components/ui/button"
-import {
-  VERDICT_CHANGE_BEFORE,
-  VERDICT_CHANGE_DISMISS,
-  VERDICT_CHANGE_EXPLANATION,
-  VERDICT_CHANGE_TITLE,
-} from "@/constants/comparison"
 import { useFormat } from "@/i18n/use-format"
 import type { EvidenceLevel } from "@/types"
 
@@ -32,19 +27,22 @@ type VerdictChangeProps = {
  * чтобы не потеряться, если панель прокручена.
  */
 export function VerdictChange({ before, onDismiss }: VerdictChangeProps) {
+  const { t } = useTranslation()
   return (
     <section
-      aria-label={VERDICT_CHANGE_TITLE}
+      aria-label={t("comparison.verdictChangeTitle")}
       className="flex flex-col gap-2 border-b bg-muted/30 px-4 py-3"
     >
       <div className="flex items-start justify-between gap-2">
-        <h3 className="text-xs font-medium">{VERDICT_CHANGE_TITLE}</h3>
+        <h3 className="text-xs font-medium">
+          {t("comparison.verdictChangeTitle")}
+        </h3>
         <Button
           variant="ghost"
           size="icon"
           onClick={onDismiss}
-          aria-label={VERDICT_CHANGE_DISMISS}
-          title={VERDICT_CHANGE_DISMISS}
+          aria-label={t("comparison.verdictChangeDismiss")}
+          title={t("comparison.verdictChangeDismiss")}
           className="-my-1 size-6 shrink-0"
         >
           <X />
@@ -54,9 +52,9 @@ export function VerdictChange({ before, onDismiss }: VerdictChangeProps) {
           1 и 2 панели прямо под плашкой, и вторая его копия здесь была самым
           крупным дублем экрана. Контраст остаётся, но пространственный:
           «было» в плашке, «стало» — ниже. */}
-      <VerdictSideRow label={VERDICT_CHANGE_BEFORE} side={before} />
+      <VerdictSideRow label={t("comparison.verdictChangeBefore")} side={before} />
       <p className="text-xs text-pretty text-muted-foreground">
-        {VERDICT_CHANGE_EXPLANATION}
+        {t("comparison.verdictChangeExplanation")}
       </p>
     </section>
   )

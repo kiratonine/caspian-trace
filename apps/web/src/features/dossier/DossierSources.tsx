@@ -1,9 +1,10 @@
+import { useTranslation } from "react-i18next"
+
 import {
   DOSSIER_SHA_LABEL,
   DOSSIER_SHA_NOT_COMPUTED,
   DOSSIER_SOURCE_PAGE_PREFIX,
 } from "@/constants/dossier"
-import { PANEL_NO_SOURCES } from "@/constants/panel"
 import type { SourceEntry } from "@/features/conclusion/panel-model"
 import { useFormat } from "@/i18n/use-format"
 import { hasConfirmedPage, sourceHref } from "@/lib/source"
@@ -18,9 +19,10 @@ type DossierSourcesProps = {
  * на бумаге кликнуть нельзя, а проверить документ читатель обязан.
  */
 export function DossierSources({ entries }: DossierSourcesProps) {
+  const { t } = useTranslation()
   const { formatDate } = useFormat()
   if (entries.length === 0) {
-    return <p className="text-muted-foreground">{PANEL_NO_SOURCES}</p>
+    return <p className="text-muted-foreground">{t("panel.noSources")}</p>
   }
 
   return (

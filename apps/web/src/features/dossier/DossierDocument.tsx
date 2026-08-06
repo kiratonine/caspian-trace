@@ -23,12 +23,6 @@ import {
   DOSSIER_UPDATED_AT_LABEL,
   type DossierSectionId,
 } from "@/constants/dossier"
-import { EVIDENCE_LEVEL_META } from "@/constants/evidence"
-import {
-  PANEL_NO_FACTS,
-  PANEL_NO_REJECTED,
-  PANEL_NO_UNKNOWNS,
-} from "@/constants/panel"
 import { REGION_LABELS } from "@/constants/regions"
 import { StatementList } from "@/features/conclusion/StatementList"
 import { useFormat } from "@/i18n/use-format"
@@ -164,7 +158,7 @@ function SectionBody({
         <div className="flex flex-col items-start gap-1.5">
           <EvidenceLevelBadge level={investigation.evidenceLevel} />
           <p className="text-xs text-pretty text-muted-foreground">
-            {EVIDENCE_LEVEL_META[investigation.evidenceLevel].description}
+            {t(`evidence.${investigation.evidenceLevel}.description`)}
           </p>
         </div>
       )
@@ -176,14 +170,14 @@ function SectionBody({
       return (
         <StatementList
           entries={model.supportedFacts}
-          emptyText={PANEL_NO_FACTS}
+          emptyText={t("panel.noFacts")}
         />
       )
     case "contradictedHypotheses":
       return (
         <StatementList
           entries={model.contradictedHypotheses}
-          emptyText={PANEL_NO_REJECTED}
+          emptyText={t("panel.noRejected")}
         />
       )
     case "unknowns":
@@ -196,7 +190,7 @@ function SectionBody({
           ))}
         </ul>
       ) : (
-        <p className="text-muted-foreground">{PANEL_NO_UNKNOWNS}</p>
+        <p className="text-muted-foreground">{t("panel.noUnknowns")}</p>
       )
     case "candidateObjects":
       return <CandidateObjectList entries={model.objects} />

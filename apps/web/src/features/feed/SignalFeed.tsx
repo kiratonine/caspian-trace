@@ -7,11 +7,6 @@ import { incidentsQueryOptions } from "@/api/queries"
 import { EvidenceLevelBadge } from "@/components/common"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  FEED_NO_INCIDENTS,
-  FEED_NO_SIGNALS,
-  FEED_SIGNALS_HEADING,
-} from "@/constants/feed"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
 import { cn } from "@/lib/utils"
@@ -81,9 +76,12 @@ export function SignalFeedContent({
   detailError = false,
   onSelect,
 }: SignalFeedContentProps) {
+  const { t } = useTranslation()
   if (incidents.length === 0) {
     return (
-      <p className="p-4 text-sm text-muted-foreground">{FEED_NO_INCIDENTS}</p>
+      <p className="p-4 text-sm text-muted-foreground">
+        {t("feed.noIncidents")}
+      </p>
     )
   }
 
@@ -164,7 +162,7 @@ function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
   return (
     <div className="relative mt-1.5 flex flex-col gap-2 border-t pt-2.5">
       <h3 className="text-xs font-medium text-muted-foreground">
-        {FEED_SIGNALS_HEADING}
+        {t("feed.signalsHeading")}
       </h3>
       {detail ? (
         detail.signals.length > 0 ? (
@@ -183,7 +181,9 @@ function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-muted-foreground">{FEED_NO_SIGNALS}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("feed.noSignals")}
+          </p>
         )
       ) : detailError ? (
         <p className="text-xs text-muted-foreground">

@@ -14,7 +14,7 @@
       "location": null,
       "locationText": "река Жайык, Атырау",
       "phenomenon": "color_change",
-      "excerpt": "Жителей Атырау встревожила необычная зеленая окраска воды",
+      "excerpt": "Жителей Атырау в начале сентября встревожила необычная зеленая окраска воды в реке Жайык.",
       "sourceDocumentId": "doc-zakon-green-water",
       "extractionMode": "verified_seed",
       "verificationStatus": "corroborated"
@@ -153,7 +153,7 @@
     },
     {
       "id": "doc-zakon-green-water",
-      "title": "Необычная зелёная вода в Жайыке",
+      "title": "В Атырау зеленая вода в реке оказалась следом нефтяного загрязнения",
       "publisher": "Zakon.kz",
       "url": "https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html",
       "publishedAt": "2025-09-09T15:16:00+05:00",
@@ -164,6 +164,6 @@
       "status": "unverified"
     }
   ],
-  "inputHash": "e8f907b88f7d1fbaf1aa8636ed88019f9ba7ba955b3eee162d61446194810f7c",
+  "inputHash": "e67da6c034952846a579df64727558b1ec2bf17de48b420a98a1f351c8637b99",
   "rulesetVersion": "1.2.0"
 }

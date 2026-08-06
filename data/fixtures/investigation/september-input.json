@@ -14,7 +14,7 @@
       "reportedAt": "2025-09-09T15:16:00+05:00",
       "locationText": "река Жайык, Атырау",
       "phenomenon": "color_change",
-      "excerpt": "Жителей Атырау встревожила необычная зеленая окраска воды",
+      "excerpt": "Жителей Атырау в начале сентября встревожила необычная зеленая окраска воды в реке Жайык.",
       "sourceDocumentId": "doc-zakon-green-water",
       "extractionMode": "verified_seed",
       "verificationStatus": "corroborated"
@@ -81,6 +81,6 @@
   ],
   "sourceDocuments": [
     { "id": "doc-kazhydromet-2025-09", "title": "Бюллетень Атырауской области, сентябрь 2025", "publisher": "РГП «Казгидромет»", "url": "https://www.kazhydromet.kz/uploads/files_calendar/9344/file/68f0e81dcc3caatyrau-russ-byulleten-za-sentyabr-2025g.pdf", "official": true, "verified": true, "publishedAt": null, "fetchedAt": null, "contentType": "pdf", "sha256": "360390d641e3e3d2b8a6b4157b3eebdf6386cb24bee08cdf9c38a1d6f01b4fbb", "cachePath": null, "status": "unverified" },
-    { "id": "doc-zakon-green-water", "title": "Необычная зелёная вода в Жайыке", "publisher": "Zakon.kz", "url": "https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html", "official": false, "verified": true, "publishedAt": "2025-09-09T15:16:00+05:00", "fetchedAt": null, "contentType": "html", "sha256": null, "cachePath": null, "status": "unverified" }
+    { "id": "doc-zakon-green-water", "title": "В Атырау зеленая вода в реке оказалась следом нефтяного загрязнения", "publisher": "Zakon.kz", "url": "https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html", "official": false, "verified": true, "publishedAt": "2025-09-09T15:16:00+05:00", "fetchedAt": null, "contentType": "html", "sha256": null, "cachePath": null, "status": "unverified" }
   ]
 }

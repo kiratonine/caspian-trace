@@ -1,0 +1,184 @@
+{
+  "version": 1,
+  "purpose": "Backend 1 idempotent database bootstrap for the three investigation-core demo inputs",
+  "cases": [
+    {
+      "inputPath": "data/fixtures/investigation/september-input.json",
+      "expectedResultPath": "data/fixtures/investigation/september-golden.json",
+      "incident": {
+        "id": "inv-atyrau-2025-09",
+        "title": "Жайык, Атырау: нефтепродукты, сентябрь 2025",
+        "region": "atyrau",
+        "indicator": "нефтепродукты"
+      },
+      "signalIds": [
+        "sig-zakon-green-water"
+      ],
+      "signalProvenance": [
+        {
+          "signalId": "sig-zakon-green-water",
+          "sourceDocumentId": "doc-zakon-green-water",
+          "url": "https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html",
+          "reportedAt": "2025-09-09T15:16:00+05:00",
+          "excerpt": "Жителей Атырау в начале сентября встревожила необычная зеленая окраска воды в реке Жайык.",
+          "checkedAt": "2026-08-06",
+          "status": "published_page_checked"
+        }
+      ],
+      "stationIds": [
+        "st-zhaiyk-1km-above-atyrau",
+        "st-asa-0-5km-above",
+        "st-asa-0-5km-below",
+        "st-zhaiyk-1km-below-atyrau"
+      ],
+      "stationRelationIds": [
+        "station-relation:st-zhaiyk-1km-above-atyrau:st-asa-0-5km-above:upstream-of",
+        "station-relation:st-asa-0-5km-above:st-asa-0-5km-below:upstream-of",
+        "station-relation:st-asa-0-5km-below:st-zhaiyk-1km-below-atyrau:upstream-of"
+      ],
+      "stationRelationEvidenceIds": [
+        "rel-sep-city-to-asa-above",
+        "rel-sep-asa-pair",
+        "rel-sep-asa-below-to-city-below"
+      ],
+      "comparisonPairRelationIds": [
+        "station-relation:st-asa-0-5km-above:st-asa-0-5km-below:upstream-of"
+      ],
+      "measurementIds": [
+        "m-2025-09-1km-above-atyrau",
+        "m-2025-09-asa-above",
+        "m-2025-09-asa-below",
+        "m-2025-09-1km-below-atyrau"
+      ],
+      "candidateObjectIds": [
+        "obj-atyrau-su-arnasy"
+      ],
+      "sourceDocumentIds": [
+        "doc-kazhydromet-2025-09",
+        "doc-zakon-green-water"
+      ],
+      "unknowns": [],
+      "expectedResult": {
+        "evidenceLevel": "L2",
+        "corridorKind": "open_upstream",
+        "upstreamStationId": null,
+        "downstreamStationId": "st-zhaiyk-1km-above-atyrau",
+        "supportedFactCodes": [],
+        "contradictedHypothesisCodes": [
+          "NO_LOCAL_INCREASE_IN_PAIR",
+          "MAXIMUM_UPSTREAM_OF_OBJECT"
+        ],
+        "objectDispositions": {
+          "obj-atyrau-su-arnasy": "does_not_explain_event"
+        },
+        "unknownCodes": [
+          "UPSTREAM_BOUNDARY_UNMEASURED"
+        ],
+        "conclusion": "Источник не установлен. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
+        "fixtureInputHash": "e67da6c034952846a579df64727558b1ec2bf17de48b420a98a1f351c8637b99",
+        "rulesetVersion": "1.2.0"
+      }
+    },
+    {
+      "inputPath": "data/fixtures/investigation/may-input.json",
+      "expectedResultPath": "data/fixtures/investigation/may-golden.json",
+      "incident": {
+        "id": "inv-atyrau-2025-05",
+        "title": "Жайык, Атырау: нефтепродукты, май 2025",
+        "region": "atyrau",
+        "indicator": "нефтепродукты"
+      },
+      "signalIds": [],
+      "signalProvenance": [],
+      "signalAbsenceReason": "В handoff нет проверенного событийного сообщения для майского demo case; signal не создаётся.",
+      "stationIds": [
+        "st-asa-0-5km-above",
+        "st-asa-0-5km-below"
+      ],
+      "stationRelationIds": [
+        "station-relation:st-asa-0-5km-above:st-asa-0-5km-below:upstream-of"
+      ],
+      "stationRelationEvidenceIds": [
+        "rel-may-asa-pair"
+      ],
+      "comparisonPairRelationIds": [
+        "station-relation:st-asa-0-5km-above:st-asa-0-5km-below:upstream-of"
+      ],
+      "measurementIds": [
+        "m-2025-05-asa-above",
+        "m-2025-05-asa-below"
+      ],
+      "candidateObjectIds": [
+        "obj-atyrau-su-arnasy"
+      ],
+      "sourceDocumentIds": [
+        "doc-kazhydromet-2025-05"
+      ],
+      "unknowns": [],
+      "expectedResult": {
+        "evidenceLevel": "L3",
+        "corridorKind": "between_stations",
+        "upstreamStationId": "st-asa-0-5km-above",
+        "downstreamStationId": "st-asa-0-5km-below",
+        "supportedFactCodes": [
+          "LOCAL_INCREASE_IN_PAIR"
+        ],
+        "contradictedHypothesisCodes": [],
+        "objectDispositions": {
+          "obj-atyrau-su-arnasy": "in_corridor"
+        },
+        "unknownCodes": [],
+        "conclusion": "Источник не установлен. В сопоставимом парном интервале зарегистрирован рост; интервал требует проверки как возможная зона дополнительного поступления.",
+        "fixtureInputHash": "30c0ebeec4f0ecc6f0b5fc90491bfec8fa69cb9eba228379c5fb87a7cec1981b",
+        "rulesetVersion": "1.2.0"
+      }
+    },
+    {
+      "inputPath": "data/fixtures/investigation/aktau-input.json",
+      "expectedResultPath": "data/fixtures/investigation/aktau-golden.json",
+      "incident": {
+        "id": "inv-aktau-insufficient",
+        "title": "Актау: недостаточно данных для локализации",
+        "region": "mangystau",
+        "indicator": "нефтепродукты"
+      },
+      "signalIds": [],
+      "signalProvenance": [],
+      "signalAbsenceReason": "Проверенный signal отсутствует; пустой массив является частью insufficient-data case.",
+      "stationIds": [],
+      "stationRelationIds": [],
+      "stationRelationEvidenceIds": [],
+      "comparisonPairRelationIds": [],
+      "measurementIds": [],
+      "candidateObjectIds": [],
+      "sourceDocumentIds": [],
+      "unknowns": [
+        {
+          "code": "CURRENT_FIELD_UNAVAILABLE",
+          "text": "Оперативное поле течений недоступно."
+        },
+        {
+          "code": "SYNCHRONOUS_MEASUREMENTS_UNAVAILABLE",
+          "text": "Синхронные лабораторные измерения отсутствуют."
+        }
+      ],
+      "expectedResult": {
+        "evidenceLevel": "L0",
+        "corridorKind": "none",
+        "upstreamStationId": null,
+        "downstreamStationId": null,
+        "supportedFactCodes": [],
+        "contradictedHypothesisCodes": [],
+        "objectDispositions": {},
+        "unknownCodes": [
+          "CURRENT_FIELD_UNAVAILABLE",
+          "SYNCHRONOUS_MEASUREMENTS_UNAVAILABLE",
+          "STATION_ORDER_UNVERIFIED"
+        ],
+        "conclusion": "Источник не локализован: имеющихся данных недостаточно для пространственного вывода.",
+        "fixtureInputHash": "4e95296c26e52b914e0c7bf2dd1091c10767cd9c0b56300d92ecfd5d1c2084ad",
+        "rulesetVersion": "1.2.0"
+      }
+    }
+  ]
+}

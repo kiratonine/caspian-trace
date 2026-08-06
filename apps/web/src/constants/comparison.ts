@@ -7,8 +7,6 @@ export const VERDICT_CHANGE_TITLE = "Вывод изменился"
 
 export const VERDICT_CHANGE_BEFORE = "Было"
 
-export const VERDICT_CHANGE_AFTER = "Стало"
-
 // §14: «объясняет, что вывод меняется от события к событию».
 export const VERDICT_CHANGE_EXPLANATION =
   "Вывод следует за фактами конкретных измерений: другой период — другие " +

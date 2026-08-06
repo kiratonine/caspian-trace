@@ -20,6 +20,47 @@ import type {
 
 type JsonRecord = Record<string, unknown>
 
+type ScopedStationRelationFact = {
+  relationId: string
+  evidenceId: string
+  sourceDocumentId: string
+  basis: string
+  comparisonPair: boolean
+  provenance: StationRelationFact['provenance']
+}
+
+type ScopedCandidateObjectFact = {
+  candidateObjectId: string
+  evidenceDocumentIds: string[]
+}
+
+type RuntimeBootstrapScopes = {
+  stationIds: string[]
+  stationRelationIds: string[]
+  measurementIds: string[]
+  candidateObjectIds: string[]
+  sourceDocumentIds: string[]
+  stationRelationFacts: ScopedStationRelationFact[]
+  candidateObjectFacts: ScopedCandidateObjectFact[]
+}
+
+type StationRelationEvidenceRecord = {
+  id: string
+  stationRelationId: string
+  sourceDocumentId: string
+  sourcePage: number | null
+  basis: string
+  sourceExcerpt: string
+  verificationStatus: string
+}
+
+type StationRelationEvidenceDelegate = {
+  findMany(args: {
+    where: { id: { in: string[] } }
+    orderBy: { id: 'asc' }
+  }): Promise<StationRelationEvidenceRecord[]>
+}
+
 @Injectable()
 export class PrismaInvestigationRepository
   implements InvestigationInputReader, InvestigationResultWriter
@@ -37,131 +78,184 @@ export class PrismaInvestigationRepository
     if (incident === null) return this.fixtures.loadInput(investigationId)
 
     const incidentMetadata = asRecord(incident.metadata)
-    const stationScope = readStringArray(incidentMetadata.stationIds)
-    const relationScope = readStringArray(incidentMetadata.stationRelationIds)
-    const measurementScope = readStringArray(incidentMetadata.measurementIds)
-    const candidateScope = readStringArray(incidentMetadata.candidateObjectIds)
+    const scopes = readRuntimeBootstrapScopes(incidentMetadata)
+    if (scopes === null) return null
+
+    const evidenceDelegate = (
+      this.prisma as unknown as {
+        stationRelationEvidence?: StationRelationEvidenceDelegate
+      }
+    ).stationRelationEvidence
+    if (scopes.stationRelationFacts.length > 0 && evidenceDelegate === undefined) {
+      return null
+    }
+
     const stations = await this.prisma.station.findMany({
-      where:
-        stationScope === null
-          ? { region: incident.region }
-          : { id: { in: stationScope } },
+      where: { id: { in: scopes.stationIds } },
       orderBy: { id: 'asc' },
     })
-    const stationIds = stations.map(({ id }) => id)
-    const stationIdSet = new Set(stationIds)
-    const waterBodies = new Set(stations.map(({ waterBody }) => waterBody))
-    const [relations, measurements, allCandidates] = await Promise.all([
+    const [relations, relationEvidence, measurements, candidates] = await Promise.all([
       this.prisma.stationRelation.findMany({
-        where:
-          relationScope === null
-            ? {
-                fromStationId: { in: stationIds },
-                toStationId: { in: stationIds },
-              }
-            : { id: { in: relationScope } },
+        where: { id: { in: scopes.stationRelationIds } },
         orderBy: { id: 'asc' },
       }),
+      scopes.stationRelationFacts.length === 0
+        ? Promise.resolve([] as StationRelationEvidenceRecord[])
+        : evidenceDelegate!.findMany({
+            where: {
+              id: {
+                in: scopes.stationRelationFacts.map(({ evidenceId }) => evidenceId),
+              },
+            },
+            orderBy: { id: 'asc' },
+          }),
       this.prisma.measurement.findMany({
-        where:
-          measurementScope === null
-            ? {
-                stationId: { in: stationIds },
-                ...(incident.indicator === null
-                  ? {}
-                  : { indicator: incident.indicator }),
-              }
-            : { id: { in: measurementScope } },
+        where: { id: { in: scopes.measurementIds } },
         include: { sourcePage: true },
         orderBy: { id: 'asc' },
       }),
       this.prisma.candidateObject.findMany({
-        where:
-          candidateScope === null ? undefined : { id: { in: candidateScope } },
+        where: { id: { in: scopes.candidateObjectIds } },
         include: { sources: true },
         orderBy: { id: 'asc' },
       }),
     ])
-    const candidates = allCandidates.filter((candidate) => {
-      if (candidateScope !== null) return true
-      const metadata = asRecord(candidate.metadata)
-      return (
-        metadata.region === incident.region.toLowerCase() ||
-        (typeof metadata.stationId === 'string' && stationIdSet.has(metadata.stationId)) ||
-        (typeof metadata.waterBody === 'string' && waterBodies.has(metadata.waterBody))
-      )
-    })
 
-    const sourceIds = new Set<string>()
-    for (const { signal } of incident.signals) sourceIds.add(signal.sourceDocumentId)
-    for (const relation of relations) sourceIds.add(relation.sourceDocumentId)
-    for (const measurement of measurements) sourceIds.add(measurement.sourceDocumentId)
-    for (const candidate of candidates) {
-      for (const source of candidate.sources) sourceIds.add(source.sourceDocumentId)
+    if (
+      !containsExactlyScopedIds(stations, scopes.stationIds) ||
+      !containsExactlyScopedIds(relations, scopes.stationRelationIds) ||
+      !containsExactlyScopedIds(
+        relationEvidence,
+        scopes.stationRelationFacts.map(({ evidenceId }) => evidenceId),
+      ) ||
+      !containsExactlyScopedIds(measurements, scopes.measurementIds) ||
+      !containsExactlyScopedIds(candidates, scopes.candidateObjectIds)
+    ) {
+      return null
     }
+
     const sources = await this.prisma.sourceDocument.findMany({
-      where: { id: { in: [...sourceIds] } },
+      where: { id: { in: scopes.sourceDocumentIds } },
       orderBy: { id: 'asc' },
     })
+    if (!containsExactlyScopedIds(sources, scopes.sourceDocumentIds)) return null
 
-    return parseInvestigationInput({
-      incident: {
-        id: incident.id,
-        title: incident.title,
-        region: incident.region.toLowerCase(),
-        indicator: incident.indicator ?? '',
-        unknowns: readIncidentUnknowns(incident.metadata),
-      },
-      signals: incident.signals.map(({ signal }) => ({
-        id: signal.id,
-        title: signal.title,
-        observedAt: toIso(signal.observedAt),
-        observedPeriod: signal.observedPeriod,
-        reportedAt: signal.reportedAt.toISOString(),
-        locationText: signal.locationText ?? '',
-        phenomenon: normalizePhenomenon(signal.phenomenon),
-        excerpt: signal.excerpt,
-        sourceDocumentId: signal.sourceDocumentId,
-        extractionMode: signal.extractionMode.toLowerCase(),
-        verificationStatus: signal.verificationStatus.toLowerCase(),
-      })),
-      stations: stations.map((station) => ({
-        id: station.id,
-        name: station.name,
-        waterBody: station.waterBody,
-      })),
-      stationRelations: relations.map(mapStationRelation),
-      measurements: measurements.map((measurement) => ({
-        id: measurement.id,
-        stationId: measurement.stationId,
-        indicator: measurement.indicator,
-        matrix: measurement.matrix,
-        value: measurement.value.toString(),
-        rawValueText: measurement.rawValueText,
-        unit: measurement.unit,
-        sampledAt: toIso(measurement.sampledAt),
-        sampledPeriod: measurement.sampledPeriod,
-        sourceDocumentId: measurement.sourceDocumentId,
-        sourcePage:
-          measurement.sourcePage?.pageNumber ??
-          readNumber(asRecord(measurement.metadata).sourcePage),
-        sourceExcerpt: measurement.sourceExcerpt,
-        verified: isVerified(measurement.verificationStatus),
-      })),
-      candidateObjects: candidates.map((candidate) => {
-        const metadata = asRecord(candidate.metadata)
-        return {
-          id: candidate.id,
-          name: candidate.name,
-          category: candidate.objectType,
-          stationId: readString(metadata.stationId),
-          waterBody: readString(metadata.waterBody),
-          evidenceDocumentIds: candidate.sources.map(({ sourceDocumentId }) => sourceDocumentId),
-          completeness: metadata.completeness === 'confirmed' ? 'confirmed' : 'partial',
-        }
-      }),
-      sourceDocuments: sources.map(mapSourceDocument),
-    })
+    const sourceIds = new Set(scopes.sourceDocumentIds)
+    const stationIds = new Set(scopes.stationIds)
+    const relationById = new Map(relations.map((relation) => [relation.id, relation]))
+    const evidenceById = new Map(relationEvidence.map((evidence) => [evidence.id, evidence]))
+    const candidateFactById = new Map(
+      scopes.candidateObjectFacts.map((fact) => [fact.candidateObjectId, fact]),
+    )
+    const stationRelations: StationRelationFact[] = []
+
+    for (const fact of scopes.stationRelationFacts) {
+      const relation = relationById.get(fact.relationId)
+      const evidence = evidenceById.get(fact.evidenceId)
+      if (relation === undefined || evidence === undefined) return null
+      const mapped = mapScopedStationRelation(relation, evidence, fact)
+      if (
+        mapped === null ||
+        !stationIds.has(mapped.upstreamStationId) ||
+        !stationIds.has(mapped.downstreamStationId) ||
+        !sourceIds.has(mapped.sourceDocumentId)
+      ) {
+        return null
+      }
+      stationRelations.push(mapped)
+    }
+
+    if (
+      incident.signals.some(({ signal }) => !sourceIds.has(signal.sourceDocumentId)) ||
+      measurements.some(
+        (measurement) =>
+          !stationIds.has(measurement.stationId) ||
+          !sourceIds.has(measurement.sourceDocumentId),
+      )
+    ) {
+      return null
+    }
+
+    const candidateObjects = []
+    for (const candidate of candidates) {
+      const fact = candidateFactById.get(candidate.id)
+      if (fact === undefined) return null
+      const linkedSourceIds = new Set(
+        candidate.sources.map(({ sourceDocumentId }) => sourceDocumentId),
+      )
+      if (
+        fact.evidenceDocumentIds.some(
+          (sourceDocumentId) =>
+            !sourceIds.has(sourceDocumentId) || !linkedSourceIds.has(sourceDocumentId),
+        )
+      ) {
+        return null
+      }
+      const metadata = asRecord(candidate.metadata)
+      const stationId = readString(metadata.stationId)
+      if (stationId !== null && !stationIds.has(stationId)) return null
+      candidateObjects.push({
+        id: candidate.id,
+        name: candidate.name,
+        category: candidate.objectType,
+        stationId,
+        waterBody: readString(metadata.waterBody),
+        evidenceDocumentIds: fact.evidenceDocumentIds,
+        completeness: metadata.completeness === 'confirmed' ? 'confirmed' as const : 'partial' as const,
+      })
+    }
+
+    try {
+      return parseInvestigationInput({
+        incident: {
+          id: incident.id,
+          title: incident.title,
+          region: incident.region.toLowerCase(),
+          indicator: incident.indicator ?? '',
+          ...incidentUnknowns(readIncidentUnknowns(incident.metadata)),
+        },
+        signals: incident.signals.map(({ signal }) => ({
+          id: signal.id,
+          title: signal.title,
+          observedAt: toIso(signal.observedAt),
+          observedPeriod: signal.observedPeriod,
+          reportedAt: signal.reportedAt.toISOString(),
+          locationText: signal.locationText ?? '',
+          phenomenon: normalizePhenomenon(signal.phenomenon),
+          excerpt: signal.excerpt,
+          sourceDocumentId: signal.sourceDocumentId,
+          extractionMode: signal.extractionMode.toLowerCase(),
+          verificationStatus: signal.verificationStatus.toLowerCase(),
+        })),
+        stations: stations.map((station) => ({
+          id: station.id,
+          name: station.name,
+          waterBody: station.waterBody,
+        })),
+        stationRelations,
+        measurements: measurements.map((measurement) => ({
+          id: measurement.id,
+          stationId: measurement.stationId,
+          indicator: measurement.indicator,
+          matrix: measurement.matrix,
+          value: measurement.value.toString(),
+          rawValueText: measurement.rawValueText,
+          unit: measurement.unit,
+          sampledAt: toIso(measurement.sampledAt),
+          sampledPeriod: measurement.sampledPeriod,
+          sourceDocumentId: measurement.sourceDocumentId,
+          sourcePage:
+            measurement.sourcePage?.pageNumber ??
+            readNumber(asRecord(measurement.metadata).sourcePage),
+          sourceExcerpt: measurement.sourceExcerpt,
+          verified: isVerified(measurement.verificationStatus),
+        })),
+        candidateObjects,
+        sourceDocuments: sources.map(mapSourceDocument),
+      })
+    } catch {
+      return null
+    }
   }
 
   async findCurrent(investigationId: string): Promise<StoredInvestigation | null> {
@@ -484,41 +578,60 @@ async function persistInput(
   }
 }
 
-function mapStationRelation(relation: {
+function mapScopedStationRelation(relation: {
   id: string
   fromStationId: string
   toStationId: string
   kind: string
-  sourceDocumentId: string
   verificationStatus: string
-  notes: string | null
   metadata: unknown
-}): StationRelationFact {
-  const metadata = asRecord(relation.metadata)
-  const provenance = asRecord(metadata.provenance)
+}, evidence: StationRelationEvidenceRecord, fact: ScopedStationRelationFact): StationRelationFact | null {
+  if (
+    evidence.id !== fact.evidenceId ||
+    evidence.stationRelationId !== relation.id ||
+    evidence.sourceDocumentId !== fact.sourceDocumentId ||
+    evidence.sourcePage !== fact.provenance.sourcePage ||
+    evidence.sourceExcerpt !== fact.provenance.sourceExcerpt ||
+    !basisMatchesEvidence(fact.basis, evidence.basis) ||
+    (asRecord(relation.metadata).comparisonPair === true) !== fact.comparisonPair
+  ) {
+    return null
+  }
+
   const reverse = relation.kind === 'DOWNSTREAM_OF'
-  const sourcePage = readNumber(provenance.sourcePage)
-  const sourceExcerpt = readString(provenance.sourceExcerpt)
-  const fixturePath = readString(provenance.fixturePath)
+  if (!reverse && relation.kind !== 'UPSTREAM_OF') return null
+
   return {
-    id: relation.id,
+    id: fact.evidenceId,
     upstreamStationId: reverse ? relation.toStationId : relation.fromStationId,
     downstreamStationId: reverse ? relation.fromStationId : relation.toStationId,
-    sourceDocumentId: relation.sourceDocumentId,
-    basis: relation.notes ?? '',
+    sourceDocumentId: fact.sourceDocumentId,
+    basis: fact.basis,
     verified:
-      relation.kind !== 'SAME_REACH' &&
       isVerified(relation.verificationStatus) &&
-      fixturePath !== null &&
-      sourcePage !== null &&
-      sourceExcerpt !== null,
-    comparisonPair: metadata.comparisonPair === true,
-    provenance: {
-      fixturePath: fixturePath ?? `database:station_relations/${relation.id}`,
-      sourcePage,
-      sourceExcerpt: sourceExcerpt ?? relation.notes ?? '',
-    },
+      isVerified(evidence.verificationStatus),
+    comparisonPair: fact.comparisonPair,
+    provenance: fact.provenance,
   }
+}
+
+const relationEvidenceBasisByFact = new Map<string, string>([
+  [
+    'Официальная парная маркировка выше/ниже одного сброса',
+    'OFFICIAL_PAIRED_ABOVE_BELOW_LABELS',
+  ],
+  [
+    'Названия створов в приложении 2: 1 км выше города и 0,5 км выше городского сброса',
+    'OFFICIAL_MONITORING_TABLE_SEQUENCE_AND_STATION_LABELS',
+  ],
+  [
+    'Названия створов в приложении 2',
+    'OFFICIAL_MONITORING_TABLE_SEQUENCE_AND_STATION_LABELS',
+  ],
+])
+
+function basisMatchesEvidence(factBasis: string, evidenceBasis: string): boolean {
+  return factBasis === evidenceBasis || relationEvidenceBasisByFact.get(factBasis) === evidenceBasis
 }
 
 function mapSourceDocument(source: {
@@ -597,6 +710,10 @@ function readIncidentUnknowns(metadata: unknown): unknown[] {
   return Array.isArray(unknowns) ? unknowns : []
 }
 
+function incidentUnknowns(unknowns: unknown[]): { unknowns?: unknown[] } {
+  return unknowns.length === 0 ? {} : { unknowns }
+}
+
 function incidentMetadataSnapshot(input: InvestigationInput): Prisma.InputJsonValue {
   return jsonValue({
     unknowns: input.incident.unknowns ?? [],
@@ -654,10 +771,145 @@ function readNumber(value: unknown): number | null {
     : null
 }
 
-function readStringArray(value: unknown): string[] | null {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string')
-    ? value
+function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScopes | null {
+  const stationIds = readStringArray(metadata.stationIds)
+  const stationRelationIds = readStringArray(metadata.stationRelationIds)
+  const measurementIds = readStringArray(metadata.measurementIds)
+  const candidateObjectIds = readStringArray(metadata.candidateObjectIds)
+  const sourceDocumentIds = readStringArray(metadata.sourceDocumentIds)
+  if (
+    stationIds === null ||
+    stationRelationIds === null ||
+    measurementIds === null ||
+    candidateObjectIds === null ||
+    sourceDocumentIds === null ||
+    (metadata.unknowns !== undefined && !Array.isArray(metadata.unknowns)) ||
+    !isRecord(metadata.runtimeBootstrap)
+  ) {
+    return null
+  }
+
+  const stationRelationFacts = readScopedStationRelationFacts(
+    metadata.runtimeBootstrap.stationRelationFacts,
+  )
+  const candidateObjectFacts = readScopedCandidateObjectFacts(
+    metadata.runtimeBootstrap.candidateObjectFacts,
+  )
+  if (
+    stationRelationFacts === null ||
+    candidateObjectFacts === null ||
+    !containsExactlyScopedIds(
+      stationRelationFacts.map(({ relationId }) => ({ id: relationId })),
+      stationRelationIds,
+    ) ||
+    !containsExactlyScopedIds(
+      candidateObjectFacts.map(({ candidateObjectId }) => ({ id: candidateObjectId })),
+      candidateObjectIds,
+    )
+  ) {
+    return null
+  }
+
+  return {
+    stationIds,
+    stationRelationIds,
+    measurementIds,
+    candidateObjectIds,
+    sourceDocumentIds,
+    stationRelationFacts,
+    candidateObjectFacts,
+  }
+}
+
+function readScopedStationRelationFacts(
+  value: unknown,
+): ScopedStationRelationFact[] | null {
+  if (!Array.isArray(value)) return null
+  const facts: ScopedStationRelationFact[] = []
+  for (const item of value) {
+    if (!isRecord(item) || !isRecord(item.provenance)) return null
+    const relationId = readString(item.relationId)
+    const evidenceId = readString(item.evidenceId)
+    const sourceDocumentId = readString(item.sourceDocumentId)
+    const basis = readString(item.basis)
+    const fixturePath = readString(item.provenance.fixturePath)
+    const sourceExcerpt = readString(item.provenance.sourceExcerpt)
+    const sourcePage = readNullablePositiveInteger(item.provenance.sourcePage)
+    if (
+      relationId === null ||
+      evidenceId === null ||
+      sourceDocumentId === null ||
+      basis === null ||
+      typeof item.comparisonPair !== 'boolean' ||
+      fixturePath === null ||
+      sourceExcerpt === null ||
+      sourcePage === undefined
+    ) {
+      return null
+    }
+    facts.push({
+      relationId,
+      evidenceId,
+      sourceDocumentId,
+      basis,
+      comparisonPair: item.comparisonPair,
+      provenance: { fixturePath, sourcePage, sourceExcerpt },
+    })
+  }
+  const relationIds = facts.map(({ relationId }) => relationId)
+  const evidenceIds = facts.map(({ evidenceId }) => evidenceId)
+  return new Set(relationIds).size === facts.length &&
+    new Set(evidenceIds).size === facts.length
+    ? facts
     : null
+}
+
+function readScopedCandidateObjectFacts(
+  value: unknown,
+): ScopedCandidateObjectFact[] | null {
+  if (!Array.isArray(value)) return null
+  const facts: ScopedCandidateObjectFact[] = []
+  for (const item of value) {
+    if (!isRecord(item)) return null
+    const candidateObjectId = readString(item.candidateObjectId)
+    const evidenceDocumentIds = readStringArray(item.evidenceDocumentIds)
+    if (
+      candidateObjectId === null ||
+      evidenceDocumentIds === null ||
+      evidenceDocumentIds.length === 0
+    ) {
+      return null
+    }
+    facts.push({ candidateObjectId, evidenceDocumentIds })
+  }
+  return new Set(facts.map(({ candidateObjectId }) => candidateObjectId)).size ===
+    facts.length
+    ? facts
+    : null
+}
+
+function readNullablePositiveInteger(value: unknown): number | null | undefined {
+  if (value === null) return null
+  return readNumber(value) ?? undefined
+}
+
+function containsExactlyScopedIds(
+  records: ReadonlyArray<{ id: string }>,
+  expectedIds: readonly string[],
+): boolean {
+  if (records.length !== expectedIds.length) return false
+  const expected = new Set(expectedIds)
+  return records.every(({ id }) => expected.has(id))
+}
+
+function readStringArray(value: unknown): string[] | null {
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => typeof item !== 'string' || item.length === 0)
+  ) {
+    return null
+  }
+  return new Set(value).size === value.length ? value : null
 }
 
 function toDate(value: string | null): Date | null {

@@ -75,8 +75,8 @@
           "UPSTREAM_BOUNDARY_UNMEASURED"
         ],
         "conclusion": "Источник не установлен. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
-        "fixtureInputHash": "e67da6c034952846a579df64727558b1ec2bf17de48b420a98a1f351c8637b99",
-        "rulesetVersion": "1.2.0"
+        "fixtureInputHash": "ab5e5a1f3ac67d8405151065e29c3a9ca1099271cee11b6262b411acdef83b56",
+        "rulesetVersion": "1.2.1"
       }
     },
     {
@@ -129,8 +129,8 @@
         },
         "unknownCodes": [],
         "conclusion": "Источник не установлен. В сопоставимом парном интервале зарегистрирован рост; интервал требует проверки как возможная зона дополнительного поступления.",
-        "fixtureInputHash": "30c0ebeec4f0ecc6f0b5fc90491bfec8fa69cb9eba228379c5fb87a7cec1981b",
-        "rulesetVersion": "1.2.0"
+        "fixtureInputHash": "6af691a9ea5c0e34d527ea8bcd415cb4f74e1484755bd681a7c2a68721ae51c1",
+        "rulesetVersion": "1.2.1"
       }
     },
     {
@@ -177,7 +177,7 @@
         ],
         "conclusion": "Источник не локализован: имеющихся данных недостаточно для пространственного вывода.",
         "fixtureInputHash": "4e95296c26e52b914e0c7bf2dd1091c10767cd9c0b56300d92ecfd5d1c2084ad",
-        "rulesetVersion": "1.2.0"
+        "rulesetVersion": "1.2.1"
       }
     }
   ]

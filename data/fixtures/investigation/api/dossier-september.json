@@ -10,7 +10,7 @@
       "title": "Необычная зелёная окраска воды в Жайыке",
       "observedAt": null,
       "observedPeriod": "2025-09",
-      "reportedAt": "2025-09-09T15:16:00+05:00",
+      "reportedAt": "2025-09-09T10:16:00.000Z",
       "location": null,
       "locationText": "река Жайык, Атырау",
       "phenomenon": "color_change",
@@ -91,6 +91,7 @@
     {
       "id": "evidence-no-increase-rel-sep-asa-pair-m-2025-09-asa-above-m-2025-09-asa-below",
       "code": "NO_LOCAL_INCREASE_IN_PAIR",
+      "sortOrder": 0,
       "kind": "contradicts",
       "text": "В сопоставимой паре изменение составляет -0,004 мг/дм³; эта пара не подтверждает дополнительное поступление внутри интервала в данном временном срезе.",
       "measurementIds": [
@@ -100,12 +101,12 @@
       "sourceDocumentIds": [
         "doc-kazhydromet-2025-09"
       ],
-      "generatedBy": "rule_engine",
-      "sortOrder": 0
+      "generatedBy": "rule_engine"
     },
     {
       "id": "evidence-maximum-upstream-obj-atyrau-su-arnasy",
       "code": "MAXIMUM_UPSTREAM_OF_OBJECT",
+      "sortOrder": 1,
       "kind": "contradicts",
       "text": "Объект для проверки «КГП «Атырау су арнасы»» расположен ниже максимального вышележащего измерения и не объясняет этот максимум обычным переносом вниз по течению. Это не оценивает другие события или участки ниже объекта.",
       "measurementIds": [
@@ -114,8 +115,7 @@
       "sourceDocumentIds": [
         "doc-kazhydromet-2025-09"
       ],
-      "generatedBy": "rule_engine",
-      "sortOrder": 1
+      "generatedBy": "rule_engine"
     }
   ],
   "unknowns": [
@@ -156,7 +156,7 @@
       "title": "В Атырау зеленая вода в реке оказалась следом нефтяного загрязнения",
       "publisher": "Zakon.kz",
       "url": "https://www.zakon.kz/obshestvo/6490267-v-atyrau-zelenaya-voda-v-reke-okazalas-sledom-neftyanogo-zagryazneniya.html",
-      "publishedAt": "2025-09-09T15:16:00+05:00",
+      "publishedAt": "2025-09-09T10:16:00.000Z",
       "fetchedAt": null,
       "contentType": "html",
       "sha256": null,
@@ -164,6 +164,6 @@
       "status": "unverified"
     }
   ],
-  "inputHash": "e67da6c034952846a579df64727558b1ec2bf17de48b420a98a1f351c8637b99",
-  "rulesetVersion": "1.2.0"
+  "inputHash": "ab5e5a1f3ac67d8405151065e29c3a9ca1099271cee11b6262b411acdef83b56",
+  "rulesetVersion": "1.2.1"
 }

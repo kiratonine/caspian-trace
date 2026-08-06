@@ -5,6 +5,7 @@ import {
   calculateInputHash,
   type InvestigationInput,
   type InvestigationResult,
+  type SourceDocumentFact,
 } from '@caspian-trace/investigation-core'
 
 import { Prisma } from '../../src/generated/prisma/client'
@@ -27,7 +28,24 @@ interface TestHarness {
   incidentRows: Array<{ id: string; metadata: Record<string, unknown> }>
   evidenceRows: Array<{ id: string; sourceDocumentId: string }>
   candidateRows: Array<{ sources: Array<{ sourceDocumentId: string }> }>
-  sourceRows: Array<{ id: string }>
+  sourceRows: TestSourceDocumentRow[]
+}
+
+interface TestSourceDocumentRow {
+  id: string
+  title: string
+  publisher: string
+  originalUrl: string
+  mediaType: string
+  publishedAt: Date | null
+  fetchedAt: Date | null
+  sha256: string | null
+  cachePath: string | null
+  status: string
+  extractionMetadata: {
+    official: boolean
+    verified: boolean
+  }
 }
 
 const repositoryRoot = resolve(__dirname, '..', '..', '..', '..')
@@ -108,6 +126,36 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     expect(september?.candidateObjects[0]?.evidenceDocumentIds).toEqual(['doc-kazhydromet-2025-09'])
   })
 
+  it('reconstructs scoped source facts after the database row is enriched', async () => {
+    const harness = createHarness(inputs, handoff)
+    const fixture = inputs.find(({ incident }) => incident.id === 'inv-atyrau-2025-05')
+    const manifestCase = handoff.cases.find(
+      ({ incident }) => incident.id === 'inv-atyrau-2025-05',
+    )
+    const source = harness.sourceRows.find(({ id }) => id === 'doc-kazhydromet-2025-05')
+    expect(fixture).toBeDefined()
+    expect(source).toBeDefined()
+
+    source!.cachePath = 'source-cache/kazhydromet/2025-05.pdf'
+    source!.fetchedAt = isoDate('2026-08-07T02:00:00.000Z')
+    source!.status = 'VERIFIED'
+
+    const loaded = await harness.repository.loadInput('inv-atyrau-2025-05')
+
+    expect(loaded?.sourceDocuments).toEqual(fixture!.sourceDocuments)
+    expect(loaded?.sourceDocuments[0]).toMatchObject({
+      cachePath: null,
+      fetchedAt: null,
+      status: 'unverified',
+    })
+    expect(calculateInputHash(loaded!)).toBe(manifestCase?.expectedResult.fixtureInputHash)
+    expect(source).toMatchObject({
+      cachePath: 'source-cache/kazhydromet/2025-05.pdf',
+      status: 'VERIFIED',
+    })
+    expect(source!.fetchedAt?.toISOString()).toBe('2026-08-07T02:00:00.000Z')
+  })
+
   it('supports the explicit empty scopes of the Aktau case', async () => {
     const { repository, evidenceFindMany } = createHarness(inputs, handoff)
 
@@ -155,6 +203,79 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     await expect(missingSource.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
   })
 
+  it('fails closed for invalid scoped source document facts', async () => {
+    const missing = createHarness(inputs, handoff)
+    delete runtimeBootstrapFor(missing, 'inv-atyrau-2025-05').sourceDocumentFacts
+    await expect(missing.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+
+    const duplicate = createHarness(inputs, handoff)
+    const duplicateBootstrap = runtimeBootstrapFor(duplicate, 'inv-atyrau-2025-09')
+    const duplicateFacts = duplicateBootstrap.sourceDocumentFacts as SourceDocumentFact[]
+    duplicateBootstrap.sourceDocumentFacts = [duplicateFacts[0]!, duplicateFacts[0]!]
+    await expect(duplicate.repository.loadInput('inv-atyrau-2025-09')).resolves.toBeNull()
+
+    const wrongScope = createHarness(inputs, handoff)
+    const wrongScopeFact = sourceFactFor(wrongScope, 'inv-atyrau-2025-05')
+    wrongScopeFact.id = 'doc-outside-incident-scope'
+    await expect(wrongScope.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+
+    const invalid = createHarness(inputs, handoff)
+    delete sourceFactFor(invalid, 'inv-atyrau-2025-05').publisher
+    await expect(invalid.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+  })
+
+  it('fails closed when immutable source identity conflicts with the scoped fact', async () => {
+    const conflicts: Array<{
+      incidentId: string
+      sourceId: string
+      mutate: (source: TestSourceDocumentRow) => void
+    }> = [
+      {
+        incidentId: 'inv-atyrau-2025-05',
+        sourceId: 'doc-kazhydromet-2025-05',
+        mutate: (source): void => { source.originalUrl += '?conflict=1' },
+      },
+      {
+        incidentId: 'inv-atyrau-2025-05',
+        sourceId: 'doc-kazhydromet-2025-05',
+        mutate: (source): void => { source.publisher = 'Different publisher' },
+      },
+      {
+        incidentId: 'inv-atyrau-2025-05',
+        sourceId: 'doc-kazhydromet-2025-05',
+        mutate: (source): void => { source.mediaType = 'application/json' },
+      },
+      {
+        incidentId: 'inv-atyrau-2025-05',
+        sourceId: 'doc-kazhydromet-2025-05',
+        mutate: (source): void => { source.sha256 = '0'.repeat(64) },
+      },
+      {
+        incidentId: 'inv-atyrau-2025-09',
+        sourceId: 'doc-zakon-green-water',
+        mutate: (source): void => {
+          source.publishedAt = isoDate('2025-09-10T15:16:00+05:00')
+        },
+      },
+    ]
+
+    for (const { incidentId, sourceId, mutate } of conflicts) {
+      const harness = createHarness(inputs, handoff)
+      const source = harness.sourceRows.find(({ id }) => id === sourceId)
+      expect(source).toBeDefined()
+      mutate(source!)
+      await expect(harness.repository.loadInput(incidentId)).resolves.toBeNull()
+    }
+
+    for (const field of ['cachePath', 'fetchedAt'] as const) {
+      const harness = createHarness(inputs, handoff)
+      const fact = sourceFactFor(harness, 'inv-atyrau-2025-05')
+      if (field === 'cachePath') fact.cachePath = 'fixture/cache.pdf'
+      else fact.fetchedAt = '2026-08-07T02:00:00.000Z'
+      await expect(harness.repository.loadInput('inv-atyrau-2025-05')).resolves.toBeNull()
+    }
+  })
+
   it('persists a runtime bootstrap relation through its canonical ID without creating a duplicate edge', async () => {
     const input = inputs.find(({ incident }) => incident.id === 'inv-atyrau-2025-05')
     expect(input).toBeDefined()
@@ -185,6 +306,7 @@ describe('PrismaInvestigationRepository runtime bootstrap input', () => {
     const runtimeBootstrap = {
       version: 1,
       fixtureInputHash: result.inputHash,
+      sourceDocumentFacts: input!.sourceDocuments,
       stationRelationFacts,
       candidateObjectFacts,
     }
@@ -401,6 +523,7 @@ function createHarness(inputs: InvestigationInput[], handoff: HandoffManifest): 
         candidateObjectIds: input.candidateObjects.map(({ id }) => id),
         sourceDocumentIds: input.sourceDocuments.map(({ id }) => id),
         runtimeBootstrap: {
+          sourceDocumentFacts: structuredClone(input.sourceDocuments),
           stationRelationFacts: input.stationRelations.map((relation) => ({
             relationId: canonicalRelationId(relation),
             evidenceId: relation.id,
@@ -459,6 +582,33 @@ function createHarness(inputs: InvestigationInput[], handoff: HandoffManifest): 
     candidateRows,
     sourceRows,
   }
+}
+
+function runtimeBootstrapFor(
+  harness: TestHarness,
+  incidentId: string,
+): Record<string, unknown> {
+  const incident = harness.incidentRows.find(({ id }) => id === incidentId)
+  const runtimeBootstrap = incident?.metadata.runtimeBootstrap
+  if (
+    typeof runtimeBootstrap !== 'object' ||
+    runtimeBootstrap === null ||
+    Array.isArray(runtimeBootstrap)
+  ) {
+    throw new Error(`Missing runtime bootstrap ${incidentId}`)
+  }
+  return runtimeBootstrap as Record<string, unknown>
+}
+
+function sourceFactFor(
+  harness: TestHarness,
+  incidentId: string,
+): Record<string, unknown> {
+  const facts = runtimeBootstrapFor(harness, incidentId).sourceDocumentFacts
+  if (!Array.isArray(facts) || facts.length === 0) {
+    throw new Error(`Missing source document facts ${incidentId}`)
+  }
+  return facts[0] as Record<string, unknown>
 }
 
 interface FindManyArgs {

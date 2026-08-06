@@ -39,6 +39,7 @@ type RuntimeBootstrapScopes = {
   measurementIds: string[]
   candidateObjectIds: string[]
   sourceDocumentIds: string[]
+  sourceDocumentFacts: SourceDocumentFact[]
   stationRelationFacts: ScopedStationRelationFact[]
   candidateObjectFacts: ScopedCandidateObjectFact[]
 }
@@ -51,6 +52,20 @@ type StationRelationEvidenceRecord = {
   basis: string
   sourceExcerpt: string
   verificationStatus: string
+}
+
+type SourceDocumentRecord = {
+  id: string
+  title: string
+  publisher: string
+  originalUrl: string
+  mediaType: string
+  publishedAt: Date | null
+  fetchedAt: Date | null
+  sha256: string | null
+  cachePath: string | null
+  status: string
+  extractionMetadata: unknown
 }
 
 @Injectable()
@@ -124,6 +139,16 @@ export class PrismaInvestigationRepository
       orderBy: { id: 'asc' },
     })
     if (!containsExactlyScopedIds(sources, scopes.sourceDocumentIds)) return null
+
+    const sourceById = new Map(sources.map((source) => [source.id, source]))
+    if (
+      scopes.sourceDocumentFacts.some((fact) => {
+        const source = sourceById.get(fact.id)
+        return source === undefined || !matchesScopedSourceDocument(source, fact)
+      })
+    ) {
+      return null
+    }
 
     const sourceIds = new Set(scopes.sourceDocumentIds)
     const stationIds = new Set(scopes.stationIds)
@@ -237,7 +262,7 @@ export class PrismaInvestigationRepository
           verified: isVerified(measurement.verificationStatus),
         })),
         candidateObjects,
-        sourceDocuments: sources.map(mapSourceDocument),
+        sourceDocuments: scopes.sourceDocumentFacts,
       })
     } catch {
       return null
@@ -721,19 +746,7 @@ function basisMatchesEvidence(factBasis: string, evidenceBasis: string): boolean
   return factBasis === evidenceBasis || relationEvidenceBasisByFact.get(factBasis) === evidenceBasis
 }
 
-function mapSourceDocument(source: {
-  id: string
-  title: string
-  publisher: string
-  originalUrl: string
-  mediaType: string
-  publishedAt: Date | null
-  fetchedAt: Date | null
-  sha256: string | null
-  cachePath: string | null
-  status: string
-  extractionMetadata: unknown
-}): SourceDocumentFact {
+function mapSourceDocument(source: SourceDocumentRecord): SourceDocumentFact {
   const metadata = asRecord(source.extractionMetadata)
   return {
     id: source.id,
@@ -749,6 +762,30 @@ function mapSourceDocument(source: {
     cachePath: source.cachePath,
     status: source.status.toLowerCase() as SourceDocumentFact['status'],
   }
+}
+
+function matchesScopedSourceDocument(
+  source: SourceDocumentRecord,
+  fact: SourceDocumentFact,
+): boolean {
+  const mapped = mapSourceDocument(source)
+  return (
+    mapped.id === fact.id &&
+    mapped.url === fact.url &&
+    mapped.publisher === fact.publisher &&
+    mapped.contentType === fact.contentType &&
+    (fact.sha256 === null || mapped.sha256 === fact.sha256) &&
+    (fact.cachePath === null || mapped.cachePath === fact.cachePath) &&
+    matchesScopedDate(mapped.fetchedAt, fact.fetchedAt) &&
+    matchesScopedDate(mapped.publishedAt, fact.publishedAt)
+  )
+}
+
+function matchesScopedDate(value: string | null, fact: string | null): boolean {
+  return fact === null || (
+    value !== null &&
+    new Date(value).getTime() === new Date(fact).getTime()
+  )
 }
 
 function readStoredSnapshot(record: {
@@ -889,9 +926,13 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
   const candidateObjectFacts = readScopedCandidateObjectFacts(
     metadata.runtimeBootstrap.candidateObjectFacts,
   )
+  const sourceDocumentFacts = readScopedSourceDocumentFacts(
+    metadata.runtimeBootstrap.sourceDocumentFacts,
+  )
   if (
     stationRelationFacts === null ||
     candidateObjectFacts === null ||
+    sourceDocumentFacts === null ||
     !containsExactlyScopedIds(
       stationRelationFacts.map(({ relationId }) => ({ id: relationId })),
       stationRelationIds,
@@ -899,6 +940,10 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
     !containsExactlyScopedIds(
       candidateObjectFacts.map(({ candidateObjectId }) => ({ id: candidateObjectId })),
       candidateObjectIds,
+    ) ||
+    !containsExactlyScopedIds(
+      sourceDocumentFacts,
+      sourceDocumentIds,
     )
   ) {
     return null
@@ -910,8 +955,33 @@ function readRuntimeBootstrapScopes(metadata: JsonRecord): RuntimeBootstrapScope
     measurementIds,
     candidateObjectIds,
     sourceDocumentIds,
+    sourceDocumentFacts,
     stationRelationFacts,
     candidateObjectFacts,
+  }
+}
+
+function readScopedSourceDocumentFacts(
+  value: unknown,
+): SourceDocumentFact[] | null {
+  if (!Array.isArray(value)) return null
+  try {
+    return parseInvestigationInput({
+      incident: {
+        id: 'runtime-bootstrap-source-document-facts',
+        title: 'Runtime bootstrap source document facts',
+        region: 'atyrau',
+        indicator: 'runtime-bootstrap-validation',
+      },
+      signals: [],
+      stations: [],
+      stationRelations: [],
+      measurements: [],
+      candidateObjects: [],
+      sourceDocuments: value,
+    }).sourceDocuments
+  } catch {
+    return null
   }
 }
 

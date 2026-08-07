@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next"
 
+import { SourceLink } from "@/components/common"
 import {
   Tooltip,
   TooltipContent,
@@ -24,17 +25,35 @@ export function MapObjectPin({ marker }: { marker: MapObjectMarker }) {
               <span className="font-medium">{marker.object.name}</span>
               <span className="block text-muted-foreground">
                 {t("map.candidateLabel")} ·{" "}
-                {marker.insideCorridor
-                  ? t("map.objectInsideCorridor")
-                  : t("map.objectOutsideCorridor")}
+                {marker.insideCorridor === null
+                  ? t("map.objectCorridorUnknown")
+                  : marker.insideCorridor
+                    ? t("map.objectInsideCorridor")
+                    : t("map.objectOutsideCorridor")}
               </span>
             </span>
             <span className="size-2.5 shrink-0 rotate-45 border-[1.5px] border-foreground bg-background" />
           </div>
         }
       />
-      <TooltipContent>
+      <TooltipContent className="flex max-w-80 flex-col gap-2">
+        <p className="font-medium">
+          {marker.coordinateMode === "verified"
+            ? t("map.coordinateMode.verifiedLabel")
+            : t("map.coordinateMode.schematicLabel")}
+        </p>
         <p className="max-w-72 text-pretty">{marker.basis}</p>
+        {marker.coordinateMode === "schematic" && (
+          <p className="max-w-72 text-pretty text-muted-foreground">
+            {t("map.coordinateMode.schematicObjectDetail")}
+          </p>
+        )}
+        {marker.coordinateSourceDocument && (
+          <SourceLink
+            sourceDocument={marker.coordinateSourceDocument}
+            className="text-foreground"
+          />
+        )}
       </TooltipContent>
     </Tooltip>
   )

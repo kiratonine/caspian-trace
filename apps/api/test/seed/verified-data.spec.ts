@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import {
   ExtractionMode,
   SourceDocumentStatus,
+  StationRelationKind,
   VerificationStatus,
 } from '../../src/generated/prisma/enums'
 import { loadVerifiedData } from '../../prisma/seed/verified-data.loader'
@@ -24,6 +25,7 @@ import {
   seedVerifiedData,
   type VerifiedSeedClient,
 } from '../../prisma/seed/verified-seed.service'
+import { deriveStationRiverOrder } from '../../prisma/seed/station-river-order'
 import type { Prisma } from '../../src/generated/prisma/client'
 import {
   completeHumanReview,
@@ -121,7 +123,7 @@ describe('verified data loader and schemas', () => {
     temporaryDirectories.push(outside)
     const target = join(outside, 'fixture.json')
     writeFileSync(target, '{}')
-    createOutsideSymlink(directory, 'escape.json', target)
+    if (!createOutsideSymlink(directory, 'escape.json', target)) return
     mutateFixture<Manifest>(directory, 'manifest.json', (manifest) => {
       manifest.fixtures[0]!.path = 'escape.json'
     })
@@ -637,14 +639,69 @@ describe('verified data mapping and relation trust policy', () => {
     expect(measurement?.rawValueText).toBe('0,234')
   })
 
-  it('keeps unknown geography, river order, fetched time, cache, and source page row null', async () => {
+  it('keeps unknown geography, fetched time, cache, and source page row null', async () => {
     const directory = fixtureDirectory()
     completeHumanReview(directory)
     const mapped = mapVerifiedData(await loadVerifiedData(directory))
     expect(mapped.stations.every(({ latitude, longitude }) => latitude === null && longitude === null)).toBe(true)
-    expect(mapped.stations.every(({ riverOrder }) => riverOrder === null)).toBe(true)
+    expect(
+      Object.fromEntries(
+        mapped.stations.map(({ id, riverOrder }) => [id, riverOrder]),
+      ),
+    ).toMatchObject({
+      'st-zhaiyk-1km-above-atyrau': 0,
+      'st-asa-0-5km-above': 1,
+      'st-asa-0-5km-below': 2,
+      'st-zhaiyk-1km-below-atyrau': 3,
+    })
     expect(mapped.documents.every(({ fetchedAt, cachePath }) => fetchedAt === null && cachePath === null)).toBe(true)
     expect(mapped.measurements.every(({ sourcePageId }) => sourcePageId === null)).toBe(true)
+  })
+
+  it('derives order only for verified unambiguous linear components', () => {
+    const stations = ['a', 'b', 'c', 'isolated'].map((id) => ({ id }))
+    const relations = ([
+      ['a', 'b', VerificationStatus.OFFICIAL],
+      ['b', 'c', VerificationStatus.CORROBORATED],
+      ['isolated', 'c', VerificationStatus.UNVERIFIED],
+    ] as const).map(([fromStationId, toStationId, verificationStatus]) => ({
+      fromStationId,
+      toStationId,
+      verificationStatus,
+      kind: StationRelationKind.UPSTREAM_OF,
+    }))
+
+    expect(Object.fromEntries(deriveStationRiverOrder(stations, relations))).toEqual({
+      a: 0,
+      b: 1,
+      c: 2,
+      isolated: null,
+    })
+  })
+
+  it.each([
+    {
+      name: 'branch',
+      edges: [['a', 'b'], ['a', 'c']],
+    },
+    {
+      name: 'cycle',
+      edges: [['a', 'b'], ['b', 'c'], ['c', 'a']],
+    },
+  ])('fails closed for a $name component', ({ edges }) => {
+    const stations = ['a', 'b', 'c'].map((id) => ({ id }))
+    const relations = edges.map(([fromStationId, toStationId]) => ({
+      fromStationId: fromStationId!,
+      toStationId: toStationId!,
+      verificationStatus: VerificationStatus.OFFICIAL,
+      kind: StationRelationKind.UPSTREAM_OF,
+    }))
+
+    expect(Object.fromEntries(deriveStationRiverOrder(stations, relations))).toEqual({
+      a: null,
+      b: null,
+      c: null,
+    })
   })
 
   it('keeps documents unverified without fetched snapshots', async () => {

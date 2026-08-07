@@ -4,13 +4,13 @@
 // `location: null`, в `data/verified/**` координат не передавали вовсе.
 // Поэтому позиции ниже — ДЕМОНСТРАЦИОННЫЕ, поставлены для показа и ничего
 // не утверждают о реальном положении точек на местности. Оговорка об этом —
-// в i18n-ресурсе (map.placeholderWarning, stubs.mapCoordsDisclaimer).
+// в i18n-ресурсе (map.coordinateMode.schematicDisclaimer).
 //
 // Когда бэк отдаст `Station.location` / `CandidateObject.location`, удаляется
 // ровно эта таблица: остальной код уже читает координаты из модели.
 
 /** Демонстрационные координаты створов, [lon, lat]. НЕ проверенные данные. */
-export const MAP_PLACEHOLDER_STATION_COORDS: Record<string, [number, number]> =
+export const MAP_SCHEMATIC_STATION_COORDS: Record<string, [number, number]> =
   {
     "st-zhaiyk-1km-above-atyrau": [51.9236, 47.148],
     "st-asa-0-5km-above": [51.9138, 47.1279],

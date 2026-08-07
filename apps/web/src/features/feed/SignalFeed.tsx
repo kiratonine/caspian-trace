@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
+import { sameIncidentReference } from "@/lib/incident-reference"
 import { cn } from "@/lib/utils"
 import { SignalCard } from "./SignalCard"
 
@@ -91,9 +92,12 @@ export function SignalFeedContent({
         <IncidentCard
           key={incident.id}
           incident={incident}
-          selected={incident.id === selectedIncidentId}
+          selected={sameIncidentReference(incident.id, selectedIncidentId)}
           detail={
-            selectedDetail?.investigation.id === incident.id
+            sameIncidentReference(
+              selectedDetail?.investigation.id,
+              incident.id
+            )
               ? selectedDetail
               : null
           }

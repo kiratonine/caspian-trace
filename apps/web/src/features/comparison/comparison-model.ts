@@ -1,4 +1,5 @@
 import type { IncidentSummary } from "@/api/contracts"
+import { sameIncidentReference } from "@/lib/incident-reference"
 
 // Сопоставимые события — те, что описывают ОДИН участок наблюдений: одна
 // область и один показатель, период известен. Связь берётся из полей API,
@@ -9,7 +10,9 @@ export function findComparablePeriods(
   summaries: IncidentSummary[],
   selectedId: string | null
 ): IncidentSummary[] {
-  const selected = summaries.find((s) => s.id === selectedId)
+  const selected = summaries.find((summary) =>
+    sameIncidentReference(summary.id, selectedId)
+  )
   if (!selected || selected.period === null) return []
 
   const group = summaries.filter(

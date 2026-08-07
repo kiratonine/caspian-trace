@@ -275,6 +275,29 @@ describe('strict API boundaries', () => {
     ).toBe(false)
   })
 
+  it('keeps candidate location provenance aligned with location', () => {
+    const candidateObject = (
+      readFixture('incident-september.json') as {
+        candidateObjects: unknown[]
+      }
+    ).candidateObjects[0] as Record<string, unknown>
+
+    expect(
+      CandidateObjectSchema.safeParse({
+        ...candidateObject,
+        location: { lat: 47.1, lon: 51.9 },
+        locationSourceDocumentId: null,
+      }).success,
+    ).toBe(false)
+    expect(
+      CandidateObjectSchema.safeParse({
+        ...candidateObject,
+        location: { lat: 47.1, lon: 51.9 },
+        locationSourceDocumentId: 'doc-location',
+      }).success,
+    ).toBe(true)
+  })
+
   it('rejects [0, 0] as unknown geometry', () => {
     const station = (
       readFixture('incident-september.json') as { stations: unknown[] }

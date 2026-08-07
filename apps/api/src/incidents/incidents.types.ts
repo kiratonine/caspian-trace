@@ -55,6 +55,7 @@ const stationSelect = {
   longitude: true,
   riverOrder: true,
   locationSourceDocumentId: true,
+  locationSourceDocument: { select: sourceDocumentSelect },
 } as const satisfies Prisma.StationSelect
 
 export const incidentDetailSelect = {
@@ -127,6 +128,8 @@ export const incidentDetailSelect = {
           objectType: true,
           latitude: true,
           longitude: true,
+          geometrySourceDocumentId: true,
+          geometrySourceDocument: { select: sourceDocumentSelect },
           verificationStatus: true,
           metadata: true,
           sources: {

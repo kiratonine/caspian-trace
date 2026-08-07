@@ -113,9 +113,23 @@ export const tk = {
     measurementsTrigger: "Ölçegler",
     objectOutsideCorridor: "bölekden daşarda",
     objectInsideCorridor: "bölegiň çäginde",
+    objectCorridorUnknown: "bölege görä ýerleşişi kesgitlenmedi",
     objectPlacementBasis: {
       "obj-atyrau-su-arnasy":
         "Ýerleşişi koordinatlardan däl, Gazgidrometiň býulleteniniň kesim atlaryndan çykaryldy («akdyryşdan 0,5 km ýokarda» we «akdyryşdan 0,5 km aşakda», 22-nji sah.): desganyň koordinatlary berilmedi.",
+    },
+    coordinateMode: {
+      verifiedLabel: "Ýerleşişi çeşme bilen tassyklandy",
+      verifiedStation: "Kesimiň ýerleşişi çeşme bilen tassyklandy",
+      verifiedObject: "Desganyň ýerleşişi çeşme bilen tassyklandy",
+      schematicLabel: "Shemalaýyn ýerleşiş",
+      schematicStation: "Kesimiň shemalaýyn ýerleşişi",
+      schematicStationDetail: "Kesimiň takyk GPS ýerleşişi tassyklanmady.",
+      schematicObjectDetail:
+        "Bu desganyň koordinaty hem-de sebäpli baglanyşygyň subutnamasy däl.",
+      schematicDisclaimer:
+        "Shemalaýyn ýerleşiş — takyk koordinatlar tassyklanmady. Karta düşegi bu ýerleşişi GPS maglumatyna öwürmeýär.",
+      markerSummary: "Tassyklanan: {{verified}} · shemalaýyn: {{schematic}}",
     },
   },
   units: {
@@ -280,6 +294,65 @@ export const tk = {
       "Çeşmeleriň sanawy boş: soramaga zat ýok, bu-da maglumatlaryň ýagdaýydyr.",
     loading: "ýagdaý anyklanylýar",
     error: "çeşmeleriň ýagdaýy alynmady",
+  },
+  agentFlow: {
+    title: "Agent nähili işleýär",
+    seedNotice: "Demo maglumatlary görkezilýär; çeşme ýagdaýlary häzirki daşarky sorag däl.",
+    footer: "AI signaly tapmaga we tertiplemäge kömek edýär. Jemleýji netije diňe barlanan maglumatlardan gurulýar.",
+    step: {
+      search: {
+        title: "Jemgyýetçilik habarlaryny gözlemek",
+        description: "Ulgam GDELT-i we rugsat edilen göni çeşmeleri barlaýar.",
+        statusGap: "Çeşme wagtlaýyn elýeterli däl — bu maglumat boşlugy, hadysalaryň ýoklugy däl.",
+        statusAvailable: "Çeşmäniň ýagdaýy API-den alyndy.",
+        statusUnknown: "Çeşmäniň häzirki ýagdaýy entek alynmady.",
+      },
+      provenance: {
+        title: "Gelip çykyşyny barlamak",
+        description: "Çeşme üçin URL, neşirçi, snapshot we SHA-256 saklanýar.",
+        summary: "Resminamalar: {{total}} · SHA-256 bilen: {{sha}} · snapshot bilen: {{snapshots}}",
+      },
+      candidate: {
+        title: "Kandidaty çykarmak",
+        description: "AI ýeri, hadysany, döwri we sitatany saýlap biler. Kandidat tassyklanan fakt hasaplanmaýar.",
+        badge: "Barlag gerek",
+      },
+      official: {
+        title: "Resmi maglumatlar bilen deňeşdirmek",
+        description: "Ulgam habary Gazgidromet resminamasy, PDF sahypasy we laboratoriýa bahalary bilen deňeşdirýär.",
+        summary: "Barlanan ölçegler: {{measurements}} · resmi resminamalar: {{documents}} · belli sahypalar: {{pages}}",
+      },
+      analysis: {
+        title: "Barlanan faktlaryň seljermesi",
+        description: "L0–L3, koridor, delta we conclusion investigation-core tarapyndan döredilýär.",
+      },
+    },
+  },
+  investigationTrace: {
+    title: "Saýlanan derňewi barlamak",
+    loading: "Saýlanan derňewiň maglumatlary ýüklenýär.",
+    error: "Saýlanan derňewiň yzyny ýükläp bolmady.",
+    stage: { signal: "Jemgyýetçilik signaly", official: "Resmi barlag", measurements: "Ölçegler", conclusion: "Deterministik netije" },
+    noSignal: "Jemgyýetçilik signaly ýok.",
+    noOfficialDocument: "Resmi resminama goşulmady.",
+    reportedAt: "Çap edildi: {{value}}",
+    location: "Ýer: {{value}}",
+    phenomenon: "Hadysa: {{value}}",
+    extractionModeLabel: "Çykaryş tertibi",
+    extractionMode: { llm_verified: "AI-kandidat; barlag ýagdaýy aýratyn görkezilýär", verified_seed: "Barlanan demo fixture; AI işletilmedi", rule: "Düzgün bilen çykaryldy" },
+    verificationLabel: "Barlag ýagdaýy",
+    pageUnknown: "Çeşme sahypasy görkezilmedi.",
+    pageKnown: "Çeşme sahypasy: {{page}}",
+    sourceStatusLabel: "Resminamanyň ýagdaýy",
+    sourceStatus: { verified: "barlanan", unverified: "barlanmadyk", unavailable: "elýeterli däl" },
+    measurementSummary: "Ölçegler: {{total}} · seljeriş üçin tassyklandy: {{verified}}",
+    sampledPeriods: "Nusga döwri ýa-da senesi: {{value}}",
+    sourcePages: "Sahypa belli: {{known}} · görkezilmedi: {{unknown}}",
+    units: "Birlikler: {{value}}",
+    unknownValue: "görkezilmedi",
+    corridor: { none: "Bölegiň çäkleri kesgitlenmedi.", open_upstream: "Bölek akym boýunça ýokary açyk.", between: "Bölek iki kesim bilen çäklenýär." },
+    unknowns: "Maglumat boşluklary: {{count}}",
+    conclusionDisclaimer: "Derňewiň netijesi şeýle görkezse, çeşme kesgitlenmedi. Deterministik netije AI-a degişli edilmeýär.",
   },
   stubs: {
     source: {

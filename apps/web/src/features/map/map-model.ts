@@ -4,7 +4,7 @@ import type { IncidentDetail } from "@/api/contracts"
 import {
   MAP_OBJECT_PLACEMENT,
   MAP_OPEN_CORRIDOR_EXTENSION_DEG,
-  MAP_PLACEHOLDER_STATION_COORDS,
+  MAP_SCHEMATIC_STATION_COORDS,
 } from "@/constants/map"
 import type {
   CandidateObject,
@@ -15,26 +15,33 @@ import type {
 
 // Чистая подготовка данных карты. Никаких выводов фронт не считает
 // (запрет 6 CLAUDE.md): участок приходит границами `corridorBounds`, порядок —
-// подтверждённым `riverOrder`. Координаты — демонстрационные из
-// `MAP_PLACEHOLDER_STATION_COORDS`, пока бэк не передал настоящие.
+// подтверждённым `riverOrder`. При отсутствии координат с provenance модель
+// явно помечает демонстрационное размещение как schematic.
 
 /** [lon, lat] — порядок MapLibre. */
 export type LngLat = [number, number]
 
-export type MapStationNode = {
-  station: Station
-  measurement: Measurement | null
-  sourceDocument: SourceDocument | null
+export type CoordinateMode = "verified" | "schematic"
+
+export type ResolvedMapCoordinate = {
   coords: LngLat
+  coordinateMode: CoordinateMode
+  sourceDocumentId: string | null
+  coordinateSourceDocument: SourceDocument | null
 }
 
-export type MapObjectMarker = {
+export type MapStationNode = ResolvedMapCoordinate & {
+  station: Station
+  measurement: Measurement | null
+  measurementSourceDocument: SourceDocument | null
+}
+
+export type MapObjectMarker = ResolvedMapCoordinate & {
   object: CandidateObject
-  coords: LngLat
   /** Чем обосновано положение — печатается пользователю, а не умалчивается. */
   basis: string
-  /** Объект лежит внутри участка. false — участок его не включает. */
-  insideCorridor: boolean
+  /** null — данных для сопоставления с границами участка недостаточно. */
+  insideCorridor: boolean | null
 }
 
 export type MapModel = {
@@ -49,6 +56,37 @@ export type MapModel = {
   /** Участок открыт вверх по течению: верхней границы у него нет. */
   corridorOpenUpstream: boolean
   commonUnit: string | null
+  verifiedMarkerCount: number
+  schematicMarkerCount: number
+}
+
+export function resolveStationCoordinate(
+  station: Station,
+  documentsById: ReadonlyMap<string, SourceDocument>
+): ResolvedMapCoordinate | null {
+  if (station.location && station.locationSourceDocumentId) {
+    const coordinateSourceDocument = documentsById.get(
+      station.locationSourceDocumentId
+    )
+    if (coordinateSourceDocument) {
+      return {
+        coords: [station.location.lon, station.location.lat],
+        coordinateMode: "verified",
+        sourceDocumentId: station.locationSourceDocumentId,
+        coordinateSourceDocument,
+      }
+    }
+  }
+
+  const schematic = MAP_SCHEMATIC_STATION_COORDS[station.id]
+  return schematic
+    ? {
+        coords: schematic,
+        coordinateMode: "schematic",
+        sourceDocumentId: null,
+        coordinateSourceDocument: null,
+      }
+    : null
 }
 
 /**
@@ -84,28 +122,25 @@ export function buildMapModel(detail: IncidentDetail, t: TFunction): MapModel {
     detail.sourceDocuments.map((document) => [document.id, document])
   )
 
-  // Створ попадает на карту, только если у него подтверждён порядок И для него
-  // есть координата. Иначе он уходит в список «положение не подтверждено»:
-  // поставить точку наугад значило бы выдумать координаты (запрет 2).
   const ordered = detail.stations
-    .filter(
-      (station) =>
-        station.riverOrder !== null &&
-        MAP_PLACEHOLDER_STATION_COORDS[station.id] !== undefined
-    )
+    .filter((station) => station.riverOrder !== null)
     .sort((a, b) => (a.riverOrder ?? 0) - (b.riverOrder ?? 0))
 
-  const nodes: MapStationNode[] = ordered.map((station) => {
+  const nodes: MapStationNode[] = ordered.flatMap((station) => {
+    const coordinate = resolveStationCoordinate(station, documentsById)
+    if (!coordinate) return []
     const measurement =
       detail.measurements.find((m) => m.stationId === station.id) ?? null
-    return {
-      station,
-      measurement,
-      sourceDocument: measurement
-        ? (documentsById.get(measurement.sourceDocumentId) ?? null)
-        : null,
-      coords: MAP_PLACEHOLDER_STATION_COORDS[station.id] as LngLat,
-    }
+    return [
+      {
+        ...coordinate,
+        station,
+        measurement,
+        measurementSourceDocument: measurement
+          ? (documentsById.get(measurement.sourceDocumentId) ?? null)
+          : null,
+      },
+    ]
   })
 
   const placedIds = new Set(nodes.map((node) => node.station.id))
@@ -155,7 +190,41 @@ export function buildMapModel(detail: IncidentDetail, t: TFunction): MapModel {
   const markers: MapObjectMarker[] = []
   const unplacedObjects: CandidateObject[] = []
 
+  const insideCorridorForOrder = (objectOrder: number | null) => {
+    if (objectOrder === null) return null
+    const bottomOrder = corridorBottom ? orderOf(corridorBottom) : null
+    const topOrder = corridorTop ? orderOf(corridorTop) : null
+    return bottomOrder === null
+      ? null
+      : objectOrder <= bottomOrder &&
+          (topOrder === null || objectOrder >= topOrder)
+  }
+
+  function orderOf(coord: LngLat): number | null {
+    return nodes.find((node) => node.coords === coord)?.station.riverOrder ?? null
+  }
+
   for (const object of detail.candidateObjects) {
+    const objectCoordinateSource = object.locationSourceDocumentId
+      ? documentsById.get(object.locationSourceDocumentId)
+      : undefined
+    if (
+      object.location &&
+      object.locationSourceDocumentId &&
+      objectCoordinateSource
+    ) {
+      markers.push({
+        object,
+        coords: [object.location.lon, object.location.lat],
+        coordinateMode: "verified",
+        sourceDocumentId: object.locationSourceDocumentId,
+        coordinateSourceDocument: objectCoordinateSource,
+        basis: t("map.coordinateMode.verifiedObject"),
+        insideCorridor: insideCorridorForOrder(object.riverOrder),
+      })
+      continue
+    }
+
     const placement = MAP_OBJECT_PLACEMENT[object.id]
     const first = placement
       ? coordsByStationId.get(placement.betweenStationIds[0])
@@ -172,22 +241,23 @@ export function buildMapModel(detail: IncidentDetail, t: TFunction): MapModel {
       // Внутри участка — если объект попадает между границами по течению.
       // Считается по порядку створов, а не по расстоянию: порядок подтверждён
       // документами, а координаты демонстрационные.
-      const orderOf = (coord: LngLat) =>
-        nodes.find((node) => node.coords === coord)?.station.riverOrder ?? null
       const objectOrder = ((orderOf(first) ?? 0) + (orderOf(second) ?? 0)) / 2
-      const bottomOrder = corridorBottom ? orderOf(corridorBottom) : null
-      const topOrder = corridorTop ? orderOf(corridorTop) : null
+      const sourceDocumentId = object.evidenceDocumentIds.find((id) =>
+        documentsById.has(id)
+      )
 
       markers.push({
         object,
         coords,
+        coordinateMode: "schematic",
+        sourceDocumentId: sourceDocumentId ?? null,
+        coordinateSourceDocument: sourceDocumentId
+          ? (documentsById.get(sourceDocumentId) ?? null)
+          : null,
         // object.id — свободная строка данных (не закрытый enum), поэтому
         // лукап с fallback: неизвестный id не должен уронить рендер.
         basis: t(`map.objectPlacementBasis.${object.id}`, { defaultValue: "" }),
-        insideCorridor:
-          bottomOrder !== null &&
-          objectOrder <= bottomOrder &&
-          (topOrder === null || objectOrder >= topOrder),
+        insideCorridor: insideCorridorForOrder(objectOrder),
       })
     } else {
       unplacedObjects.push(object)
@@ -212,5 +282,15 @@ export function buildMapModel(detail: IncidentDetail, t: TFunction): MapModel {
     corridorLine,
     corridorOpenUpstream,
     commonUnit,
+    verifiedMarkerCount:
+      nodes.filter(({ coordinateMode }) => coordinateMode === "verified")
+        .length +
+      markers.filter(({ coordinateMode }) => coordinateMode === "verified")
+        .length,
+    schematicMarkerCount:
+      nodes.filter(({ coordinateMode }) => coordinateMode === "schematic")
+        .length +
+      markers.filter(({ coordinateMode }) => coordinateMode === "schematic")
+        .length,
   }
 }

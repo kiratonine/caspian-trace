@@ -14,6 +14,8 @@ import { DATA_MODE } from "@/constants/api"
 import { SOURCE_HEALTH_META } from "@/constants/live-status"
 import { IS_SEED_MODE } from "@/api/client"
 import { DataModeNotice } from "./DataModeNotice"
+import { AgentWorkflowSection } from "./AgentWorkflowSection"
+import { SelectedInvestigationTrace } from "./SelectedInvestigationTrace"
 import { SourceHealthMarkIcon } from "./SourceHealthMark"
 import { SourceStatusList } from "./SourceStatusList"
 import { summarizeSources } from "./live-status-model"
@@ -109,6 +111,8 @@ export function LiveStatusIndicator() {
           isPending={isPending}
           isError={isError}
         />
+        <AgentWorkflowSection sources={data?.sources} />
+        <SelectedInvestigationTrace />
       </PopoverContent>
     </Popover>
   )

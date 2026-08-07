@@ -268,6 +268,17 @@ export function createOutsideSymlink(
   directory: string,
   name: string,
   target: string,
-): void {
-  symlinkSync(target, join(directory, name))
+): boolean {
+  try {
+    symlinkSync(target, join(directory, name))
+    return true
+  } catch (error: unknown) {
+    if (
+      process.platform === 'win32' &&
+      (error as NodeJS.ErrnoException).code === 'EPERM'
+    ) {
+      return false
+    }
+    throw error
+  }
 }

@@ -35,6 +35,7 @@ const station = {
   longitude: null,
   riverOrder: 1,
   locationSourceDocumentId: null,
+  locationSourceDocument: null,
 }
 
 export function makeSummaryRow(): IncidentSummaryRow {
@@ -123,6 +124,8 @@ export function makeDetailRow(): IncidentDetailRow {
           objectType: 'test outlet',
           latitude: null,
           longitude: null,
+          geometrySourceDocumentId: null,
+          geometrySourceDocument: null,
           verificationStatus: VerificationStatus.OFFICIAL,
           metadata: { waterBody: 'Жайык', riverOrder: 2 },
           sources: [

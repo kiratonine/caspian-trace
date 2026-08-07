@@ -13,6 +13,7 @@ import { Button, buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DOSSIER_ID_PARAM, incidentPath } from "@/constants/routing"
 import { downloadJson } from "@/lib/download"
+import { sameIncidentReference } from "@/lib/incident-reference"
 import { DossierDocument } from "./DossierDocument"
 
 /**
@@ -30,8 +31,9 @@ export function DossierPage() {
   // по ссылке подгрузится один раз.
   const incidentsQuery = useQuery(incidentsQueryOptions)
   const period =
-    incidentsQuery.data?.find((incident) => incident.id === incidentId)
-      ?.period ?? null
+    incidentsQuery.data?.find((incident) =>
+      sameIncidentReference(incident.id, incidentId)
+    )?.period ?? null
   // Момент открытия страницы: пересчёт на каждый рендер менял бы дату
   // в шапке при любом клике.
   const [generatedAt] = useState(() => new Date().toISOString())

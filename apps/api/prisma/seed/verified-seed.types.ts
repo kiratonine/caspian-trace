@@ -44,7 +44,7 @@ export interface SeedEntitySummary {
 
 export interface VerifiedSeedSummary {
   documents: SeedEntitySummary
-  stations: Omit<SeedEntitySummary, 'promoted'>
+  stations: Omit<SeedEntitySummary, 'promoted'> & { updated: number }
   relations: SeedEntitySummary & {
     evidenceCreated: number
     evidenceUnchanged: number

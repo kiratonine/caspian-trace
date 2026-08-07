@@ -1,4 +1,13 @@
+import { useTranslation } from "react-i18next"
+
+import { SourceLink } from "@/components/common"
 import { MeasurementValue } from "@/components/common/MeasurementValue"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 import type { MapStationNode } from "./map-model"
 
 type MapStationPinProps = {
@@ -17,9 +26,42 @@ type MapStationPinProps = {
  * и в таблице досье.
  */
 export function MapStationPin({ node, showUnit }: MapStationPinProps) {
+  const { t } = useTranslation()
+  const coordinateLabel =
+    node.coordinateMode === "verified"
+      ? t("map.coordinateMode.verifiedStation")
+      : t("map.coordinateMode.schematicStation")
+
   return (
     <div className="flex items-center gap-1.5">
-      <span className="size-2.5 shrink-0 rounded-full border-[1.5px] border-foreground bg-background" />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              aria-label={`${node.station.name}: ${coordinateLabel}`}
+              className={cn(
+                "size-2.5 shrink-0 cursor-help rounded-full border-[1.5px] border-foreground bg-background outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+                node.coordinateMode === "schematic" && "border-dashed"
+              )}
+            />
+          }
+        />
+        <TooltipContent className="flex max-w-80 flex-col gap-2">
+          <p className="text-pretty">{coordinateLabel}</p>
+          {node.coordinateMode === "schematic" && (
+            <p className="text-pretty text-muted-foreground">
+              {t("map.coordinateMode.schematicStationDetail")}
+            </p>
+          )}
+          {node.coordinateSourceDocument && (
+            <SourceLink
+              sourceDocument={node.coordinateSourceDocument}
+              className="text-foreground"
+            />
+          )}
+        </TooltipContent>
+      </Tooltip>
       <span className="flex min-w-0 items-baseline gap-1.5 rounded bg-background/85 px-1.5 py-0.5 text-xs">
         <span
           className="min-w-0 truncate text-muted-foreground"
@@ -27,10 +69,10 @@ export function MapStationPin({ node, showUnit }: MapStationPinProps) {
         >
           {node.station.name}
         </span>
-        {node.measurement && node.sourceDocument && (
+        {node.measurement && node.measurementSourceDocument && (
           <MeasurementValue
             measurement={node.measurement}
-            sourceDocument={node.sourceDocument}
+            sourceDocument={node.measurementSourceDocument}
             showUnit={showUnit}
             className="shrink-0"
           />

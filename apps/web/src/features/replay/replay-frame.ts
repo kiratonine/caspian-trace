@@ -7,6 +7,7 @@ import type {
   ReplayStep,
 } from "@/api/contracts"
 import { replayMeasurementSummary } from "@/constants/replay"
+import { replayScenarioMatchesReference } from "@/lib/incident-reference"
 import { useReplayStore } from "@/stores/replayStore"
 import type { EvidenceLevel } from "@/types"
 
@@ -90,7 +91,9 @@ export function useReplayFrame(incidentId: string | null): ReplayFrame | null {
   const stepIndex = useReplayStore((state) => state.stepIndex)
 
   return useMemo(() => {
-    if (!scenario || scenario.incidentId !== incidentId) return null
+    if (!scenario || !replayScenarioMatchesReference(scenario, incidentId)) {
+      return null
+    }
     if (!scenario.steps[stepIndex]) return null
     return buildReplayFrame(scenario, stepIndex)
   }, [scenario, stepIndex, incidentId])

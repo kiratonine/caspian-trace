@@ -112,9 +112,23 @@ export const az = {
     measurementsTrigger: "Ölçmələr",
     objectOutsideCorridor: "sahədən kənarda",
     objectInsideCorridor: "sahənin hüdudlarında",
+    objectCorridorUnknown: "sahəyə nisbətən mövqe müəyyən edilməyib",
     objectPlacementBasis: {
       "obj-atyrau-su-arnasy":
         "Mövqe koordinatlardan deyil, Qazhidromet bülleteninin kəsim adlarından çıxarılıb («axıdılmadan 0,5 km yuxarı» və «axıdılmadan 0,5 km aşağı», səh. 22): obyektin koordinatları verilməyib.",
+    },
+    coordinateMode: {
+      verifiedLabel: "Mövqe mənbə ilə təsdiqlənib",
+      verifiedStation: "Kəsimin mövqeyi mənbə ilə təsdiqlənib",
+      verifiedObject: "Obyektin mövqeyi mənbə ilə təsdiqlənib",
+      schematicLabel: "Sxematik mövqe",
+      schematicStation: "Kəsimin sxematik mövqeyi",
+      schematicStationDetail: "Kəsimin dəqiq GPS mövqeyi təsdiqlənməyib.",
+      schematicObjectDetail:
+        "Bu, obyektin koordinatı və ya səbəb əlaqəsinin sübutu deyil.",
+      schematicDisclaimer:
+        "Sxematik mövqe — dəqiq koordinatlar təsdiqlənməyib. Xəritə fonu bu yerləşdirməni GPS məlumatına çevirmir.",
+      markerSummary: "Təsdiqlənib: {{verified}} · sxematik: {{schematic}}",
     },
   },
   units: {
@@ -279,6 +293,65 @@ export const az = {
       "Mənbələr siyahısı boşdur: sorğulamağa bir şey yoxdur, bu da məlumatların vəziyyətidir.",
     loading: "vəziyyət dəqiqləşdirilir",
     error: "mənbələrin vəziyyəti alınmadı",
+  },
+  agentFlow: {
+    title: "Agent necə işləyir",
+    seedNotice: "Demo məlumatları göstərilir; mənbə vəziyyətləri cari xarici sorğu deyil.",
+    footer: "Sİ siqnalı tapmağa və qurmağa kömək edir. Nəticə yalnız yoxlanmış məlumatlara əsaslanır.",
+    step: {
+      search: {
+        title: "İctimai məlumatların axtarışı",
+        description: "Sistem GDELT və icazəli birbaşa mənbələri yoxlayır.",
+        statusGap: "Mənbə müvəqqəti əlçatmazdır — bu, məlumat boşluğudur, hadisələrin olmaması deyil.",
+        statusAvailable: "Mənbə vəziyyəti API-dən alınıb.",
+        statusUnknown: "Mənbənin cari vəziyyəti hələ alınmayıb.",
+      },
+      provenance: {
+        title: "Mənşənin yoxlanması",
+        description: "Mənbə üçün URL, nəşriyyatçı, snapshot və SHA-256 saxlanır.",
+        summary: "Sənədlər: {{total}} · SHA-256 ilə: {{sha}} · snapshot ilə: {{snapshots}}",
+      },
+      candidate: {
+        title: "Namizədin çıxarılması",
+        description: "Sİ məkanı, hadisəni, dövrü və sitatı ayıra bilər. Namizəd təsdiqlənmiş fakt sayılmır.",
+        badge: "Yoxlama tələb olunur",
+      },
+      official: {
+        title: "Rəsmi məlumatlarla tutuşdurma",
+        description: "Sistem nəşri Qazhidromet sənədi, PDF səhifəsi və laboratoriya qiymətləri ilə tutuşdurur.",
+        summary: "Yoxlanmış ölçmələr: {{measurements}} · rəsmi sənədlər: {{documents}} · məlum səhifələr: {{pages}}",
+      },
+      analysis: {
+        title: "Yoxlanmış faktların təhlili",
+        description: "L0–L3, dəhliz, delta və conclusion investigation-core tərəfindən formalaşdırılır.",
+      },
+    },
+  },
+  investigationTrace: {
+    title: "Seçilmiş araşdırmanın yoxlanması",
+    loading: "Seçilmiş araşdırmanın məlumatları yüklənir.",
+    error: "Seçilmiş araşdırmanın izini yükləmək mümkün olmadı.",
+    stage: { signal: "İctimai siqnal", official: "Rəsmi yoxlama", measurements: "Ölçmələr", conclusion: "Deterministik nəticə" },
+    noSignal: "İctimai siqnal yoxdur.",
+    noOfficialDocument: "Rəsmi sənəd əlavə edilməyib.",
+    reportedAt: "Dərc edilib: {{value}}",
+    location: "Məkan: {{value}}",
+    phenomenon: "Hadisə: {{value}}",
+    extractionModeLabel: "Çıxarma rejimi",
+    extractionMode: { llm_verified: "Sİ namizədi; yoxlama vəziyyəti ayrıca göstərilib", verified_seed: "Yoxlanmış demo fixture; Sİ işə salınmayıb", rule: "Qayda ilə çıxarılıb" },
+    verificationLabel: "Yoxlama vəziyyəti",
+    pageUnknown: "Mənbə səhifəsi göstərilməyib.",
+    pageKnown: "Mənbə səhifəsi: {{page}}",
+    sourceStatusLabel: "Sənədin vəziyyəti",
+    sourceStatus: { verified: "yoxlanıb", unverified: "yoxlanmayıb", unavailable: "əlçatmazdır" },
+    measurementSummary: "Ölçmələr: {{total}} · təhlil üçün təsdiqlənib: {{verified}}",
+    sampledPeriods: "Nümunə dövrü və ya tarixi: {{value}}",
+    sourcePages: "Səhifə məlumdur: {{known}} · göstərilməyib: {{unknown}}",
+    units: "Vahidlər: {{value}}",
+    unknownValue: "göstərilməyib",
+    corridor: { none: "Sahənin sərhədləri müəyyən edilməyib.", open_upstream: "Sahə axın üzrə yuxarı açıqdır.", between: "Sahə iki kəsimlə məhdudlaşır." },
+    unknowns: "Məlumat boşluqları: {{count}}",
+    conclusionDisclaimer: "Araşdırmanın nəticəsi bunu göstərirsə, mənbə müəyyən edilməyib. Deterministik nəticə Sİ-yə aid edilmir.",
   },
   stubs: {
     source: {

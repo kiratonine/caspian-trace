@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import type { IncidentSummary } from "@/api/contracts"
 import { EvidenceLevelBadge } from "@/components/common"
 import { useFormat } from "@/i18n/use-format"
+import { sameIncidentReference } from "@/lib/incident-reference"
 import { cn } from "@/lib/utils"
 import { hasComparablePeriods } from "./comparison-model"
 
@@ -30,7 +31,10 @@ export function PeriodSwitcher({
     <nav aria-label={t("comparison.switcherLabel")}>
       <ul className="flex flex-wrap gap-2">
         {periods.map((period) => {
-          const selected = period.id === selectedIncidentId
+          const selected = sameIncidentReference(
+            period.id,
+            selectedIncidentId
+          )
           return (
             <li key={period.id}>
               <button

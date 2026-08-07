@@ -139,12 +139,24 @@ export const CandidateObjectSchema = z
     name: nonEmptyText,
     category: nonEmptyText,
     location: LocationSchema.nullable(),
+    locationSourceDocumentId: nonEmptyId.nullable().default(null),
     waterBody: nonEmptyText.nullable(),
     riverOrder: z.number().int().nonnegative().nullable(),
     evidenceDocumentIds: z.array(nonEmptyId).min(1),
     completeness: z.enum(['confirmed', 'partial']),
   })
   .strict()
+  .refine(
+    ({ location, locationSourceDocumentId }) =>
+      location === null
+        ? locationSourceDocumentId === null
+        : locationSourceDocumentId !== null,
+    {
+      message:
+        'locationSourceDocumentId must be present exactly when location is present',
+      path: ['locationSourceDocumentId'],
+    },
+  )
 
 export const EvidenceStatementSchema = z
   .object({

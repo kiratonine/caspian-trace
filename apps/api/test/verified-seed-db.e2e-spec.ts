@@ -98,7 +98,7 @@ describe('verified seed against disposable PostgreSQL', () => {
     )
     expect(summary).toEqual({
       documents: { created: 2, unchanged: 0, promoted: 0 },
-      stations: { created: 7, unchanged: 0 },
+      stations: { created: 7, updated: 0, unchanged: 0 },
       relations: {
         created: 3,
         unchanged: 0,
@@ -145,13 +145,25 @@ describe('verified seed against disposable PostgreSQL', () => {
     expect(stations).toHaveLength(7)
     expect(
       stations.every(
-        ({ id, latitude, longitude, riverOrder }) =>
+        ({ id, latitude, longitude }) =>
           id.startsWith(TEST_PREFIX) &&
           latitude === null &&
-          longitude === null &&
-          riverOrder === null,
+          longitude === null,
       ),
     ).toBe(true)
+    expect(
+      Object.fromEntries(
+        stations.map(({ id, riverOrder }) => [
+          id.slice(TEST_PREFIX.length),
+          riverOrder,
+        ]),
+      ),
+    ).toMatchObject({
+      'st-zhaiyk-1km-above-atyrau': 0,
+      'st-asa-0-5km-above': 1,
+      'st-asa-0-5km-below': 2,
+      'st-zhaiyk-1km-below-atyrau': 3,
+    })
 
     const documents = await prisma.sourceDocument.findMany({
       where: { id: { startsWith: TEST_PREFIX } },
@@ -327,7 +339,11 @@ describe('verified seed against disposable PostgreSQL', () => {
         { testOnlyIdPrefix: TEST_PREFIX },
       )
       expect(summary.documents).toEqual({ created: 0, unchanged: 2, promoted: 0 })
-      expect(summary.stations).toEqual({ created: 0, unchanged: 7 })
+      expect(summary.stations).toEqual({
+        created: 0,
+        updated: 0,
+        unchanged: 7,
+      })
       expect(summary.relations).toMatchObject({
         created: 0,
         unchanged: 3,
@@ -352,6 +368,61 @@ describe('verified seed against disposable PostgreSQL', () => {
       })
     } finally {
       removeVerifiedData(reversedDirectory)
+    }
+  })
+
+  it('updates only derived river order and preserves coordinate provenance', async () => {
+    const stationId = `${TEST_PREFIX}st-zhaiyk-1km-above-atyrau`
+    const locationSourceDocumentId = `${TEST_PREFIX}doc-kazhydromet-2025-09`
+    await prisma.station.update({
+      where: { id: stationId },
+      data: {
+        latitude: '47.123456',
+        longitude: '51.987654',
+        locationSourceDocumentId,
+        riverOrder: 99,
+        metadata: { provenance: 'external-coordinate-owner' },
+      },
+    })
+
+    try {
+      const summary = await seedVerifiedData(
+        prisma,
+        await loadVerifiedData(completedDirectory),
+        { testOnlyIdPrefix: TEST_PREFIX },
+      )
+      expect(summary.stations).toEqual({
+        created: 0,
+        updated: 1,
+        unchanged: 6,
+      })
+      const station = await prisma.station.findUniqueOrThrow({
+        where: { id: stationId },
+        select: {
+          latitude: true,
+          longitude: true,
+          locationSourceDocumentId: true,
+          riverOrder: true,
+          metadata: true,
+        },
+      })
+      expect(station).toMatchObject({
+        locationSourceDocumentId,
+        riverOrder: 0,
+        metadata: { provenance: 'external-coordinate-owner' },
+      })
+      expect(station.latitude?.toString()).toBe('47.123456')
+      expect(station.longitude?.toString()).toBe('51.987654')
+    } finally {
+      await prisma.station.update({
+        where: { id: stationId },
+        data: {
+          latitude: null,
+          longitude: null,
+          locationSourceDocumentId: null,
+          metadata: { provenance: 'verified_manifest' },
+        },
+      })
     }
   })
 

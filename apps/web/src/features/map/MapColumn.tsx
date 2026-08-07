@@ -86,6 +86,22 @@ export function MapColumn() {
           onSelect={selectPeriod}
         />
       )}
+      {mapModel.schematicMarkerCount > 0 && (
+        <div
+          role="note"
+          className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border px-3 py-2 text-xs"
+        >
+          <p className="text-pretty text-muted-foreground">
+            {t("map.coordinateMode.schematicDisclaimer")}
+          </p>
+          <p className="shrink-0 tabular-nums text-muted-foreground">
+            {t("map.coordinateMode.markerSummary", {
+              verified: mapModel.verifiedMarkerCount,
+              schematic: mapModel.schematicMarkerCount,
+            })}
+          </p>
+        </div>
+      )}
       <MapLibreMap model={mapModel} />
     </section>
   )

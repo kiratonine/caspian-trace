@@ -114,9 +114,23 @@ export const fa = {
     measurementsTrigger: "اندازه‌گیری‌ها",
     objectOutsideCorridor: "بیرون از بازه",
     objectInsideCorridor: "درون مرزهای بازه",
+    objectCorridorUnknown: "موقعیت نسبت به بازه تعیین نشده است",
     objectPlacementBasis: {
       "obj-atyrau-su-arnasy":
         "موقعیت نه از مختصات، بلکه از نام ایستگاه‌ها در بولتن قازهیدرومت استنتاج شده است («0,5 کیلومتر بالاتر از تخلیه» و «0,5 کیلومتر پایین‌تر از تخلیه»، صفحهٔ 22): مختصات این تأسیسات ارائه نشده است.",
+    },
+    coordinateMode: {
+      verifiedLabel: "موقعیت با منبع تأیید شده است",
+      verifiedStation: "موقعیت ایستگاه با منبع تأیید شده است",
+      verifiedObject: "موقعیت تأسیسات با منبع تأیید شده است",
+      schematicLabel: "موقعیت شماتیک",
+      schematicStation: "موقعیت شماتیک ایستگاه",
+      schematicStationDetail: "موقعیت دقیق GPS ایستگاه تأیید نشده است.",
+      schematicObjectDetail:
+        "این مختصات تأسیسات یا مدرک رابطهٔ علّی نیست.",
+      schematicDisclaimer:
+        "موقعیت شماتیک است و مختصات دقیق تأیید نشده‌اند. زمینهٔ نقشه این جای‌گذاری را به دادهٔ GPS تبدیل نمی‌کند.",
+      markerSummary: "تأییدشده: {{verified}} · شماتیک: {{schematic}}",
     },
   },
   units: {
@@ -283,6 +297,65 @@ export const fa = {
       "فهرست منابع خالی است: چیزی برای فراخوانی نیست، و این هم وضعیتی از داده‌هاست.",
     loading: "وضعیت در حال بررسی است",
     error: "وضعیت منابع دریافت نشد",
+  },
+  agentFlow: {
+    title: "عامل چگونه کار می‌کند",
+    seedNotice: "داده‌های نمایشی نشان داده می‌شوند؛ وضعیت منابع، پیمایش زندهٔ بیرونی نیست.",
+    footer: "هوش مصنوعی به یافتن و ساختاربندی سیگنال کمک می‌کند. نتیجه فقط از داده‌های بررسی‌شده ساخته می‌شود.",
+    step: {
+      search: {
+        title: "جست‌وجوی گزارش‌های عمومی",
+        description: "سامانه GDELT و منابع مستقیم مجاز را بررسی می‌کند.",
+        statusGap: "منبع موقتاً در دسترس نیست؛ این شکاف داده است، نه نبود رویداد.",
+        statusAvailable: "وضعیت منابع از API دریافت شد.",
+        statusUnknown: "وضعیت کنونی منابع هنوز دریافت نشده است.",
+      },
+      provenance: {
+        title: "بررسی منشأ",
+        description: "برای منبع، URL، ناشر، snapshot و SHA-256 نگهداری می‌شود.",
+        summary: "اسناد: {{total}} · دارای SHA-256: {{sha}} · دارای snapshot: {{snapshots}}",
+      },
+      candidate: {
+        title: "استخراج نامزد",
+        description: "هوش مصنوعی می‌تواند مکان، پدیده، دوره و نقل‌قول را استخراج کند. نامزد، واقعیت تأییدشده نیست.",
+        badge: "نیازمند بررسی",
+      },
+      official: {
+        title: "تطبیق با داده‌های رسمی",
+        description: "سامانه گزارش را با سند قازهیدرومت، صفحهٔ PDF و مقادیر آزمایشگاهی تطبیق می‌دهد.",
+        summary: "اندازه‌گیری‌های بررسی‌شده: {{measurements}} · اسناد رسمی: {{documents}} · صفحات معلوم: {{pages}}",
+      },
+      analysis: {
+        title: "تحلیل واقعیت‌های بررسی‌شده",
+        description: "L0–L3، دالان، delta و conclusion را investigation-core تولید می‌کند.",
+      },
+    },
+  },
+  investigationTrace: {
+    title: "بررسی پروندهٔ انتخاب‌شده",
+    loading: "داده‌های پروندهٔ انتخاب‌شده در حال بارگیری است.",
+    error: "بارگیری ردّ بررسی پروندهٔ انتخاب‌شده ممکن نشد.",
+    stage: { signal: "سیگنال عمومی", official: "بررسی رسمی", measurements: "اندازه‌گیری‌ها", conclusion: "نتیجهٔ قطعی‌گرا" },
+    noSignal: "سیگنال عمومی وجود ندارد.",
+    noOfficialDocument: "سند رسمی پیوست نشده است.",
+    reportedAt: "منتشرشده: {{value}}",
+    location: "مکان: {{value}}",
+    phenomenon: "پدیده: {{value}}",
+    extractionModeLabel: "حالت استخراج",
+    extractionMode: { llm_verified: "نامزد هوش مصنوعی؛ وضعیت بررسی جداگانه نشان داده می‌شود", verified_seed: "fixture نمایشی بررسی‌شده؛ هوش مصنوعی اجرا نشده است", rule: "با قاعده استخراج شده" },
+    verificationLabel: "وضعیت بررسی",
+    pageUnknown: "صفحهٔ منبع مشخص نشده است.",
+    pageKnown: "صفحهٔ منبع: {{page}}",
+    sourceStatusLabel: "وضعیت سند",
+    sourceStatus: { verified: "بررسی‌شده", unverified: "بررسی‌نشده", unavailable: "دردسترس نیست" },
+    measurementSummary: "اندازه‌گیری‌ها: {{total}} · تأییدشده برای تحلیل: {{verified}}",
+    sampledPeriods: "دوره یا تاریخ نمونه‌برداری: {{value}}",
+    sourcePages: "صفحه معلوم: {{known}} · نامشخص: {{unknown}}",
+    units: "واحدها: {{value}}",
+    unknownValue: "مشخص نشده",
+    corridor: { none: "مرزهای بازه تعیین نشده‌اند.", open_upstream: "بازه به سمت بالادست باز است.", between: "بازه میان دو ایستگاه محدود شده است." },
+    unknowns: "شکاف‌های داده: {{count}}",
+    conclusionDisclaimer: "اگر نتیجهٔ پرونده چنین می‌گوید، منشأ تعیین نشده است. نتیجهٔ قطعی‌گرا به هوش مصنوعی نسبت داده نمی‌شود.",
   },
   stubs: {
     source: {

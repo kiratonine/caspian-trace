@@ -11,6 +11,7 @@ import { Prisma } from '../../src/generated/prisma/client'
 import { relationVerificationStatus } from './verified-data.policy'
 import { schemaError } from './verified-seed.errors'
 import type { LoadedVerifiedData } from './verified-seed.types'
+import { deriveStationRiverOrder } from './station-river-order'
 
 interface DocumentCatalogEntry {
   title: string
@@ -61,7 +62,7 @@ export interface MappedStation {
   latitude: null
   longitude: null
   locationSourceDocumentId: null
-  riverOrder: null
+  riverOrder: number | null
   metadata: Prisma.InputJsonObject
 }
 
@@ -267,6 +268,11 @@ export function mapVerifiedData(
       verificationStatus,
       notes: null,
     })
+  }
+
+  const riverOrderByStationId = deriveStationRiverOrder(stations, relations)
+  for (const station of stations) {
+    station.riverOrder = riverOrderByStationId.get(station.id) ?? null
   }
 
   return { documents, stations, measurements, relations, relationEvidence }

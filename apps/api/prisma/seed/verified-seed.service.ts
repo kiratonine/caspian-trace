@@ -31,7 +31,7 @@ export async function seedVerifiedData(
   return prisma.$transaction(
     async (transaction) => {
       const documents = emptySummary()
-      const stations = { created: 0, unchanged: 0 }
+      const stations = { created: 0, updated: 0, unchanged: 0 }
       const relations = {
         ...emptySummary(),
         evidenceCreated: 0,
@@ -182,11 +182,17 @@ async function seedDocument(
 async function seedStation(
   transaction: Prisma.TransactionClient,
   expected: MappedStation,
-  summary: { created: number; unchanged: number },
+  summary: { created: number; updated: number; unchanged: number },
 ): Promise<void> {
   const existing = await transaction.station.findUnique({
     where: { id: expected.id },
-    select: { id: true, name: true, waterBody: true, region: true },
+    select: {
+      id: true,
+      name: true,
+      waterBody: true,
+      region: true,
+      riverOrder: true,
+    },
   })
   if (!existing) {
     await transaction.station.create({ data: expected })
@@ -201,6 +207,14 @@ async function seedStation(
   }
   assertEqual(existing.waterBody, expected.waterBody, 'station water body')
   assertEqual(existing.region, expected.region, 'station region')
+  if (existing.riverOrder !== expected.riverOrder) {
+    await transaction.station.update({
+      where: { id: expected.id },
+      data: { riverOrder: expected.riverOrder },
+    })
+    summary.updated += 1
+    return
+  }
   summary.unchanged += 1
 }
 

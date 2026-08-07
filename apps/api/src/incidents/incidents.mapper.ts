@@ -177,6 +177,7 @@ function mapCandidateObject(row: DetailCandidateRow): CandidateObject {
     name: requireText(row.name),
     category: requireText(row.objectType),
     location: mapLocation(row.latitude, row.longitude),
+    locationSourceDocumentId: row.geometrySourceDocumentId,
     waterBody: metadataString(row.metadata, 'waterBody'),
     riverOrder: metadataNonnegativeInteger(row.metadata, 'riverOrder'),
     evidenceDocumentIds,
@@ -241,6 +242,12 @@ function collectSourceDocuments(row: IncidentDetailRow): SourceDocument[] {
   }
   for (const { measurement } of row.measurements) {
     byId.set(measurement.sourceDocument.id, measurement.sourceDocument)
+    if (measurement.station.locationSourceDocument) {
+      byId.set(
+        measurement.station.locationSourceDocument.id,
+        measurement.station.locationSourceDocument,
+      )
+    }
   }
   for (const statement of row.evidenceStatements) {
     for (const { sourceDocument } of statement.sources) {
@@ -248,9 +255,27 @@ function collectSourceDocuments(row: IncidentDetailRow): SourceDocument[] {
     }
   }
   for (const { candidateObject } of row.candidateObjects) {
+    if (candidateObject.geometrySourceDocument) {
+      byId.set(
+        candidateObject.geometrySourceDocument.id,
+        candidateObject.geometrySourceDocument,
+      )
+    }
     for (const { sourceDocument } of candidateObject.sources) {
       byId.set(sourceDocument.id, sourceDocument)
     }
+  }
+  if (row.upstreamStation?.locationSourceDocument) {
+    byId.set(
+      row.upstreamStation.locationSourceDocument.id,
+      row.upstreamStation.locationSourceDocument,
+    )
+  }
+  if (row.downstreamStation?.locationSourceDocument) {
+    byId.set(
+      row.downstreamStation.locationSourceDocument.id,
+      row.downstreamStation.locationSourceDocument,
+    )
   }
   return [...byId.values()]
     .sort((left, right) => compareText(left.id, right.id))

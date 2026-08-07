@@ -12,6 +12,7 @@ import {
   replayStepAriaLabel,
 } from "@/constants/replay"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
+import { replayScenarioMatchesReference } from "@/lib/incident-reference"
 import { cn } from "@/lib/utils"
 import { useReplayStore } from "@/stores/replayStore"
 import { describeReplayStep, useReplayFrame } from "./replay-frame"
@@ -75,7 +76,10 @@ export function ReplayTimeline() {
   // Реплей не переживает смену выбранного события: сценарий другого события
   // на экране нового — рассинхрон всех трёх колонок.
   useEffect(() => {
-    if (activeScenario && activeScenario.incidentId !== selectedIncidentId) {
+    if (
+      activeScenario &&
+      !replayScenarioMatchesReference(activeScenario, selectedIncidentId)
+    ) {
       exit()
     }
   }, [activeScenario, selectedIncidentId, exit])

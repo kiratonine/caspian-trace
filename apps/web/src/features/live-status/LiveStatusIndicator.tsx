@@ -85,10 +85,11 @@ export function LiveStatusIndicator() {
               : SOURCE_HEALTH_META[summary.worstStatus].mark
           }
         />
-        <span className="hidden sm:inline">{t("liveStatus.triggerLabel")}</span>
-        {/* Сводка «недоступны: N из M» убрана из шапки по решению владельца
-            продукта 07.08.2026. Полный список состояний источников остался
-            в поповере (SourceStatusList) и в aria-label триггера. */}
+        {/* Текст «Источники» и сводка «недоступны: N из M» убраны из шапки
+            по решению владельца продукта 07.08.2026: шапка должна быть
+            чистой. Триггером остаётся сама метка состояния — поповер с
+            состоянием источников и агентским флоу открывается по ней.
+            Название и сводка сохранены в aria-label. */}
         {IS_SEED_MODE && (
           <Badge variant="outline" className="font-normal">
             {t("stubs.badgeLabel")}

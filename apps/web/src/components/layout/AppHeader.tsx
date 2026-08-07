@@ -1,6 +1,10 @@
 import { useTranslation } from "react-i18next"
 
-import { LiveStatusIndicator } from "@/features/live-status/LiveStatusIndicator"
+// ВРЕМЕННО СКРЫТО (владелец продукта, 07.08.2026): индикатор источников убран
+// из шапки до отдельного распоряжения. Сами компоненты живы и работают —
+// удалён только вызов, поэтому возврат = раскомментировать эту строку и вызов
+// ниже. Живьём индикатор по-прежнему можно смотреть в /dev/live-status.
+// import { LiveStatusIndicator } from "@/features/live-status/LiveStatusIndicator"
 import { LanguageSwitcher } from "./LanguageSwitcher"
 
 export function AppHeader() {
@@ -16,8 +20,9 @@ export function AppHeader() {
         {t("app.name")}
       </h1>
       {/* Состояние источников и режим данных — свойство всего экрана,
-          поэтому живут в шапке, а не в колонке (этап F6). */}
-      <LiveStatusIndicator />
+          поэтому живут в шапке, а не в колонке (этап F6).
+          Возврат: раскомментировать строку ниже и импорт вверху файла. */}
+      {/* <LiveStatusIndicator /> */}
       <div className="ml-auto">
         <LanguageSwitcher />
       </div>

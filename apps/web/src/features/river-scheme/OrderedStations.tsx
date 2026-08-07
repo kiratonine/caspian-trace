@@ -6,10 +6,20 @@ type OrderedStationsProps = {
   /** Уже отсортированы по riverOrder: первый — выше всех по течению. */
   entries: StationSchemeEntry[]
   corridor: SchemeModel["corridor"]
+  showUnit?: boolean
 }
 
-/** Линия реки: вертикаль через центры узлов, лента коридора между границами. */
-export function OrderedStations({ entries, corridor }: OrderedStationsProps) {
+/**
+ * Упорядоченные створы: сверху вниз по течению, лента коридора между границами.
+ * Вертикальной линии через узлы больше нет (решение сессии 16, минимализм):
+ * подтверждённый порядок читается из подзаголовка схемы и из оговорки у группы
+ * без ранжирования, а лишняя графика на проекторе только шумела.
+ */
+export function OrderedStations({
+  entries,
+  corridor,
+  showUnit = true,
+}: OrderedStationsProps) {
   const downstreamIndex = corridor
     ? entries.findIndex((e) => e.station.id === corridor.downstreamStationId)
     : -1
@@ -26,16 +36,11 @@ export function OrderedStations({ entries, corridor }: OrderedStationsProps) {
     upstreamIndex <= downstreamIndex
 
   const row = (entry: StationSchemeEntry) => (
-    <StationNode key={entry.station.id} entry={entry} />
+    <StationNode key={entry.station.id} entry={entry} showUnit={showUnit} />
   )
 
   return (
     <div className="relative">
-      {/* Узлы size-2.5 → центр в 5px от края ряда; линия w-px по центру. */}
-      <span
-        aria-hidden
-        className="left-1.125 absolute inset-y-4 w-px bg-border"
-      />
       {hasBand ? (
         <>
           {entries.slice(0, upstreamIndex).map(row)}

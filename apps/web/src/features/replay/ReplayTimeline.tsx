@@ -1,21 +1,14 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Pause, Play, Square } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import { replayScenarioQueryOptions } from "@/api/queries"
 import { EvidenceLevelBadge } from "@/components/common"
 import { Button } from "@/components/ui/button"
 import {
-  REPLAY_EXIT_LABEL,
-  REPLAY_KEYBOARD_HINT,
-  REPLAY_PAUSE_LABEL,
-  REPLAY_PLAY_LABEL,
-  REPLAY_RESTART_LABEL,
-  REPLAY_RESUME_LABEL,
   REPLAY_STEP_OFFSETS_MS,
-  REPLAY_STEP_TYPE_LABELS,
   REPLAY_STEP_TYPE_ORDER,
-  REPLAY_UNAVAILABLE,
   replayStepAriaLabel,
 } from "@/constants/replay"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
@@ -44,7 +37,18 @@ function labelAlignment(index: number, count: number) {
   return "-translate-x-1/2 text-center"
 }
 
+type DragState = {
+  pointerId: number
+  /** Реплей играл до захвата — после отпускания продолжаем с нового шага. */
+  resume: boolean
+  /** Последний применённый жестом шаг: кадр перерисуется позже, чем придёт move. */
+  lastIndex: number
+  /** Шаг менялся перетаскиванием: следующий click — хвост того же жеста. */
+  moved: boolean
+}
+
 export function ReplayTimeline() {
+  const { t } = useTranslation()
   const { selectedIncidentId } = useSelectedIncidentDetail()
   const scenarioQuery = useQuery({
     ...replayScenarioQueryOptions(selectedIncidentId ?? ""),
@@ -63,6 +67,10 @@ export function ReplayTimeline() {
   useReplayPlayback()
   const positionMs = useReplayPositionMs()
   const frame = useReplayFrame(selectedIncidentId)
+
+  const trackRef = useRef<HTMLDivElement>(null)
+  const dragRef = useRef<DragState | null>(null)
+  const suppressMarkerClickRef = useRef(false)
 
   // Реплей не переживает смену выбранного события: сценарий другого события
   // на экране нового — рассинхрон всех трёх колонок.
@@ -122,19 +130,19 @@ export function ReplayTimeline() {
   const isPlaying = frame !== null && status === "playing"
   const canReplay = availableScenario !== null || activeScenario !== null
   const playLabel = !activeScenario
-    ? REPLAY_PLAY_LABEL
+    ? t("replay.playLabel")
     : status === "playing"
-      ? REPLAY_PAUSE_LABEL
+      ? t("replay.pauseLabel")
       : status === "finished"
-        ? REPLAY_RESTART_LABEL
-        : REPLAY_RESUME_LABEL
+        ? t("replay.restartLabel")
+        : t("replay.resumeLabel")
 
   const steps =
     (activeScenario ?? availableScenario)?.steps ?? PLACEHOLDER_STEPS
   const totalMs = steps[steps.length - 1]?.offsetMs || 1
   const progress =
     positionMs === null ? null : Math.min(positionMs / totalMs, 1)
-  const stepSummary = frame ? describeReplayStep(frame.step) : null
+  const stepSummary = frame ? describeReplayStep(frame.step, t) : null
 
   const togglePlayback = () => {
     if (!activeScenario) {
@@ -148,19 +156,95 @@ export function ReplayTimeline() {
     }
   }
 
-  const handleMarkerClick = (index: number) => {
+  const goToStep = (index: number) => {
     if (activeScenario) {
       seekToStep(index)
     } else if (availableScenario) {
-      // Клик по маркеру без запущенного реплея — старт на этом шаге без
-      // воспроизведения: ручной режим для демо.
+      // Шаг выбран без запущенного реплея — старт на нём без воспроизведения:
+      // ручной режим для демо.
       start(availableScenario, { stepIndex: index, autoplay: false })
+    }
+  }
+
+  const handleMarkerClick = (index: number) => {
+    // Клик, завершающий перетаскивание, шаг уже не меняет: иначе отпускание
+    // над чужим маркером отбрасывало бы реплей назад.
+    if (suppressMarkerClickRef.current) {
+      suppressMarkerClickRef.current = false
+      return
+    }
+    goToStep(index)
+  }
+
+  // Плейхед тянется по шкале с прилипанием к ближайшему шагу: между шагами
+  // показывать нечего — шкала это хронология доказательств, а не прогресс-бар.
+  const stepIndexFromClientX = (clientX: number) => {
+    const rect = trackRef.current?.getBoundingClientRect()
+    if (!rect || rect.width === 0) return null
+    const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1)
+    const positionMs = ratio * totalMs
+    let nearestIndex = 0
+    let nearestDistance = Number.POSITIVE_INFINITY
+    steps.forEach((step, index) => {
+      const distance = Math.abs(step.offsetMs - positionMs)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearestIndex = index
+      }
+    })
+    return nearestIndex
+  }
+
+  const handleTrackPointerDown = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    if (!canReplay || event.button !== 0) return
+    const index = stepIndexFromClientX(event.clientX)
+    if (index === null) return
+    dragRef.current = {
+      pointerId: event.pointerId,
+      resume: status === "playing",
+      lastIndex: index,
+      moved: false,
+    }
+    suppressMarkerClickRef.current = false
+    event.currentTarget.setPointerCapture(event.pointerId)
+    // На время жеста часы стоят: иначе таймер шага продолжал бы двигать
+    // реплей под курсором и спорить с рукой.
+    if (status === "playing") pause()
+    goToStep(index)
+  }
+
+  const handleTrackPointerMove = (
+    event: React.PointerEvent<HTMLDivElement>
+  ) => {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const index = stepIndexFromClientX(event.clientX)
+    if (index === null || index === drag.lastIndex) return
+    drag.lastIndex = index
+    drag.moved = true
+    goToStep(index)
+  }
+
+  const handleTrackPointerEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    dragRef.current = null
+    suppressMarkerClickRef.current = drag.moved
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    // Реплей, дотянутый до последнего шага, повтором с начала не отвечает:
+    // play() на finished — это «запустить заново», а руку просили о другом.
+    if (drag.resume && useReplayStore.getState().status !== "finished") {
+      play()
     }
   }
 
   return (
     <footer
-      aria-label="Шкала реплея"
+      aria-label={t("a11y.replayTimeline")}
       // min-w-0: как строка грида футер иначе получает минимальную ширину по
       // содержимому, и длинный текст шага растягивает весь экран вбок.
       className="flex min-w-0 items-center gap-4 border-t px-4 py-2.5"
@@ -172,7 +256,7 @@ export function ReplayTimeline() {
           disabled={!canReplay}
           onClick={togglePlayback}
           aria-label={playLabel}
-          title={playLabel}
+          title={`${playLabel} · ${t("replay.keyboardHint")}`}
         >
           {isPlaying ? <Pause /> : <Play />}
         </Button>
@@ -181,8 +265,8 @@ export function ReplayTimeline() {
           size="icon"
           disabled={!activeScenario}
           onClick={exit}
-          aria-label={REPLAY_EXIT_LABEL}
-          title={REPLAY_EXIT_LABEL}
+          aria-label={t("replay.exitLabel")}
+          title={t("replay.exitLabel")}
         >
           <Square />
         </Button>
@@ -198,7 +282,7 @@ export function ReplayTimeline() {
           {frame ? (
             <>
               <span className="font-medium text-foreground">
-                {REPLAY_STEP_TYPE_LABELS[frame.step.type]}
+                {t(`replay.stepType.${frame.step.type}`)}
               </span>
               <EvidenceLevelBadge
                 level={frame.evidenceLevel}
@@ -208,12 +292,24 @@ export function ReplayTimeline() {
               {stepSummary}
             </>
           ) : scenarioQuery.isError ? (
-            REPLAY_UNAVAILABLE
+            t("replay.unavailable")
           ) : (
-            REPLAY_KEYBOARD_HINT
+            t("replay.playLabel")
           )}
         </p>
-        <div className="relative h-9 min-w-0">
+        {/* touch-none: на планшете вертикальный свайп по шкале иначе уводит
+            страницу, а не ведёт плейхед. */}
+        <div
+          ref={trackRef}
+          onPointerDown={handleTrackPointerDown}
+          onPointerMove={handleTrackPointerMove}
+          onPointerUp={handleTrackPointerEnd}
+          onPointerCancel={handleTrackPointerEnd}
+          className={cn(
+            "relative h-9 min-w-0 touch-none",
+            canReplay && "cursor-pointer"
+          )}
+        >
           <div className="absolute inset-x-0 top-2.25 h-px bg-border" />
           {progress !== null && (
             <>
@@ -231,7 +327,7 @@ export function ReplayTimeline() {
           {steps.map((step, index) => {
             const reached = frame !== null && index <= frame.stepIndex
             const isCurrent = frame !== null && index === frame.stepIndex
-            const label = REPLAY_STEP_TYPE_LABELS[step.type]
+            const label = t(`replay.stepType.${step.type}`)
             return (
               <div
                 key={step.id}
@@ -242,8 +338,9 @@ export function ReplayTimeline() {
                   type="button"
                   disabled={!canReplay}
                   onClick={() => handleMarkerClick(index)}
-                  aria-label={replayStepAriaLabel(label)}
+                  aria-label={replayStepAriaLabel(label, t)}
                   aria-current={isCurrent ? "step" : undefined}
+                  title={label}
                   className="absolute top-2.25 -translate-x-1/2 -translate-y-1/2 rounded-full p-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/60 disabled:cursor-default"
                 >
                   <span
@@ -254,15 +351,20 @@ export function ReplayTimeline() {
                     )}
                   />
                 </button>
-                <span
-                  className={cn(
-                    "absolute top-5 block w-max text-[10px] leading-tight text-muted-foreground",
-                    labelAlignment(index, steps.length),
-                    isCurrent && "font-medium text-foreground"
-                  )}
-                >
-                  {label}
-                </span>
+                {/* Подпись только у текущего шага: шесть подписей сразу давали
+                    два одинаковых «Применение правила» подряд (в сценарии по
+                    шагу inference на каждое правило). Названия остальных
+                    доступны по наведению и скринридеру. */}
+                {isCurrent && (
+                  <span
+                    className={cn(
+                      "absolute top-5 block w-max text-[10px] leading-tight font-medium text-foreground",
+                      labelAlignment(index, steps.length)
+                    )}
+                  >
+                    {label}
+                  </span>
+                )}
               </div>
             )
           })}

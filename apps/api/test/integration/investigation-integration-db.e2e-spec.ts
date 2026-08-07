@@ -81,6 +81,7 @@ describe('investigation persistence (disposable PostgreSQL e2e)', () => {
 
   it('fails closed when a scoped database record is missing', async () => {
     const incidentId = `${prefix}missing-scoped-record`
+    const stationId = `${prefix}station-that-does-not-exist`
 
     await prisma.incident.create({
       data: {
@@ -89,10 +90,22 @@ describe('investigation persistence (disposable PostgreSQL e2e)', () => {
         region: 'ATYRAU',
         indicator: 'нефтепродукты',
         metadata: {
-          stationIds: [`${prefix}station-that-does-not-exist`],
+          stationIds: [stationId],
           stationRelationIds: [],
           measurementIds: [],
           candidateObjectIds: [],
+          sourceDocumentIds: [],
+          runtimeBootstrap: {
+            stationFacts: [{
+              id: stationId,
+              name: 'Missing integration station',
+              waterBody: 'Integration water body',
+            }],
+            stationRelationFacts: [],
+            candidateObjectFacts: [],
+            sourceDocumentFacts: [],
+            measurementFacts: [],
+          },
         },
       },
     })
@@ -101,6 +114,7 @@ describe('investigation persistence (disposable PostgreSQL e2e)', () => {
   })
 
   it('persists idempotent versions, repeated codes, sort order and candidate evidence', async () => {
+    await persistRuntimeBootstrapFoundation(prisma, input)
     const first = await repository.saveVersioned(input.incident.id, input, result)
     firstVersionId = first.id
     const repeated = await repository.saveVersioned(input.incident.id, input, result)
@@ -153,7 +167,12 @@ describe('investigation persistence (disposable PostgreSQL e2e)', () => {
     })
     await prisma.measurement.update({
       where: { id: measurementId },
-      data: { metadata: { externalOwner: 'retained' } },
+      data: {
+        metadata: {
+          sourcePage: input.measurements[0]!.sourcePage,
+          externalOwner: 'retained',
+        },
+      },
     })
     const changed = { ...result, rulesetVersion: `${result.rulesetVersion}-integration` }
     const second = await repository.saveVersioned(input.incident.id, input, changed)
@@ -172,11 +191,17 @@ describe('investigation persistence (disposable PostgreSQL e2e)', () => {
     await expect(prisma.measurement.findUniqueOrThrow({
       where: { id: measurementId },
       select: { metadata: true },
-    })).resolves.toEqual({ metadata: { externalOwner: 'retained' } })
+    })).resolves.toEqual({
+      metadata: {
+        sourcePage: input.measurements[0]!.sourcePage,
+        externalOwner: 'retained',
+      },
+    })
   })
 
   it('loads normalized provenance and exposes a contract-valid evidence graph snapshot', async () => {
     const loaded = await repository.loadInput(input.incident.id)
+    expect(loaded?.stations).toEqual(input.stations)
     expect(loaded?.stationRelations).toHaveLength(input.stationRelations.length)
     expect(loaded?.stationRelations.every(({ sourceDocumentId }) => sourceDocumentId.startsWith(prefix))).toBe(true)
     const stored = await repository.findCurrent(input.incident.id)
@@ -219,6 +244,116 @@ function prefixInput(input: InvestigationInput, prefix: string): InvestigationIn
       url: new URL(`/integration/${id(source.id)}`, source.url).toString(),
     })),
   }
+}
+
+async function persistRuntimeBootstrapFoundation(
+  prisma: PrismaService,
+  input: InvestigationInput,
+): Promise<void> {
+  for (const source of input.sourceDocuments) {
+    await prisma.sourceDocument.create({
+      data: {
+        id: source.id,
+        originalUrl: source.url,
+        canonicalUrl: source.url,
+        publisher: source.publisher,
+        title: source.title,
+        sourceType: source.official ? 'official' : 'media',
+        mediaType: source.contentType,
+        publishedAt: source.publishedAt === null ? null : new Date(source.publishedAt),
+        fetchedAt: source.fetchedAt === null ? null : new Date(source.fetchedAt),
+        sha256: source.sha256,
+        cachePath: source.cachePath,
+        status: source.status.toUpperCase() as 'VERIFIED' | 'UNVERIFIED' | 'UNAVAILABLE',
+        extractionMetadata: {
+          official: source.official,
+          verified: source.verified,
+        },
+      },
+    })
+  }
+
+  for (const station of input.stations) {
+    await prisma.station.create({
+      data: {
+        id: station.id,
+        name: station.name,
+        waterBody: station.waterBody,
+        region: input.incident.region.toUpperCase() as 'ATYRAU' | 'MANGYSTAU',
+      },
+    })
+  }
+
+  for (const relation of input.stationRelations) {
+    await prisma.stationRelation.create({
+      data: {
+        id: relation.id,
+        fromStationId: relation.upstreamStationId,
+        toStationId: relation.downstreamStationId,
+        kind: 'UPSTREAM_OF',
+        sourceDocumentId: relation.sourceDocumentId,
+        verificationStatus: relation.verified ? 'OFFICIAL' : 'UNVERIFIED',
+        notes: relation.basis,
+        metadata: { comparisonPair: relation.comparisonPair },
+      },
+    })
+    await prisma.stationRelationEvidence.create({
+      data: {
+        id: relation.id,
+        stationRelationId: relation.id,
+        sourceDocumentId: relation.sourceDocumentId,
+        sourcePage: relation.provenance.sourcePage,
+        basis: relationEvidenceBasis(relation.basis),
+        sourceExcerpt: relation.provenance.sourceExcerpt,
+        checkedBy: ['integration-e2e-reviewer'],
+        checkedAt: '2026-08-07',
+        verificationStatus: relation.verified ? 'OFFICIAL' : 'UNVERIFIED',
+      },
+    })
+  }
+
+  await prisma.incident.create({
+    data: {
+      id: input.incident.id,
+      title: input.incident.title,
+      region: input.incident.region.toUpperCase() as 'ATYRAU' | 'MANGYSTAU',
+      indicator: input.incident.indicator,
+      metadata: {
+        unknowns: input.incident.unknowns ?? [],
+        stationIds: input.stations.map(({ id }) => id),
+        stationRelationIds: input.stationRelations.map(({ id }) => id),
+        measurementIds: input.measurements.map(({ id }) => id),
+        candidateObjectIds: input.candidateObjects.map(({ id }) => id),
+        sourceDocumentIds: input.sourceDocuments.map(({ id }) => id),
+        runtimeBootstrap: {
+          stationFacts: structuredClone(input.stations),
+          stationRelationFacts: input.stationRelations.map((relation) => ({
+            relationId: relation.id,
+            evidenceId: relation.id,
+            sourceDocumentId: relation.sourceDocumentId,
+            basis: relation.basis,
+            comparisonPair: relation.comparisonPair,
+            provenance: structuredClone(relation.provenance),
+          })),
+          candidateObjectFacts: input.candidateObjects.map((candidate) => ({
+            candidateObjectId: candidate.id,
+            evidenceDocumentIds: [...candidate.evidenceDocumentIds],
+          })),
+          sourceDocumentFacts: structuredClone(input.sourceDocuments),
+          measurementFacts: structuredClone(input.measurements),
+        },
+      },
+    },
+  })
+}
+
+function relationEvidenceBasis(
+  basis: string,
+): 'OFFICIAL_PAIRED_ABOVE_BELOW_LABELS' | 'OFFICIAL_MONITORING_TABLE_SEQUENCE_AND_STATION_LABELS' {
+  if (basis === 'Официальная парная маркировка выше/ниже одного сброса') {
+    return 'OFFICIAL_PAIRED_ABOVE_BELOW_LABELS'
+  }
+  return 'OFFICIAL_MONITORING_TABLE_SEQUENCE_AND_STATION_LABELS'
 }
 
 function withRepeatedEvidence(result: InvestigationResult): InvestigationResult {

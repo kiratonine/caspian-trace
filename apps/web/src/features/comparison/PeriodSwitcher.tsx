@@ -1,8 +1,10 @@
+import { useTranslation } from "react-i18next"
+
 import type { IncidentSummary } from "@/api/contracts"
 import { EvidenceLevelBadge } from "@/components/common"
-import { COMPARISON_SWITCHER_LABEL } from "@/constants/comparison"
-import { formatMonth } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import { cn } from "@/lib/utils"
+import { hasComparablePeriods } from "./comparison-model"
 
 type PeriodSwitcherProps = {
   periods: IncidentSummary[]
@@ -20,13 +22,12 @@ export function PeriodSwitcher({
   selectedIncidentId,
   onSelect,
 }: PeriodSwitcherProps) {
-  if (periods.length < 2) return null
+  const { t } = useTranslation()
+  const { formatMonth } = useFormat()
+  if (!hasComparablePeriods(periods)) return null
 
   return (
-    <nav aria-label={COMPARISON_SWITCHER_LABEL} className="flex flex-col gap-1">
-      <p className="text-xs text-muted-foreground">
-        {COMPARISON_SWITCHER_LABEL}
-      </p>
+    <nav aria-label={t("comparison.switcherLabel")}>
       <ul className="flex flex-wrap gap-2">
         {periods.map((period) => {
           const selected = period.id === selectedIncidentId

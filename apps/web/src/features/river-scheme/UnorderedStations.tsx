@@ -1,12 +1,19 @@
 import { Info } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
-import { SCHEME_UNORDERED_NOTE } from "@/constants/scheme"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { StationNode } from "./StationNode"
 import type { SchemeModel, StationSchemeEntry } from "./scheme-model"
 
 type UnorderedStationsProps = {
   entries: StationSchemeEntry[]
   corridor: SchemeModel["corridor"]
+  /** false — единицу печатает подпись столбца, а не каждое значение. */
+  showUnit?: boolean
 }
 
 /**
@@ -17,15 +24,29 @@ type UnorderedStationsProps = {
 export function UnorderedStations({
   entries,
   corridor,
+  showUnit = true,
 }: UnorderedStationsProps) {
+  const { t } = useTranslation()
   const openUp = corridor?.upstreamStationId == null
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="flex items-start gap-2 border border-dashed p-3 text-xs text-pretty text-muted-foreground">
-        <Info aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-        {SCHEME_UNORDERED_NOTE}
-      </p>
+      {/* Не рамка, а рельс слева — как у ленты коридора. Три строки оговорки
+          повторяли подзаголовок схемы, поэтому на экране осталась метка,
+          а дословная формулировка живёт в тултипе. */}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <p className="flex w-fit cursor-help items-center gap-2 border-l-2 py-1 pl-3 text-xs text-muted-foreground">
+              <Info aria-hidden className="size-3.5 shrink-0" />
+              {t("scheme.unorderedLabel")}
+            </p>
+          }
+        />
+        <TooltipContent>
+          <p className="max-w-72 text-pretty">{t("scheme.unorderedNote")}</p>
+        </TooltipContent>
+      </Tooltip>
       <div className="flex flex-col divide-y divide-border/60">
         {entries.map((entry) => {
           const bound =
@@ -40,6 +61,7 @@ export function UnorderedStations({
               entry={entry}
               corridorBound={bound}
               corridorOpenUp={openUp}
+              showUnit={showUnit}
             />
           )
         })}

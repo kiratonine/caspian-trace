@@ -1,9 +1,10 @@
+import type { TFunction } from "i18next"
 import { useMemo } from "react"
 
 import type {
   IncidentDetail,
   ReplayScenario,
-  TypedReplayStep,
+  ReplayStep,
 } from "@/api/contracts"
 import { replayMeasurementSummary } from "@/constants/replay"
 import { useReplayStore } from "@/stores/replayStore"
@@ -17,7 +18,7 @@ import type { EvidenceLevel } from "@/types"
 export type ReplayFrame = {
   scenario: ReplayScenario
   stepIndex: number
-  step: TypedReplayStep
+  step: ReplayStep
   /** Уровень на текущем шаге — приходит в payload каждого шага с бэка. */
   evidenceLevel: EvidenceLevel
   /** Измерения, «загруженные» шагами measurement к текущему моменту. */
@@ -118,7 +119,7 @@ export function projectDetailForReplay(
 }
 
 /** Строка текущего шага для шкалы: дословные тексты payload, без пересказа. */
-export function describeReplayStep(step: TypedReplayStep): string {
+export function describeReplayStep(step: ReplayStep, t: TFunction): string {
   switch (step.type) {
     case "signal":
       return `«${step.payload.signal.excerpt}»`
@@ -127,6 +128,6 @@ export function describeReplayStep(step: TypedReplayStep): string {
     case "conclusion":
       return step.payload.text
     case "measurement":
-      return replayMeasurementSummary(step.payload.measurements.length)
+      return replayMeasurementSummary(step.payload.measurements.length, t)
   }
 }

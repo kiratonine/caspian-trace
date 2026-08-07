@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 const nonEmptyId = z.string().trim().min(1).max(160)
+const evidenceStatementId = z.string().trim().min(1).max(256)
 const nonEmptyText = z.string().trim().min(1)
 
 export const IsoDateTimeSchema = z.string().datetime({ offset: true })
@@ -147,7 +148,7 @@ export const CandidateObjectSchema = z
 
 export const EvidenceStatementSchema = z
   .object({
-    id: nonEmptyId,
+    id: evidenceStatementId,
     code: z.string().trim().regex(/^[A-Z][A-Z0-9_]*$/),
     sortOrder: z.number().int().nonnegative(),
     kind: z.enum(['supports', 'contradicts', 'limits', 'unknown']),

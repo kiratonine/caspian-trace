@@ -230,6 +230,21 @@ describe('strict API boundaries', () => {
     ).toBe(true)
   })
 
+  it('accepts a deterministic versioned evidence statement ID longer than 160 characters', () => {
+    const parsed = EvidenceStatementSchema.parse({
+      id: 'inv-atyrau-2025-09@1.2.1:ab5e5a1f3ac67d8405151065e29c3a9ca1099271cee11b6262b411acdef83b56:evidence-no-increase-rel-sep-asa-pair-m-2025-09-asa-above-m-2025-09-asa-below',
+      code: 'NO_LOCAL_INCREASE_IN_PAIR',
+      sortOrder: 0,
+      kind: 'contradicts',
+      text: 'В паре створов локальный рост не зафиксирован.',
+      measurementIds: ['m-2025-09-asa-above', 'm-2025-09-asa-below'],
+      sourceDocumentIds: ['doc-kazhydromet-2025-09'],
+      generatedBy: 'rule_engine',
+    })
+
+    expect(parsed.id).toHaveLength(167)
+  })
+
   it('accepts an unknown statement with empty IDs', () => {
     expect(
       EvidenceStatementSchema.safeParse({

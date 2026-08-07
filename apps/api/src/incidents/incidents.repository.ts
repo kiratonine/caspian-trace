@@ -45,7 +45,13 @@ export class IncidentsRepository {
 
   findDetail(investigationId: string): Promise<IncidentDetailRow | null> {
     return this.prisma.investigation.findFirst({
-      where: { id: investigationId, isCurrent: true },
+      where: {
+        isCurrent: true,
+        OR: [
+          { id: investigationId },
+          { incidentId: investigationId },
+        ],
+      },
       select: incidentDetailSelect,
     })
   }

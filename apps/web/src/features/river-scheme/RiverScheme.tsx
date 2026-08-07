@@ -1,31 +1,32 @@
 import { useMemo, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
 import type { IncidentDetail } from "@/api/contracts"
 import { incidentsQueryOptions } from "@/api/queries"
 import { Skeleton } from "@/components/ui/skeleton"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
-import {
-  SCHEME_UNCONFIRMED_ORDER_HINT,
-  SCHEME_UPSTREAM_HINT,
-} from "@/constants/scheme"
-import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { InsufficientDataScreen } from "@/features/aktau/InsufficientDataScreen"
 import { PeriodSwitcher } from "@/features/comparison/PeriodSwitcher"
-import { findComparablePeriods } from "@/features/comparison/comparison-model"
+import {
+  findComparablePeriods,
+  hasComparablePeriods,
+} from "@/features/comparison/comparison-model"
 import {
   projectDetailForReplay,
   useReplayFrame,
 } from "@/features/replay/replay-frame"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
-import { formatSampledAt } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
+import { useUnitLabel } from "@/i18n/use-labels"
 import { OrderedStations } from "./OrderedStations"
 import { UnorderedStations } from "./UnorderedStations"
 import { buildSchemeModel } from "./scheme-model"
 
 /** Колонка схемы: рисует выбранное событие (общий хук выбора). */
 export function RiverScheme() {
+  const { t } = useTranslation()
   const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail()
   // Во время реплея схема показывает только «уже загруженные» шагами
   // измерения и коридор — селектор поверх данных, без рефетча (план сессии 9).
@@ -49,10 +50,11 @@ export function RiverScheme() {
   }
 
   return (
-    <section aria-label="Линейная схема реки" className="flex min-h-0 flex-col">
+    <section aria-label={t("a11y.schemeRegion")} className="flex min-h-0 flex-col">
       {shownDetail ? (
         <RiverSchemeContent
           detail={shownDetail}
+          hasPeriodSwitcher={hasComparablePeriods(periods)}
           periodSwitcher={
             <PeriodSwitcher
               periods={periods}
@@ -66,7 +68,9 @@ export function RiverScheme() {
           <SchemeHeader subtitle={null} />
           <div className="flex min-h-0 flex-1 items-center justify-center p-8">
             {isError ? (
-              <p className="text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
+              <p className="text-sm text-muted-foreground">
+                {t("app.dataLoadError")}
+              </p>
             ) : (
               <SchemeSkeleton />
             )}
@@ -81,13 +85,23 @@ type RiverSchemeContentProps = {
   detail: IncidentDetail
   /** Переключатель периодов участка; у события без пары его нет. */
   periodSwitcher?: ReactNode
+  /**
+   * Переключатель периодов виден — тогда период не дублируется строкой
+   * контекста. Без пары периодов дата отбора остаётся здесь: иначе она
+   * не попала бы на экран вовсе.
+   */
+  hasPeriodSwitcher?: boolean
 }
 
 /** Презентационная часть схемы — контейнер и дев-превью отдают ей готовые данные. */
 export function RiverSchemeContent({
   detail,
   periodSwitcher = null,
+  hasPeriodSwitcher = false,
 }: RiverSchemeContentProps) {
+  const { t } = useTranslation()
+  const { formatSampledDate } = useFormat()
+  const unitLabel = useUnitLabel()
   const model = useMemo(() => buildSchemeModel(detail), [detail])
   const hasUnordered = model.unordered.length > 0
 
@@ -100,12 +114,22 @@ export function RiverSchemeContent({
 
   const waterBody = detail.stations[0]?.waterBody ?? null
   // Пока хоть одна станция без подтверждённого порядка — «вверху — выше по
-  // течению» обещать нельзя.
-  const orderHint = hasUnordered
-    ? SCHEME_UNCONFIRMED_ORDER_HINT
-    : SCHEME_UPSTREAM_HINT
+  // течению» обещать нельзя. Но если часть створов всё-таки выстроена
+  // проверенными связями, «порядок не подтверждён» тоже неправда.
+  const orderHint = !hasUnordered
+    ? t("scheme.upstreamHint")
+    : model.ordered.length > 0
+      ? t("scheme.partialOrderHint")
+      : t("scheme.unconfirmedOrderHint")
   const subtitle = [waterBody, orderHint].filter(Boolean).join(" · ") || null
   const firstMeasurement = detail.measurements[0] ?? null
+  // Период уже стоит на активной кнопке переключателя — второй раз его здесь
+  // не печатаем. Если пары периодов нет и кнопок тоже, дата остаётся тут.
+  const sampledDate =
+    hasPeriodSwitcher || !firstMeasurement
+      ? null
+      : formatSampledDate(firstMeasurement)
+  const unit = model.commonUnit === null ? null : unitLabel(model.commonUnit)
 
   return (
     <>
@@ -115,19 +139,21 @@ export function RiverSchemeContent({
           {periodSwitcher}
           <p className="text-xs text-muted-foreground">
             {detail.investigation.indicator}
-            {firstMeasurement &&
-              ` · ${formatSampledAt(firstMeasurement.sampledAt)}`}
+            {unit && `, ${unit}`}
+            {sampledDate && ` · ${sampledDate}`}
           </p>
           {model.ordered.length > 0 && (
             <OrderedStations
               entries={model.ordered}
               corridor={model.corridor}
+              showUnit={model.commonUnit === null}
             />
           )}
           {hasUnordered && (
             <UnorderedStations
               entries={model.unordered}
               corridor={model.corridor}
+              showUnit={model.commonUnit === null}
             />
           )}
         </div>
@@ -139,7 +165,7 @@ export function RiverSchemeContent({
 function SchemeHeader({ subtitle }: { subtitle: string | null }) {
   return (
     <header className="flex items-baseline justify-between gap-3 border-b px-4 py-3">
-      <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+      <h2 className="text-xs font-medium text-muted-foreground">
         Линейная схема реки
       </h2>
       {subtitle && (

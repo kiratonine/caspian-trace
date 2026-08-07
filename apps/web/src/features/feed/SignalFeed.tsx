@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
+import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
 
 import type { IncidentDetail, IncidentSummary } from "@/api/contracts"
@@ -6,14 +7,7 @@ import { incidentsQueryOptions } from "@/api/queries"
 import { EvidenceLevelBadge } from "@/components/common"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  FEED_NO_INCIDENTS,
-  FEED_NO_SIGNALS,
-  FEED_SIGNALS_HEADING,
-} from "@/constants/feed"
-import { REGION_LABELS } from "@/constants/regions"
 import { INCIDENT_SEARCH_PARAM } from "@/constants/routing"
-import { DATA_LOAD_ERROR } from "@/constants/strings"
 import { useSelectedIncidentDetail } from "@/hooks/use-selected-incident-detail"
 import { cn } from "@/lib/utils"
 import { SignalCard } from "./SignalCard"
@@ -22,6 +16,7 @@ import { SignalCard } from "./SignalCard"
 // карточкой выбранного события из его detail — списковый эндпоинт сигналы
 // не отдаёт (вопрос 2 плана), а detail уже загружен для схемы и панели.
 export function SignalFeed() {
+  const { t } = useTranslation()
   const incidentsQuery = useQuery(incidentsQueryOptions)
   const { selectedIncidentId, detail, isError } = useSelectedIncidentDetail()
   const [, setSearchParams] = useSearchParams()
@@ -35,11 +30,11 @@ export function SignalFeed() {
 
   return (
     <section
-      aria-label="Сигналы и расследования"
+      aria-label={t("a11y.feedRegion")}
       className="flex min-h-0 flex-col"
     >
       <header className="border-b px-4 py-3">
-        <h2 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
+        <h2 className="text-xs font-medium text-muted-foreground">
           Сигналы и расследования
         </h2>
       </header>
@@ -53,7 +48,9 @@ export function SignalFeed() {
             onSelect={selectIncident}
           />
         ) : incidentsQuery.isError ? (
-          <p className="p-4 text-sm text-muted-foreground">{DATA_LOAD_ERROR}</p>
+          <p className="p-4 text-sm text-muted-foreground">
+            {t("app.dataLoadError")}
+          </p>
         ) : (
           <FeedSkeleton />
         )}
@@ -79,9 +76,12 @@ export function SignalFeedContent({
   detailError = false,
   onSelect,
 }: SignalFeedContentProps) {
+  const { t } = useTranslation()
   if (incidents.length === 0) {
     return (
-      <p className="p-4 text-sm text-muted-foreground">{FEED_NO_INCIDENTS}</p>
+      <p className="p-4 text-sm text-muted-foreground">
+        {t("feed.noIncidents")}
+      </p>
     )
   }
 
@@ -146,9 +146,6 @@ function IncidentCard({
           className="relative"
         />
       </div>
-      <p className="text-xs text-muted-foreground">
-        {incident.indicator} · {REGION_LABELS[incident.region]}
-      </p>
       {selected && <SignalsBlock detail={detail} detailError={detailError} />}
     </li>
   )
@@ -161,10 +158,11 @@ type SignalsBlockProps = {
 
 // relative — блок должен ловить клики поверх растянутой кнопки карточки.
 function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
+  const { t } = useTranslation()
   return (
     <div className="relative mt-1.5 flex flex-col gap-2 border-t pt-2.5">
-      <h3 className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-        {FEED_SIGNALS_HEADING}
+      <h3 className="text-xs font-medium text-muted-foreground">
+        {t("feed.signalsHeading")}
       </h3>
       {detail ? (
         detail.signals.length > 0 ? (
@@ -183,10 +181,14 @@ function SignalsBlock({ detail, detailError }: SignalsBlockProps) {
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-muted-foreground">{FEED_NO_SIGNALS}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("feed.noSignals")}
+          </p>
         )
       ) : detailError ? (
-        <p className="text-xs text-muted-foreground">{DATA_LOAD_ERROR}</p>
+        <p className="text-xs text-muted-foreground">
+          {t("app.dataLoadError")}
+        </p>
       ) : (
         <div aria-hidden className="flex flex-col gap-2">
           <Skeleton className="h-3 w-3/4" />

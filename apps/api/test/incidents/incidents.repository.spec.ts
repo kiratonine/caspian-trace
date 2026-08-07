@@ -54,11 +54,17 @@ describe('IncidentsRepository', () => {
     })
   })
 
-  it('uses one explicit detail query and restricts it to current results', async () => {
-    await repository.findDetail('test-part04-investigation')
+  it('accepts a version ID or stable incident alias and restricts detail to current results', async () => {
+    await repository.findDetail('test-part04-incident')
     expect(findFirst).toHaveBeenCalledTimes(1)
     expect(findFirst).toHaveBeenCalledWith({
-      where: { id: 'test-part04-investigation', isCurrent: true },
+      where: {
+        isCurrent: true,
+        OR: [
+          { id: 'test-part04-incident' },
+          { incidentId: 'test-part04-incident' },
+        ],
+      },
       select: incidentDetailSelect,
     })
   })

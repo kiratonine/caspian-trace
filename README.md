@@ -34,7 +34,7 @@
   </a>
   ·
   <a
-    href="https://docs.google.com/presentation/d/1A_T_v7eEyJFu_f3uftzeZggxCNDT1xvE/edit?usp=sharing&ouid=113841808140956424271&rtpof=true&sd=true"
+    href="https://drive.google.com/file/d/14u-wDFZ0jqaqpzG6eDdtTYa1S400DUME/view?usp=sharing"
     target="_blank"
     rel="noopener noreferrer"
   >

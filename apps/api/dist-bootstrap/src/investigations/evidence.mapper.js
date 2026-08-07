@@ -59,6 +59,7 @@ function toCandidateObject(candidate) {
         name: candidate.name,
         category: candidate.category,
         location: null,
+        locationSourceDocumentId: null,
         waterBody: candidate.waterBody,
         riverOrder: null,
         evidenceDocumentIds: candidate.evidenceDocumentIds,

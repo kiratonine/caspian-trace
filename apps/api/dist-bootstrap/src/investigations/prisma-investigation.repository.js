@@ -73,6 +73,20 @@ let PrismaInvestigationRepository = class PrismaInvestigationRepository {
             !containsExactlyScopedIds(candidates, scopes.candidateObjectIds)) {
             return null;
         }
+        const stationById = new Map(stations.map((station) => [station.id, station]));
+        if (scopes.stationFacts.some((fact) => {
+            const station = stationById.get(fact.id);
+            return station === undefined || !matchesScopedStation(station, fact);
+        })) {
+            return null;
+        }
+        const measurementById = new Map(measurements.map((measurement) => [measurement.id, measurement]));
+        if (scopes.measurementFacts.some((fact) => {
+            const measurement = measurementById.get(fact.id);
+            return measurement === undefined || !matchesScopedMeasurement(measurement, fact);
+        })) {
+            return null;
+        }
         const sources = await this.prisma.sourceDocument.findMany({
             where: { id: { in: scopes.sourceDocumentIds } },
             orderBy: { id: 'asc' },
@@ -156,28 +170,9 @@ let PrismaInvestigationRepository = class PrismaInvestigationRepository {
                     extractionMode: signal.extractionMode.toLowerCase(),
                     verificationStatus: signal.verificationStatus.toLowerCase(),
                 })),
-                stations: stations.map((station) => ({
-                    id: station.id,
-                    name: station.name,
-                    waterBody: station.waterBody,
-                })),
+                stations: scopes.stationFacts,
                 stationRelations,
-                measurements: measurements.map((measurement) => ({
-                    id: measurement.id,
-                    stationId: measurement.stationId,
-                    indicator: measurement.indicator,
-                    matrix: measurement.matrix,
-                    value: measurement.value.toString(),
-                    rawValueText: measurement.rawValueText,
-                    unit: measurement.unit,
-                    sampledAt: toIso(measurement.sampledAt),
-                    sampledPeriod: measurement.sampledPeriod,
-                    sourceDocumentId: measurement.sourceDocumentId,
-                    sourcePage: measurement.sourcePage?.pageNumber ??
-                        readNumber(asRecord(measurement.metadata).sourcePage),
-                    sourceExcerpt: measurement.sourceExcerpt,
-                    verified: isVerified(measurement.verificationStatus),
-                })),
+                measurements: scopes.measurementFacts,
                 candidateObjects,
                 sourceDocuments: scopes.sourceDocumentFacts,
             });
@@ -609,6 +604,41 @@ const relationEvidenceBasisByFact = new Map([
 function basisMatchesEvidence(factBasis, evidenceBasis) {
     return factBasis === evidenceBasis || relationEvidenceBasisByFact.get(factBasis) === evidenceBasis;
 }
+function matchesScopedMeasurement(measurement, fact) {
+    const sourcePage = measurement.sourcePage?.pageNumber ??
+        readNumber(asRecord(measurement.metadata).sourcePage);
+    return (measurement.id === fact.id &&
+        measurement.stationId === fact.stationId &&
+        measurement.sourceDocumentId === fact.sourceDocumentId &&
+        measurement.indicator === fact.indicator &&
+        measurement.matrix === fact.matrix &&
+        decimalMatches(measurement.value, fact.value) &&
+        measurement.rawValueText === fact.rawValueText &&
+        measurement.unit === fact.unit &&
+        measurementDateMatches(measurement.sampledAt, fact.sampledAt) &&
+        measurement.sampledPeriod === fact.sampledPeriod &&
+        sourcePage === fact.sourcePage &&
+        isVerified(measurement.verificationStatus) === fact.verified &&
+        measurementExcerptMatches(measurement.sourceExcerpt, fact.sourceExcerpt));
+}
+function decimalMatches(value, fact) {
+    try {
+        return new client_1.Prisma.Decimal(value.toString()).equals(new client_1.Prisma.Decimal(fact));
+    }
+    catch {
+        return false;
+    }
+}
+function measurementDateMatches(value, fact) {
+    if (value === null || fact === null)
+        return value === null && fact === null;
+    return new Date(value.toISOString()).getTime() === new Date(fact).getTime();
+}
+function measurementExcerptMatches(value, fact) {
+    return value === fact || (value !== null &&
+        fact !== null &&
+        value.endsWith(fact));
+}
 function mapSourceDocument(source) {
     const metadata = asRecord(source.extractionMetadata);
     return {
@@ -743,14 +773,22 @@ function readRuntimeBootstrapScopes(metadata) {
         return null;
     }
     const stationRelationFacts = readScopedStationRelationFacts(metadata.runtimeBootstrap.stationRelationFacts);
+    const stationFacts = readScopedStationFacts(metadata.runtimeBootstrap.stationFacts);
     const candidateObjectFacts = readScopedCandidateObjectFacts(metadata.runtimeBootstrap.candidateObjectFacts);
     const sourceDocumentFacts = readScopedSourceDocumentFacts(metadata.runtimeBootstrap.sourceDocumentFacts);
-    if (stationRelationFacts === null ||
+    const measurementFacts = sourceDocumentFacts === null
+        ? null
+        : readScopedMeasurementFacts(metadata.runtimeBootstrap.measurementFacts, stationIds, sourceDocumentFacts);
+    if (stationFacts === null ||
+        stationRelationFacts === null ||
         candidateObjectFacts === null ||
         sourceDocumentFacts === null ||
+        measurementFacts === null ||
+        !containsExactlyScopedIds(stationFacts, stationIds) ||
         !containsExactlyScopedIds(stationRelationFacts.map(({ relationId }) => ({ id: relationId })), stationRelationIds) ||
         !containsExactlyScopedIds(candidateObjectFacts.map(({ candidateObjectId }) => ({ id: candidateObjectId })), candidateObjectIds) ||
-        !containsExactlyScopedIds(sourceDocumentFacts, sourceDocumentIds)) {
+        !containsExactlyScopedIds(sourceDocumentFacts, sourceDocumentIds) ||
+        !containsExactlyScopedIds(measurementFacts, measurementIds)) {
         return null;
     }
     return {
@@ -759,10 +797,75 @@ function readRuntimeBootstrapScopes(metadata) {
         measurementIds,
         candidateObjectIds,
         sourceDocumentIds,
+        stationFacts,
+        measurementFacts,
         sourceDocumentFacts,
         stationRelationFacts,
         candidateObjectFacts,
     };
+}
+function readScopedStationFacts(value) {
+    if (!Array.isArray(value))
+        return null;
+    try {
+        return (0, investigation_input_schema_1.parseInvestigationInput)({
+            incident: {
+                id: 'runtime-bootstrap-station-facts',
+                title: 'Runtime bootstrap station facts',
+                region: 'atyrau',
+                indicator: 'runtime-bootstrap-validation',
+            },
+            signals: [],
+            stations: value,
+            stationRelations: [],
+            measurements: [],
+            candidateObjects: [],
+            sourceDocuments: [],
+        }).stations;
+    }
+    catch {
+        return null;
+    }
+}
+function matchesScopedStation(station, fact) {
+    return (station.id === fact.id &&
+        station.waterBody === fact.waterBody &&
+        (station.name === fact.name ||
+            normalizeScopedStationName(station.name) === normalizeScopedStationName(fact.name)));
+}
+function normalizeScopedStationName(value) {
+    return value
+        .normalize('NFC')
+        .replace(/(^|\s)г\.\s*/giu, '$1')
+        .replace(/\s+/gu, ' ')
+        .trim();
+}
+function readScopedMeasurementFacts(value, stationIds, sourceDocumentFacts) {
+    if (!Array.isArray(value))
+        return null;
+    try {
+        return (0, investigation_input_schema_1.parseInvestigationInput)({
+            incident: {
+                id: 'runtime-bootstrap-measurement-facts',
+                title: 'Runtime bootstrap measurement facts',
+                region: 'atyrau',
+                indicator: 'runtime-bootstrap-validation',
+            },
+            signals: [],
+            stations: stationIds.map((id) => ({
+                id,
+                name: id,
+                waterBody: 'runtime-bootstrap-validation',
+            })),
+            stationRelations: [],
+            measurements: value,
+            candidateObjects: [],
+            sourceDocuments: sourceDocumentFacts,
+        }).measurements;
+    }
+    catch {
+        return null;
+    }
 }
 function readScopedSourceDocumentFacts(value) {
     if (!Array.isArray(value))

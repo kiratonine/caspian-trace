@@ -137,9 +137,11 @@ function buildIncidentPlan(validatedCase) {
                     ...handoff
                         .stationRelationEvidenceIds,
                 ],
+                stationFacts: structuredClone(input.stations),
                 stationRelationFacts,
                 candidateObjectFacts,
                 sourceDocumentFacts: structuredClone(input.sourceDocuments),
+                measurementFacts: structuredClone(input.measurements),
                 fixtureInputHash: handoff.expectedResult
                     .fixtureInputHash,
                 rulesetVersion: handoff.expectedResult

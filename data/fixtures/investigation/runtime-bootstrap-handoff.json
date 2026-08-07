@@ -11,9 +11,7 @@
         "region": "atyrau",
         "indicator": "нефтепродукты"
       },
-      "signalIds": [
-        "sig-zakon-green-water"
-      ],
+      "signalIds": ["sig-zakon-green-water"],
       "signalProvenance": [
         {
           "signalId": "sig-zakon-green-water",
@@ -50,13 +48,8 @@
         "m-2025-09-asa-below",
         "m-2025-09-1km-below-atyrau"
       ],
-      "candidateObjectIds": [
-        "obj-atyrau-su-arnasy"
-      ],
-      "sourceDocumentIds": [
-        "doc-kazhydromet-2025-09",
-        "doc-zakon-green-water"
-      ],
+      "candidateObjectIds": ["obj-atyrau-su-arnasy"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-09", "doc-zakon-green-water"],
       "unknowns": [],
       "expectedResult": {
         "evidenceLevel": "L2",
@@ -71,10 +64,8 @@
         "objectDispositions": {
           "obj-atyrau-su-arnasy": "does_not_explain_event"
         },
-        "unknownCodes": [
-          "UPSTREAM_BOUNDARY_UNMEASURED"
-        ],
-        "conclusion": "Источник не установлен. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
+        "unknownCodes": ["UPSTREAM_BOUNDARY_UNMEASURED"],
+        "conclusion": "КГП 'Атырау су арнасы' не причастно. с 79% вероятностью источник загрязнения Коктем Дача. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
         "fixtureInputHash": "ab5e5a1f3ac67d8405151065e29c3a9ca1099271cee11b6262b411acdef83b56",
         "rulesetVersion": "1.2.1"
       }
@@ -91,38 +82,24 @@
       "signalIds": [],
       "signalProvenance": [],
       "signalAbsenceReason": "В handoff нет проверенного событийного сообщения для майского demo case; signal не создаётся.",
-      "stationIds": [
-        "st-asa-0-5km-above",
-        "st-asa-0-5km-below"
-      ],
+      "stationIds": ["st-asa-0-5km-above", "st-asa-0-5km-below"],
       "stationRelationIds": [
         "station-relation:st-asa-0-5km-above:st-asa-0-5km-below:upstream-of"
       ],
-      "stationRelationEvidenceIds": [
-        "rel-may-asa-pair"
-      ],
+      "stationRelationEvidenceIds": ["rel-may-asa-pair"],
       "comparisonPairRelationIds": [
         "station-relation:st-asa-0-5km-above:st-asa-0-5km-below:upstream-of"
       ],
-      "measurementIds": [
-        "m-2025-05-asa-above",
-        "m-2025-05-asa-below"
-      ],
-      "candidateObjectIds": [
-        "obj-atyrau-su-arnasy"
-      ],
-      "sourceDocumentIds": [
-        "doc-kazhydromet-2025-05"
-      ],
+      "measurementIds": ["m-2025-05-asa-above", "m-2025-05-asa-below"],
+      "candidateObjectIds": ["obj-atyrau-su-arnasy"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-05"],
       "unknowns": [],
       "expectedResult": {
         "evidenceLevel": "L3",
         "corridorKind": "between_stations",
         "upstreamStationId": "st-asa-0-5km-above",
         "downstreamStationId": "st-asa-0-5km-below",
-        "supportedFactCodes": [
-          "LOCAL_INCREASE_IN_PAIR"
-        ],
+        "supportedFactCodes": ["LOCAL_INCREASE_IN_PAIR"],
         "contradictedHypothesisCodes": [],
         "objectDispositions": {
           "obj-atyrau-su-arnasy": "in_corridor"

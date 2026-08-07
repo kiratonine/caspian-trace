@@ -44,7 +44,13 @@ let IncidentsRepository = class IncidentsRepository {
     }
     findDetail(investigationId) {
         return this.prisma.investigation.findFirst({
-            where: { id: investigationId, isCurrent: true },
+            where: {
+                isCurrent: true,
+                OR: [
+                    { id: investigationId },
+                    { incidentId: investigationId },
+                ],
+            },
             select: incidents_types_1.incidentDetailSelect,
         });
     }

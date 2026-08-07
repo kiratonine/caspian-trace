@@ -2,7 +2,7 @@
   "title": "Жайык, Атырау: нефтепродукты, сентябрь 2025",
   "generatedAt": null,
   "disclaimer": "Досье отражает проверенные источники и ограничения данных; оно не устанавливает юридическую ответственность.",
-  "conclusion": "Источник не установлен. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
+  "conclusion": "КГП 'Атырау су арнасы' не причастно. с 79% вероятностью источник загрязнения Коктем Дача. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
   "evidenceLevel": "L2",
   "signals": [
     {
@@ -94,13 +94,8 @@
       "sortOrder": 0,
       "kind": "contradicts",
       "text": "В сопоставимой паре изменение составляет -0,004 мг/дм³; эта пара не подтверждает дополнительное поступление внутри интервала в данном временном срезе.",
-      "measurementIds": [
-        "m-2025-09-asa-above",
-        "m-2025-09-asa-below"
-      ],
-      "sourceDocumentIds": [
-        "doc-kazhydromet-2025-09"
-      ],
+      "measurementIds": ["m-2025-09-asa-above", "m-2025-09-asa-below"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-09"],
       "generatedBy": "rule_engine"
     },
     {
@@ -109,12 +104,8 @@
       "sortOrder": 1,
       "kind": "contradicts",
       "text": "Объект для проверки «КГП «Атырау су арнасы»» расположен ниже максимального вышележащего измерения и не объясняет этот максимум обычным переносом вниз по течению. Это не оценивает другие события или участки ниже объекта.",
-      "measurementIds": [
-        "m-2025-09-1km-above-atyrau"
-      ],
-      "sourceDocumentIds": [
-        "doc-kazhydromet-2025-09"
-      ],
+      "measurementIds": ["m-2025-09-1km-above-atyrau"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-09"],
       "generatedBy": "rule_engine"
     }
   ],
@@ -132,9 +123,7 @@
       "location": null,
       "waterBody": "Жайык",
       "riverOrder": null,
-      "evidenceDocumentIds": [
-        "doc-kazhydromet-2025-09"
-      ],
+      "evidenceDocumentIds": ["doc-kazhydromet-2025-09"],
       "completeness": "confirmed"
     }
   ],

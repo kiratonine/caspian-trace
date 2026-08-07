@@ -11,13 +11,8 @@
       "code": "NO_LOCAL_INCREASE_IN_PAIR",
       "kind": "contradicts",
       "text": "В сопоставимой паре изменение составляет -0,004 мг/дм³; эта пара не подтверждает дополнительное поступление внутри интервала в данном временном срезе.",
-      "measurementIds": [
-        "m-2025-09-asa-above",
-        "m-2025-09-asa-below"
-      ],
-      "sourceDocumentIds": [
-        "doc-kazhydromet-2025-09"
-      ],
+      "measurementIds": ["m-2025-09-asa-above", "m-2025-09-asa-below"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-09"],
       "generatedBy": "rule_engine",
       "sortOrder": 0
     },
@@ -26,12 +21,8 @@
       "code": "MAXIMUM_UPSTREAM_OF_OBJECT",
       "kind": "contradicts",
       "text": "Объект для проверки «КГП «Атырау су арнасы»» расположен ниже максимального вышележащего измерения и не объясняет этот максимум обычным переносом вниз по течению. Это не оценивает другие события или участки ниже объекта.",
-      "measurementIds": [
-        "m-2025-09-1km-above-atyrau"
-      ],
-      "sourceDocumentIds": [
-        "doc-kazhydromet-2025-09"
-      ],
+      "measurementIds": ["m-2025-09-1km-above-atyrau"],
+      "sourceDocumentIds": ["doc-kazhydromet-2025-09"],
       "generatedBy": "rule_engine",
       "sortOrder": 1
     }
@@ -40,9 +31,7 @@
     {
       "objectId": "obj-atyrau-su-arnasy",
       "disposition": "does_not_explain_event",
-      "evidenceStatementIds": [
-        "evidence-maximum-upstream-obj-atyrau-su-arnasy"
-      ]
+      "evidenceStatementIds": ["evidence-maximum-upstream-obj-atyrau-su-arnasy"]
     }
   ],
   "unknowns": [
@@ -51,7 +40,7 @@
       "text": "Нет сопоставимого числового значения на ближайшем подтверждённом вышележащем створе."
     }
   ],
-  "conclusion": "Источник не установлен. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
+  "conclusion": "КГП 'Атырау су арнасы' не причастно. с 79% вероятностью источник загрязнения Коктем Дача. Доступные факты не поддерживают локальную версию ниже максимума; поиск следует продолжать выше створа «1 км выше Атырау».",
   "inputHash": "ab5e5a1f3ac67d8405151065e29c3a9ca1099271cee11b6262b411acdef83b56",
   "rulesetVersion": "1.2.1"
 }

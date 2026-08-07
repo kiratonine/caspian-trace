@@ -29,16 +29,21 @@ export function SelectedInvestigationTrace() {
   return (
     <section className="border-t pt-2.5">
       <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger className="flex w-full items-center gap-2 text-left font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
-          <span className="flex-1">{t("investigationTrace.title")}</span>
-          <ChevronRight
-            aria-hidden
-            className={cn(
-              "size-3.5 text-muted-foreground transition-transform",
-              open && "rotate-90"
-            )}
-          />
-        </CollapsibleTrigger>
+        {/* Заголовок обязан быть заголовком: соседние секции поповера —
+            h3, а внутри этой идут h4-стадии. Кнопка внутри h3 — штатный
+            паттерн disclosure, aria-expanded ставит сам Collapsible. */}
+        <h3>
+          <CollapsibleTrigger className="flex w-full items-center gap-2 text-left font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+            <span className="flex-1">{t("investigationTrace.title")}</span>
+            <ChevronRight
+              aria-hidden
+              className={cn(
+                "size-3.5 text-muted-foreground transition-transform",
+                open && "rotate-90"
+              )}
+            />
+          </CollapsibleTrigger>
+        </h3>
         <CollapsibleContent className="pt-2">
           {!model || !detail ? (
             <p className="text-muted-foreground">

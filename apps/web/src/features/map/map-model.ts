@@ -38,8 +38,12 @@ export type MapStationNode = ResolvedMapCoordinate & {
 
 export type MapObjectMarker = ResolvedMapCoordinate & {
   object: CandidateObject
-  /** Чем обосновано положение — печатается пользователю, а не умалчивается. */
-  basis: string
+  /**
+   * Чем обосновано положение — печатается пользователю, а не умалчивается.
+   * `null` — конкретного основания для этого объекта нет; тогда остаётся
+   * общая оговорка режима координат, и пустой абзац не рисуется.
+   */
+  basis: string | null
   /** null — данных для сопоставления с границами участка недостаточно. */
   insideCorridor: boolean | null
 }
@@ -255,8 +259,13 @@ export function buildMapModel(detail: IncidentDetail, t: TFunction): MapModel {
           ? (documentsById.get(sourceDocumentId) ?? null)
           : null,
         // object.id — свободная строка данных (не закрытый enum), поэтому
-        // лукап с fallback: неизвестный id не должен уронить рендер.
-        basis: t(`map.objectPlacementBasis.${object.id}`, { defaultValue: "" }),
+        // лукап с fallback: неизвестный id не должен уронить рендер. Пустой
+        // результат превращается в null — оговорка режима координат
+        // (schematicObjectDetail) печатается независимо от этого ключа,
+        // поэтому без основания пользователь не остаётся.
+        basis:
+          t(`map.objectPlacementBasis.${object.id}`, { defaultValue: "" }) ||
+          null,
         insideCorridor: insideCorridorForOrder(objectOrder),
       })
     } else {

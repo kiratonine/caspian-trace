@@ -42,7 +42,9 @@ export function MapObjectPin({ marker }: { marker: MapObjectMarker }) {
             ? t("map.coordinateMode.verifiedLabel")
             : t("map.coordinateMode.schematicLabel")}
         </p>
-        <p className="max-w-72 text-pretty">{marker.basis}</p>
+        {marker.basis && (
+          <p className="max-w-72 text-pretty">{marker.basis}</p>
+        )}
         {marker.coordinateMode === "schematic" && (
           <p className="max-w-72 text-pretty text-muted-foreground">
             {t("map.coordinateMode.schematicObjectDetail")}

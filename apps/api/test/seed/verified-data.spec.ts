@@ -649,10 +649,10 @@ describe('verified data mapping and relation trust policy', () => {
         mapped.stations.map(({ id, riverOrder }) => [id, riverOrder]),
       ),
     ).toMatchObject({
-      'st-zhaiyk-1km-above-atyrau': 0,
-      'st-asa-0-5km-above': 1,
-      'st-asa-0-5km-below': 2,
-      'st-zhaiyk-1km-below-atyrau': 3,
+      'st-zhaiyk-1km-above-atyrau': 1,
+      'st-asa-0-5km-above': 2,
+      'st-asa-0-5km-below': 3,
+      'st-zhaiyk-1km-below-atyrau': 4,
     })
     expect(mapped.documents.every(({ fetchedAt, cachePath }) => fetchedAt === null && cachePath === null)).toBe(true)
     expect(mapped.measurements.every(({ sourcePageId }) => sourcePageId === null)).toBe(true)
@@ -672,9 +672,9 @@ describe('verified data mapping and relation trust policy', () => {
     }))
 
     expect(Object.fromEntries(deriveStationRiverOrder(stations, relations))).toEqual({
-      a: 0,
-      b: 1,
-      c: 2,
+      a: 1,
+      b: 2,
+      c: 3,
       isolated: null,
     })
   })
@@ -702,6 +702,29 @@ describe('verified data mapping and relation trust policy', () => {
       b: null,
       c: null,
     })
+  })
+
+  // Guards the applied migration constraint
+  // `CHECK (river_order IS NULL OR river_order > 0)`: a 0-based root passes
+  // every pure-function assertion above and only fails once PostgreSQL sees it,
+  // which is exactly how the regression reached the seed run.
+  it('never derives a non-positive order', () => {
+    const stations = ['a', 'b', 'c'].map((id) => ({ id }))
+    const relations = [
+      ['a', 'b'],
+      ['b', 'c'],
+    ].map(([fromStationId, toStationId]) => ({
+      fromStationId: fromStationId!,
+      toStationId: toStationId!,
+      verificationStatus: VerificationStatus.OFFICIAL,
+      kind: StationRelationKind.UPSTREAM_OF,
+    }))
+
+    const derived = [...deriveStationRiverOrder(stations, relations).values()]
+    expect(derived).not.toHaveLength(0)
+    expect(
+      derived.every((order) => order === null || order > 0),
+    ).toBe(true)
   })
 
   it('keeps documents unverified without fetched snapshots', async () => {

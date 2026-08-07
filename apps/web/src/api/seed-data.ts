@@ -156,25 +156,29 @@ function station(id: string, name: string, riverOrder: number | null): Station {
 // Цепочка сентябрьских связей: 1 км выше Атырау → 0,5 км выше сброса →
 // 0,5 км ниже сброса → 1 км ниже Атырау. Майская пара — звено этой же цепочки,
 // поэтому нумерация сквозная: сравниваются только соседи внутри одного события.
+//
+// Нумерация с ЕДИНИЦЫ, а не с нуля: в базе на колонку стоит
+// `CHECK (river_order IS NULL OR river_order > 0)`, и API отдаёт 1..4.
+// Здесь те же значения, чтобы seed-режим и API-режим не расходились.
 const stZhaiyk1kmAboveAtyrau = station(
   "st-zhaiyk-1km-above-atyrau",
   "1 км выше Атырау",
-  0
+  1
 )
 const stAsa05kmAbove = station(
   "st-asa-0-5km-above",
   "0,5 км выше сброса КГП «Атырау су арнасы»",
-  1
+  2
 )
 const stAsa05kmBelow = station(
   "st-asa-0-5km-below",
   "0,5 км ниже сброса КГП «Атырау су арнасы»",
-  2
+  3
 )
 const stZhaiyk1kmBelowAtyrau = station(
   "st-zhaiyk-1km-below-atyrau",
   "1 км ниже Атырау",
-  3
+  4
 )
 // Осетровый завод и посёлок Дамба в проверенные связи не входят — их место
 // в цепочке не подтверждено, и схема покажет их без ранжирования.

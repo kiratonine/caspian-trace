@@ -159,10 +159,10 @@ describe('verified seed against disposable PostgreSQL', () => {
         ]),
       ),
     ).toMatchObject({
-      'st-zhaiyk-1km-above-atyrau': 0,
-      'st-asa-0-5km-above': 1,
-      'st-asa-0-5km-below': 2,
-      'st-zhaiyk-1km-below-atyrau': 3,
+      'st-zhaiyk-1km-above-atyrau': 1,
+      'st-asa-0-5km-above': 2,
+      'st-asa-0-5km-below': 3,
+      'st-zhaiyk-1km-below-atyrau': 4,
     })
 
     const documents = await prisma.sourceDocument.findMany({

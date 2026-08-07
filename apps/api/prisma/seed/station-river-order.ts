@@ -20,6 +20,12 @@ const TRUSTED_STATUSES = new Set<string>([
 /**
  * Derive local topological positions from verified, linear upstream chains.
  * Array order, labels, coordinates and measurements never participate.
+ *
+ * Positions are 1-based, and that is not cosmetic: the applied migration
+ * 20260804000000_initial_schema constrains the column with
+ * `CHECK (river_order IS NULL OR river_order > 0)`, so a 0-based root is
+ * rejected by PostgreSQL. Only relative order carries meaning downstream —
+ * consumers sort by the value and never read it as an index.
  */
 export function deriveStationRiverOrder(
   stations: readonly StationOrderInput[],
@@ -92,7 +98,7 @@ export function deriveStationRiverOrder(
     }
     if (chain.length !== component.size || current !== undefined) continue
 
-    chain.forEach((id, order) => result.set(id, order))
+    chain.forEach((id, index) => result.set(id, index + 1))
   }
 
   return result

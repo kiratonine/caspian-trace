@@ -3,15 +3,15 @@
 ## 1. Итог
 
 ```text
-Статус: PASS
+Статус: PARTIAL — application/tests PASS, remote delivery BLOCKED
 Финальная ветка: integration/final-demo
 Проверенный application HEAD: c41ab2ba7d4c57e13f8436508a2c7d89ef8eca92
-Remote upstream: origin/integration/final-demo; проверяется после push, SHA передаётся в итоговом handoff
+Remote upstream: отсутствует; HTTPS/SSH credentials и GitHub App Git Data write недоступны
 Дата и время проверки: 2026-08-07T05:28:10+05:00
 Исполнитель: Codex, Backend 1 / integration owner
 ```
 
-Интегрированы актуальный локальный platform/backend, patch-equivalent Backend 2 fixes до `1f13509263c0ec6194db5763b8724e07a74fbaac` и frontend HEAD `741a9ae94c8f2ec0a12a5ffe0cdce777c02da612`. Verified demo path работает через PostgreSQL, compiled NestJS API и frontend в API mode. Внешний GDELT остаётся `failed`, но verified cases, cache, evidence, replay и dossier от него не зависят.
+Интегрированы актуальный локальный platform/backend, patch-equivalent Backend 2 fixes до `1f13509263c0ec6194db5763b8724e07a74fbaac` и frontend HEAD `741a9ae94c8f2ec0a12a5ffe0cdce777c02da612`. Verified demo path работает через PostgreSQL, compiled NestJS API и frontend в API mode. Внешний GDELT остаётся `failed`, но verified cases, cache, evidence, replay и dossier от него не зависят. Единственный невыполненный обязательный этап — remote push: локальное окружение не имеет GitHub write credentials.
 
 Документационные commits и итоговый remote SHA создаются после этого проверенного application commit; фактические значения перечислены в разделе 11 после push.
 
@@ -314,11 +314,17 @@ Safety checkpoint branch: backup/pre-final-integration-20260807-044044
 Backend stabilization commit: 1743cae9ae916b6936823ffd96bd71bef141924b
 Frontend merge/application commit: c41ab2ba7d4c57e13f8436508a2c7d89ef8eca92
 Report commit: c6652c0cf85f036d1d327fa590d99c3c4d8661dd
-Archive metadata commit: этот document-only commit; его SHA не может быть самоссылочно встроен в собственное содержимое
-Final remote SHA: проверяется после push и фиксируется в итоговом handoff
+Archive metadata commit: b5fdb9d (полный SHA приведён в итоговом handoff)
+Remote push: BLOCKED
+HTTPS result: could not read Username for https://github.com
+SSH result: Permission denied (publickey)
+GitHub App Git Data result: 403 Resource not accessible by integration
+Partial remote branch/object created: NO
 force push used: NO
 main modified: NO
 ```
+
+`git push -u origin integration/final-demo` завершился exit `128` до передачи objects. Проверены `gh` (не установлен), token env (unset), credential helper (не настроен) и SSH agent/key (отсутствуют). GitHub connector подтвердил repository visibility, но первая write-operation `create blob` получила `403`; branch/ref не создавался. Это внешний authentication blocker, а не failure source tree или test suite.
 
 ## 12. Clean archive
 
@@ -388,10 +394,10 @@ npm run dev -w web -- --host 127.0.0.1
 ## 15. Final verdict
 
 ```text
-Ready for submission: YES
-Blocking issues: none
+Ready for submission: YES locally; NO as remote handoff until authenticated push
+Blocking issues: remote branch is not published because GitHub write authentication is unavailable
 Non-blocking issues: GDELT failed; May cached snapshot unavailable; external map tiles; dependency/chunk warnings
 Recommended API URL: http://127.0.0.1:3000/api
 Recommended web URL: http://127.0.0.1:5173
-Final branch: integration/final-demo
+Final local branch: integration/final-demo
 ```

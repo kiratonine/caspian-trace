@@ -11,6 +11,8 @@ export const DOSSIER_ROUTE = "/dossier/:id"
 
 export const DOSSIER_ID_PARAM = "id"
 
+export const LANDING_ROUTE = "/landing"
+
 export function dossierPath(incidentId: string): string {
   return `/dossier/${encodeURIComponent(incidentId)}`
 }

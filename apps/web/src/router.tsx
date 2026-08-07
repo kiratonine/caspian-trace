@@ -2,8 +2,9 @@ import { lazy } from "react"
 import { createBrowserRouter, type RouteObject } from "react-router-dom"
 
 import App from "@/App"
-import { DOSSIER_ROUTE } from "@/constants/routing"
+import { DOSSIER_ROUTE, LANDING_ROUTE } from "@/constants/routing"
 import { DossierPage } from "@/features/dossier/DossierPage"
+import { LandingPage } from "@/features/landing/LandingPage"
 
 // Deep-link — часть плана (решение сессии 1): выбранное расследование живёт
 // в search-параметрах «/», печатное досье — отдельным маршрутом.
@@ -12,6 +13,7 @@ import { DossierPage } from "@/features/dossier/DossierPage"
 const routes: RouteObject[] = [
   { path: "/", element: <App /> },
   { path: DOSSIER_ROUTE, element: <DossierPage /> },
+  { path: LANDING_ROUTE, element: <LandingPage /> },
 ]
 
 // Дев-галереи. import.meta.env.DEV статически заменяется при сборке,

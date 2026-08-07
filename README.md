@@ -150,7 +150,6 @@
 ```bash
 git clone https://github.com/kiratonine/caspian-trace.git
 cd caspian-trace
-git switch integration/final-demo
 npm ci
 ```
 

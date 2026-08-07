@@ -39,4 +39,12 @@ export default defineConfig({
       "/api": { target: API_DEV_TARGET, changeOrigin: true },
     },
   },
+  // Тот же прокси для `vite preview`: без него прод-сборку нельзя проверить
+  // локально против API, а ровно в ней и вылезали расхождения с dev
+  // (воркер MapLibre — см. src/features/map/MapLibreMap.tsx).
+  preview: {
+    proxy: {
+      "/api": { target: API_DEV_TARGET, changeOrigin: true },
+    },
+  },
 })

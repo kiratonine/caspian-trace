@@ -6,10 +6,27 @@ import {
   Map as MapLibreGl,
   Marker,
   NavigationControl,
+  setWorkerUrl,
   type GeoJSONSource,
   type StyleSpecification,
 } from "maplibre-gl"
 import "maplibre-gl/dist/maplibre-gl.css"
+// MapLibre парсит GeoJSON в Web Worker, и без воркера источник навсегда
+// остаётся незагруженным: слои не рисуются, а DOM-маркеры видны — то есть
+// карта выглядит рабочей, но без линий, и в консоли пусто.
+//
+// Свой URL воркера MapLibre строит в рантайме, а не через `new URL(...)`,
+// поэтому сборщик его статически не находит и в dist не кладёт: в dev это
+// маскировал `optimizeDeps.exclude: ['maplibre-gl']`, а прод-сборка
+// оставалась без воркера совсем.
+//
+// `?worker&url` заставляет Vite собрать воркер ВМЕСТЕ с его зависимостями
+// (сам файл импортирует `./maplibre-gl-shared.mjs`, поэтому голый `?url`
+// дал бы 404) и вернуть готовую ссылку. Формат воркеров — `es`
+// (vite.config.ts), а MapLibre создаёт `new Worker(url, { type: 'module' })`.
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url"
+
+setWorkerUrl(maplibreWorkerUrl)
 
 import {
   MAP_FIT_PADDING,

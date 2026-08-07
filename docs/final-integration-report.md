@@ -6,7 +6,7 @@
 Статус: PASS
 Финальная ветка: integration/final-demo
 Проверенный application HEAD: c41ab2ba7d4c57e13f8436508a2c7d89ef8eca92
-Remote upstream: будет установлен push этой ветки после финализации отчёта
+Remote upstream: origin/integration/final-demo; проверяется после push, SHA передаётся в итоговом handoff
 Дата и время проверки: 2026-08-07T05:28:10+05:00
 Исполнитель: Codex, Backend 1 / integration owner
 ```
@@ -313,16 +313,36 @@ Storage: September private snapshot доступен через short-lived sign
 Safety checkpoint branch: backup/pre-final-integration-20260807-044044
 Backend stabilization commit: 1743cae9ae916b6936823ffd96bd71bef141924b
 Frontend merge/application commit: c41ab2ba7d4c57e13f8436508a2c7d89ef8eca92
-Report commit: создаётся после записи этого отчёта
-Archive metadata commit: создаётся после формирования archive
-Final remote SHA: фиксируется после push в этом разделе и в итоговом handoff
+Report commit: c6652c0cf85f036d1d327fa590d99c3c4d8661dd
+Archive metadata commit: этот document-only commit; его SHA не может быть самоссылочно встроен в собственное содержимое
+Final remote SHA: проверяется после push и фиксируется в итоговом handoff
 force push used: NO
 main modified: NO
 ```
 
 ## 12. Clean archive
 
-Final clean archive создаётся после commit отчёта. Его фактические path, filename, SHA-256 и verified exclusions добавляются сюда отдельным документационным commit до push.
+Final clean archive создан из report commit `c6652c0cf85f036d1d327fa590d99c3c4d8661dd`; последующий source tree отличается только этой записью archive metadata.
+
+```text
+archive path: /tmp/caspian-trace-final-demo-20260807-052951.tar.gz
+archive filename: caspian-trace-final-demo-20260807-052951.tar.gz
+SHA-256: 295d7e0559e20abc7fe89109c10d3b14d98dfb032ea4b2ffa037f28eaba8f161
+entries: 594
+```
+
+Фактическая проверка `tar -tzf` подтвердила отсутствие:
+
+```text
+.git
+node_modules
+dist
+dist-bootstrap
+.env
+.env.local
+coverage
+artifacts
+```
 
 Backend allowlist archive уже проверен:
 

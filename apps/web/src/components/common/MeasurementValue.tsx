@@ -3,7 +3,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { formatMeasurement, formatSampledAt } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
+import { useUnitLabel } from "@/i18n/use-labels"
 import { hasConfirmedPage, sourceHref } from "@/lib/source"
 import { cn } from "@/lib/utils"
 import type { Measurement, SourceDocument } from "@/types"
@@ -12,6 +13,11 @@ type MeasurementValueProps = {
   measurement: Measurement
   /** Документ, из которого взято число; ищется по `measurement.sourceDocumentId`. */
   sourceDocument: SourceDocument
+  /**
+   * false — единица печатается один раз подписью столбца, а не у каждого
+   * значения. Из тултипа она не уходит: число без размерности непроверяемо.
+   */
+  showUnit?: boolean
   className?: string
 }
 
@@ -22,9 +28,15 @@ type MeasurementValueProps = {
 export function MeasurementValue({
   measurement,
   sourceDocument,
+  showUnit = true,
   className,
 }: MeasurementValueProps) {
+  const { formatMeasurement, formatNumber, formatSampledDate } = useFormat()
+  const unitLabel = useUnitLabel()
   const pageConfirmed = hasConfirmedPage(sourceDocument, measurement.sourcePage)
+  // Даты может не быть вовсе — тогда в подписи её просто нет, а не пустое место.
+  const sampledDate = formatSampledDate(measurement)
+  const full = formatMeasurement(measurement.value, unitLabel(measurement.unit))
 
   return (
     <Tooltip>
@@ -39,14 +51,15 @@ export function MeasurementValue({
               className
             )}
           >
-            {formatMeasurement(measurement.value, measurement.unit)}
+            {showUnit ? full : formatNumber(measurement.value)}
           </a>
         }
       />
       <TooltipContent>
         <p className="max-w-64 text-pretty">
-          {measurement.indicator}, {formatSampledAt(measurement.sampledAt)} ·{" "}
-          {sourceDocument.title}
+          {!showUnit && <>{full} · </>}
+          {measurement.indicator}
+          {sampledDate && `, ${sampledDate}`} · {sourceDocument.title}
           {pageConfirmed
             ? `, стр. ${measurement.sourcePage}`
             : " (страница уточняется)"}

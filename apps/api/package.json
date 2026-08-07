@@ -1,0 +1,125 @@
+{
+  "name": "api",
+  "private": true,
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=20.19 <21"
+  },
+  "scripts": {
+    "prestart": "npm run build",
+    "start": "node dist/main.js",
+    "prestart:dev": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate",
+    "start:dev": "nest start --watch",
+    "prebuild": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate",
+    "build": "nest build",
+    "pretypecheck": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint \"{src,test,prisma}/**/*.ts\"",
+    "pretest": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --testPathIgnorePatterns=\\.e2e-spec\\.ts$",
+    "test:safe-fetch": "jest --runInBand --testMatch=\"**/safe-fetch/**/*.spec.ts\"",
+    "test:kazhydromet": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --testMatch=\"**/ingestion/kazhydromet*.spec.ts\" \"**/ingestion/pdf-text.service.spec.ts\"",
+    "test:gdelt": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --testMatch=\"**/ingestion/gdelt/**/*.spec.ts\" \"**/ingestion/direct-sources/**/*.spec.ts\" \"**/ingestion/article/**/*.spec.ts\" \"**/live/**/*.spec.ts\"",
+    "test:investigation": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --runInBand --testMatch=\"**/investigations/**/*.spec.ts\" \"**/replays/**/*.spec.ts\" \"**/export/**/*.spec.ts\" \"**/llm/**/*.spec.ts\"",
+    "pretest:watch": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core",
+    "test:watch": "jest --watch --testPathIgnorePatterns=\\.e2e-spec\\.ts$",
+    "pretest:e2e": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate",
+    "test:e2e": "jest --runInBand --testMatch=\"**/app.e2e-spec.ts\" \"**/incidents.http.e2e-spec.ts\" \"**/sources.http.e2e-spec.ts\" \"**/kazhydromet.http.e2e-spec.ts\" \"**/gdelt-live.http.e2e-spec.ts\"",
+    "pretest:e2e:process": "npm run build",
+    "test:e2e:process": "jest --runInBand --testMatch=\"**/api-process-unavailable-db.e2e-spec.ts\"",
+    "pretest:e2e:db": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",
+    "test:e2e:db": "jest --runInBand --testMatch=\"**/prisma-db.e2e-spec.ts\"",
+    "pretest:e2e:incidents:db": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",
+    "test:e2e:incidents:db": "jest --runInBand --testMatch=\"**/incidents-read-db.e2e-spec.ts\"",
+    "pretest:e2e:sources:db": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",
+    "test:e2e:sources:db": "jest --runInBand --testMatch=\"**/source-cache-db.e2e-spec.ts\"",
+    "pretest:e2e:kazhydromet:db": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",
+    "test:e2e:kazhydromet:db": "jest --runInBand --testMatch=\"**/kazhydromet-ingestion-db.e2e-spec.ts\"",
+    "pretest:e2e:gdelt:db": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",
+    "test:e2e:gdelt:db": "jest --runInBand --testMatch=\"**/gdelt-ingestion-db.e2e-spec.ts\"",
+    "pretest:e2e:investigation": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate",
+    "test:e2e:investigation": "jest --runInBand --testMatch=\"**/investigation-features.e2e-spec.ts\"",
+    "pretest:e2e:investigation:db": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate",
+    "test:e2e:investigation:db": "jest --runInBand --testMatch=\"**/integration/investigation-integration-db.e2e-spec.ts\"",
+    "pretest:e2e:supabase": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",
+    "test:e2e:supabase": "SUPABASE_READINESS_REQUIRED=true DB_READINESS_TIMEOUT_MS=10000 node --env-file=.env ../../node_modules/jest/bin/jest.js --runInBand --testMatch=\"**/supabase-readiness.e2e-spec.ts\"",
+    "prisma:seed": "prisma db seed",
+    "seed:validate": "tsx prisma/seed.ts --validate-only",
+    "pretest:e2e:seed": "npm run build -w @caspian-trace/contracts && npm run prisma:generate",
+    "test:e2e:seed": "jest --runInBand --testMatch=\"**/verified-seed-db.e2e-spec.ts\"",
+    "prisma:generate": "DIRECT_URL=${DIRECT_URL:-postgresql://prisma-generate.invalid:5432/postgres} prisma generate",
+    "prisma:format": "prisma format",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:migrate:status": "prisma migrate status",
+    "preprisma:bootstrap:investigations": "npm run build -w @caspian-trace/contracts -w @caspian-trace/investigation-core && npm run prisma:generate && node -e \"require('node:fs').rmSync('dist-bootstrap',{recursive:true,force:true})\" && tsc -p tsconfig.bootstrap.json",
+    "prisma:bootstrap:investigations": "node dist-bootstrap/prisma/bootstrap-investigations.js"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": ".",
+    "testEnvironment": "node",
+    "setupFiles": [
+      "<rootDir>/test/set-env.ts"
+    ],
+    "testMatch": [
+      "**/*.spec.ts"
+    ],
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.json"
+        }
+      ]
+    },
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/main.ts"
+    ]
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@nestjs/cli": "^11.0.24",
+    "@nestjs/schematics": "^11.1.0",
+    "@nestjs/testing": "^11.1.28",
+    "@types/express": "^5.0.6",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.19.0",
+    "@types/pg": "8.16.0",
+    "@types/supertest": "^7.2.1",
+    "eslint": "^10.8.0",
+    "globals": "^17.9.0",
+    "jest": "^29.7.0",
+    "prisma": "7.6.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.12",
+    "tsx": "4.20.6",
+    "typescript": "5.9",
+    "typescript-eslint": "^8.66.0"
+  },
+  "dependencies": {
+    "@caspian-trace/contracts": "0.0.1",
+    "@caspian-trace/investigation-core": "0.0.1",
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/platform-express": "^11.1.28",
+    "@nestjs/swagger": "11.4.5",
+    "@prisma/adapter-pg": "7.6.0",
+    "@prisma/client": "7.6.0",
+    "@supabase/supabase-js": "2.95.3",
+    "cheerio": "1.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "pdfjs-dist": "4.10.38",
+    "pg": "8.22.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.4.3"
+  }
+}

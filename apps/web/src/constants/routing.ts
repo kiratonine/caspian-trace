@@ -4,3 +4,18 @@
 // пишет — лента (клик по карточке); переключатель май/сентябрь добавится
 // в своей сессии.
 export const INCIDENT_SEARCH_PARAM = "incident"
+
+// Печатное досье (роадмап §21.3). Шаблон и построение пути живут рядом:
+// маршрутизатор и ссылки не должны расходиться в написании.
+export const DOSSIER_ROUTE = "/dossier/:id"
+
+export const DOSSIER_ID_PARAM = "id"
+
+export function dossierPath(incidentId: string): string {
+  return `/dossier/${encodeURIComponent(incidentId)}`
+}
+
+/** Главный экран с уже выбранным событием — возврат из досье. */
+export function incidentPath(incidentId: string): string {
+  return `/?${INCIDENT_SEARCH_PARAM}=${encodeURIComponent(incidentId)}`
+}

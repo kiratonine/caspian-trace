@@ -1,0 +1,32 @@
+{
+  "sources": [
+    {
+      "id": "kazhydromet-bulletins",
+      "name": "Казгидромет: ежемесячные бюллетени",
+      "lastSuccessAt": null,
+      "cacheAvailable": false,
+      "status": "never_run"
+    },
+    {
+      "id": "gdelt",
+      "name": "GDELT DOC 2.0",
+      "lastSuccessAt": null,
+      "cacheAvailable": false,
+      "status": "never_run"
+    },
+    {
+      "id": "open-meteo-flood",
+      "name": "Open-Meteo Flood API (расход Жайыка)",
+      "lastSuccessAt": null,
+      "cacheAvailable": false,
+      "status": "never_run"
+    },
+    {
+      "id": "open-meteo-marine",
+      "name": "Open-Meteo Marine API (волны у Актау)",
+      "lastSuccessAt": null,
+      "cacheAvailable": false,
+      "status": "never_run"
+    }
+  ]
+}

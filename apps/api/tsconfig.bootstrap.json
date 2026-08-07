@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "./dist-bootstrap",
+    "declaration": false,
+    "incremental": false,
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "prisma/bootstrap-investigations.ts"
+  ],
+  "exclude": [
+    "test",
+    "dist",
+    "dist-bootstrap",
+    "node_modules"
+  ]
+}

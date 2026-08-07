@@ -1,0 +1,504 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EvidenceLevel {
+  L0
+  L1
+  L2
+  L3
+}
+
+enum Region {
+  ATYRAU
+  MANGYSTAU
+}
+
+enum ExtractionMode {
+  LLM_VERIFIED
+  RULE
+  VERIFIED_SEED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  CORROBORATED
+  OFFICIAL
+  CONFLICTING
+}
+
+enum SourceDocumentStatus {
+  UNVERIFIED
+  VERIFIED
+  UNAVAILABLE
+}
+
+enum StationRelationKind {
+  UPSTREAM_OF
+  DOWNSTREAM_OF
+  SAME_REACH
+}
+
+enum StationRelationEvidenceBasis {
+  OFFICIAL_PAIRED_ABOVE_BELOW_LABELS
+  OFFICIAL_MONITORING_TABLE_SEQUENCE_AND_STATION_LABELS
+}
+
+enum IncidentStatus {
+  OPEN
+  ARCHIVED
+}
+
+enum CorridorKind {
+  NONE
+  BETWEEN_STATIONS
+  OPEN_UPSTREAM
+  OPEN_DOWNSTREAM
+}
+
+enum CandidateDisposition {
+  FOR_CHECK
+  OUTSIDE_CORRIDOR
+  INSUFFICIENT_DATA
+}
+
+enum EvidenceKind {
+  SUPPORTS
+  CONTRADICTS
+  LIMITS
+  UNKNOWN
+}
+
+enum EvidenceGeneratedBy {
+  RULE_ENGINE
+  HUMAN_VERIFIED
+}
+
+enum ReplayStepType {
+  SIGNAL
+  CORROBORATION
+  MEASUREMENT
+  INFERENCE
+  CONCLUSION
+}
+
+enum IngestionAdapter {
+  KAZHYDROMET
+  GDELT
+  DIRECT_SOURCE
+  VERIFIED_MANIFEST
+}
+
+enum IngestionRunStatus {
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+  RATE_LIMITED
+}
+
+enum SourceHealthStatus {
+  NEVER_RUN
+  HEALTHY
+  DEGRADED
+  RATE_LIMITED
+  FAILED
+}
+
+model SourceDocument {
+  id                      String                    @id @db.Text
+  originalUrl             String                    @map("original_url") @db.Text
+  canonicalUrl            String                    @map("canonical_url") @db.Text
+  publisher               String                    @db.Text
+  title                   String                    @db.Text
+  sourceType              String                    @map("source_type") @db.Text
+  mediaType               String                    @map("media_type") @db.Text
+  publishedAt             DateTime?                 @map("published_at") @db.Timestamptz(3)
+  publishedPeriod         String?                   @map("published_period") @db.Text
+  fetchedAt               DateTime?                 @map("fetched_at") @db.Timestamptz(3)
+  sha256                  String?                   @db.Char(64)
+  cachePath               String?                   @map("cache_path") @db.Text
+  httpStatus              Int?                      @map("http_status")
+  status                  SourceDocumentStatus      @default(UNVERIFIED)
+  extractionMetadata      Json                      @default("{}") @map("extraction_metadata")
+  createdAt               DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  pages                   SourcePage[]
+  locatedStations         Station[]                 @relation("StationLocationSource")
+  stationRelations        StationRelation[]
+  stationRelationEvidence StationRelationEvidence[]
+  measurements            Measurement[]
+  incidentSignals         IncidentSignal[]
+  locatedCandidateObjects CandidateObject[]         @relation("CandidateGeometrySource")
+  candidateObjectSources  CandidateObjectSource[]
+  evidenceSources         EvidenceStatementSource[]
+
+  @@unique([canonicalUrl, sha256])
+  @@index([publishedAt(sort: Desc)])
+  @@map("source_documents")
+}
+
+model SourcePage {
+  id               String         @id @db.Text
+  sourceDocumentId String         @map("source_document_id") @db.Text
+  pageNumber       Int            @map("page_number")
+  extractedText    String         @map("extracted_text") @db.Text
+  textSha256       String         @map("text_sha256") @db.Char(64)
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  sourceDocument   SourceDocument @relation(fields: [sourceDocumentId], references: [id], onDelete: Cascade)
+  measurements     Measurement[]
+
+  @@unique([sourceDocumentId, pageNumber])
+  @@unique([id, sourceDocumentId])
+  @@map("source_pages")
+}
+
+model Station {
+  id                       String            @id @db.Text
+  name                     String            @db.Text
+  waterBody                String            @map("water_body") @db.Text
+  region                   Region
+  locationText             String?           @map("location_text") @db.Text
+  latitude                 Decimal?          @db.Decimal(9, 6)
+  longitude                Decimal?          @db.Decimal(9, 6)
+  locationSourceDocumentId String?           @map("location_source_document_id") @db.Text
+  riverOrder               Int?              @map("river_order")
+  metadata                 Json              @default("{}")
+  createdAt                DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  locationSourceDocument   SourceDocument?   @relation("StationLocationSource", fields: [locationSourceDocumentId], references: [id], onDelete: Restrict)
+  outgoingRelations        StationRelation[] @relation("StationRelationFrom")
+  incomingRelations        StationRelation[] @relation("StationRelationTo")
+  measurements             Measurement[]
+  upstreamInvestigations   Investigation[]   @relation("InvestigationUpstreamStation")
+  downstreamInvestigations Investigation[]   @relation("InvestigationDownstreamStation")
+
+  @@index([waterBody, region])
+  @@map("stations")
+}
+
+model StationRelation {
+  id                 String                    @id @db.Text
+  fromStationId      String                    @map("from_station_id") @db.Text
+  toStationId        String                    @map("to_station_id") @db.Text
+  kind               StationRelationKind
+  sourceDocumentId   String?                   @map("source_document_id") @db.Text
+  verificationStatus VerificationStatus        @map("verification_status")
+  notes              String?                   @db.Text
+  metadata           Json                      @default("{}")
+  createdAt          DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  fromStation        Station                   @relation("StationRelationFrom", fields: [fromStationId], references: [id], onDelete: Cascade)
+  toStation          Station                   @relation("StationRelationTo", fields: [toStationId], references: [id], onDelete: Cascade)
+  sourceDocument     SourceDocument?           @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+  evidence           StationRelationEvidence[]
+
+  @@unique([fromStationId, toStationId, kind])
+  @@map("station_relations")
+}
+
+model StationRelationEvidence {
+  id                 String                       @id @db.Text
+  stationRelationId  String                       @map("station_relation_id") @db.Text
+  sourceDocumentId   String                       @map("source_document_id") @db.Text
+  sourcePage         Int?                         @map("source_page")
+  basis              StationRelationEvidenceBasis
+  sourceExcerpt      String                       @map("source_excerpt") @db.Text
+  checkedBy          Json                         @map("checked_by")
+  checkedAt          String                       @map("checked_at") @db.Text
+  verificationStatus VerificationStatus           @map("verification_status")
+  createdAt          DateTime                     @default(now()) @map("created_at") @db.Timestamptz(3)
+  stationRelation    StationRelation              @relation(fields: [stationRelationId], references: [id], onDelete: Cascade)
+  sourceDocument     SourceDocument               @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+
+  @@unique([stationRelationId, sourceDocumentId, basis, sourcePage], map: "station_relation_evidence_edge_document_basis_page_key")
+  @@index([sourceDocumentId])
+  @@map("station_relation_evidence")
+}
+
+model Measurement {
+  id                 String                         @id @db.Text
+  stationId          String                         @map("station_id") @db.Text
+  sourceDocumentId   String                         @map("source_document_id") @db.Text
+  sourcePageId       String?                        @map("source_page_id") @db.Text
+  indicator          String                         @db.Text
+  value              Decimal                        @db.Decimal(18, 6)
+  rawValueText       String                         @map("raw_value_text") @db.Text
+  unit               String                         @db.Text
+  matrix             String                         @db.Text
+  sampledAt          DateTime?                      @map("sampled_at") @db.Timestamptz(3)
+  sampledPeriod      String?                        @map("sampled_period") @db.Text
+  sourceExcerpt      String?                        @map("source_excerpt") @db.Text
+  extractionMode     ExtractionMode                 @map("extraction_mode")
+  verificationStatus VerificationStatus             @default(UNVERIFIED) @map("verification_status")
+  metadata           Json                           @default("{}")
+  createdAt          DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
+  station            Station                        @relation(fields: [stationId], references: [id], onDelete: Restrict)
+  sourceDocument     SourceDocument                 @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+  sourcePage         SourcePage?                    @relation(fields: [sourcePageId, sourceDocumentId], references: [id, sourceDocumentId], onDelete: Restrict)
+  investigations     InvestigationMeasurement[]
+  evidenceStatements EvidenceStatementMeasurement[]
+
+  @@index([stationId, indicator, sampledAt(sort: Desc)])
+  @@index([stationId, indicator, sampledPeriod])
+  @@index([sourceDocumentId])
+  @@map("measurements")
+}
+
+model IncidentSignal {
+  id                 String               @id @db.Text
+  title              String               @db.Text
+  observedAt         DateTime?            @map("observed_at") @db.Timestamptz(3)
+  observedPeriod     String?              @map("observed_period") @db.Text
+  reportedAt         DateTime             @map("reported_at") @db.Timestamptz(3)
+  latitude           Decimal?             @db.Decimal(9, 6)
+  longitude          Decimal?             @db.Decimal(9, 6)
+  locationText       String?              @map("location_text") @db.Text
+  phenomenon         String               @db.Text
+  excerpt            String               @db.Text
+  sourceDocumentId   String               @map("source_document_id") @db.Text
+  extractionMode     ExtractionMode       @map("extraction_mode")
+  verificationStatus VerificationStatus   @default(UNVERIFIED) @map("verification_status")
+  dedupKey           String               @map("dedup_key") @db.Text
+  metadata           Json                 @default("{}")
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  sourceDocument     SourceDocument       @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+  incidents          IncidentSignalLink[]
+
+  @@unique([dedupKey, sourceDocumentId])
+  @@index([reportedAt(sort: Desc)])
+  @@map("incident_signals")
+}
+
+model Incident {
+  id              String               @id @db.Text
+  title           String               @db.Text
+  region          Region
+  indicator       String?              @db.Text
+  status          IncidentStatus       @default(OPEN)
+  metadata        Json                 @default("{}")
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
+  signals         IncidentSignalLink[]
+  investigations  Investigation[]
+  replayScenarios ReplayScenario[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([updatedAt(sort: Desc)])
+  @@map("incidents")
+}
+
+model IncidentSignalLink {
+  incidentId String         @map("incident_id") @db.Text
+  signalId   String         @map("signal_id") @db.Text
+  incident   Incident       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  signal     IncidentSignal @relation(fields: [signalId], references: [id], onDelete: Cascade)
+
+  @@id([incidentId, signalId])
+  @@map("incident_signal_links")
+}
+
+model CandidateObject {
+  id                       String                         @id @db.Text
+  name                     String                         @db.Text
+  objectType               String                         @map("object_type") @db.Text
+  activity                 String?                        @db.Text
+  latitude                 Decimal?                       @db.Decimal(9, 6)
+  longitude                Decimal?                       @db.Decimal(9, 6)
+  geometrySourceDocumentId String?                        @map("geometry_source_document_id") @db.Text
+  basisText                String                         @map("basis_text") @db.Text
+  verificationStatus       VerificationStatus             @default(UNVERIFIED) @map("verification_status")
+  metadata                 Json                           @default("{}")
+  createdAt                DateTime                       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  geometrySourceDocument   SourceDocument?                @relation("CandidateGeometrySource", fields: [geometrySourceDocumentId], references: [id], onDelete: Restrict)
+  sources                  CandidateObjectSource[]
+  investigations           InvestigationCandidateObject[]
+
+  @@map("candidate_objects")
+}
+
+model CandidateObjectSource {
+  candidateObjectId String          @map("candidate_object_id") @db.Text
+  sourceDocumentId  String          @map("source_document_id") @db.Text
+  candidateObject   CandidateObject @relation(fields: [candidateObjectId], references: [id], onDelete: Cascade)
+  sourceDocument    SourceDocument  @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+
+  @@id([candidateObjectId, sourceDocumentId])
+  @@map("candidate_object_sources")
+}
+
+model Investigation {
+  id                  String                         @id @db.Text
+  incidentId          String                         @map("incident_id") @db.Text
+  evidenceLevel       EvidenceLevel                  @map("evidence_level")
+  conclusion          String                         @db.Text
+  corridorKind        CorridorKind                   @default(NONE) @map("corridor_kind")
+  upstreamStationId   String?                        @map("upstream_station_id") @db.Text
+  downstreamStationId String?                        @map("downstream_station_id") @db.Text
+  rulesetVersion      String?                        @map("ruleset_version") @db.Text
+  inputHash           String?                        @map("input_hash") @db.Char(64)
+  generatedAt         DateTime                       @default(now()) @map("generated_at") @db.Timestamptz(3)
+  isCurrent           Boolean                        @default(true) @map("is_current")
+  metadata            Json                           @default("{}")
+  incident            Incident                       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  upstreamStation     Station?                       @relation("InvestigationUpstreamStation", fields: [upstreamStationId], references: [id], onDelete: Restrict)
+  downstreamStation   Station?                       @relation("InvestigationDownstreamStation", fields: [downstreamStationId], references: [id], onDelete: Restrict)
+  measurements        InvestigationMeasurement[]
+  candidateObjects    InvestigationCandidateObject[]
+  evidenceStatements  EvidenceStatement[]
+  unknowns            InvestigationUnknown[]
+
+  @@unique([incidentId, inputHash, rulesetVersion])
+  @@index([incidentId, generatedAt(sort: Desc)])
+  @@index([incidentId, isCurrent])
+  @@map("investigations")
+}
+
+model InvestigationMeasurement {
+  investigationId String        @map("investigation_id") @db.Text
+  measurementId   String        @map("measurement_id") @db.Text
+  investigation   Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  measurement     Measurement   @relation(fields: [measurementId], references: [id], onDelete: Restrict)
+
+  @@id([investigationId, measurementId])
+  @@map("investigation_measurements")
+}
+
+model InvestigationCandidateObject {
+  investigationId    String                                 @map("investigation_id") @db.Text
+  candidateObjectId  String                                 @map("candidate_object_id") @db.Text
+  disposition        CandidateDisposition                   @default(FOR_CHECK)
+  note               String?                                @db.Text
+  investigation      Investigation                          @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  candidateObject    CandidateObject                        @relation(fields: [candidateObjectId], references: [id], onDelete: Restrict)
+  evidenceStatements InvestigationCandidateObjectEvidence[]
+
+  @@id([investigationId, candidateObjectId])
+  @@map("investigation_candidate_objects")
+}
+
+model EvidenceStatement {
+  id                    String                                 @id @db.Text
+  investigationId       String                                 @map("investigation_id") @db.Text
+  kind                  EvidenceKind
+  code                  String                                 @db.Text
+  text                  String                                 @db.Text
+  generatedBy           EvidenceGeneratedBy                    @map("generated_by")
+  sortOrder             Int                                    @default(0) @map("sort_order")
+  investigation         Investigation                          @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  measurements          EvidenceStatementMeasurement[]
+  sources               EvidenceStatementSource[]
+  candidateDispositions InvestigationCandidateObjectEvidence[]
+
+  @@unique([investigationId, sortOrder])
+  @@index([investigationId, code])
+  @@map("evidence_statements")
+}
+
+model InvestigationCandidateObjectEvidence {
+  investigationId     String                       @map("investigation_id") @db.Text
+  candidateObjectId   String                       @map("candidate_object_id") @db.Text
+  evidenceStatementId String                       @map("evidence_statement_id") @db.Text
+  disposition         InvestigationCandidateObject @relation(fields: [investigationId, candidateObjectId], references: [investigationId, candidateObjectId], onDelete: Cascade, map: "inv_candidate_evidence_disposition_fkey")
+  evidenceStatement   EvidenceStatement            @relation(fields: [evidenceStatementId], references: [id], onDelete: Cascade, map: "inv_candidate_evidence_statement_fkey")
+
+  @@id([investigationId, candidateObjectId, evidenceStatementId])
+  @@map("investigation_candidate_object_evidence")
+}
+
+model EvidenceStatementMeasurement {
+  evidenceStatementId String            @map("evidence_statement_id") @db.Text
+  measurementId       String            @map("measurement_id") @db.Text
+  evidenceStatement   EvidenceStatement @relation(fields: [evidenceStatementId], references: [id], onDelete: Cascade)
+  measurement         Measurement       @relation(fields: [measurementId], references: [id], onDelete: Restrict)
+
+  @@id([evidenceStatementId, measurementId])
+  @@map("evidence_statement_measurements")
+}
+
+model EvidenceStatementSource {
+  evidenceStatementId String            @map("evidence_statement_id") @db.Text
+  sourceDocumentId    String            @map("source_document_id") @db.Text
+  evidenceStatement   EvidenceStatement @relation(fields: [evidenceStatementId], references: [id], onDelete: Cascade)
+  sourceDocument      SourceDocument    @relation(fields: [sourceDocumentId], references: [id], onDelete: Restrict)
+
+  @@id([evidenceStatementId, sourceDocumentId])
+  @@map("evidence_statement_sources")
+}
+
+model InvestigationUnknown {
+  id              String        @id @db.Text
+  investigationId String        @map("investigation_id") @db.Text
+  code            String        @db.Text
+  text            String        @db.Text
+  sortOrder       Int           @default(0) @map("sort_order")
+  investigation   Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+
+  @@unique([investigationId, code])
+  @@map("investigation_unknowns")
+}
+
+model ReplayScenario {
+  id         String       @id @db.Text
+  incidentId String       @map("incident_id") @db.Text
+  title      String       @db.Text
+  isDemo     Boolean      @default(false) @map("is_demo")
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  incident   Incident     @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  steps      ReplayStep[]
+
+  @@map("replay_scenarios")
+}
+
+model ReplayStep {
+  id         String         @id @db.Text
+  scenarioId String         @map("scenario_id") @db.Text
+  offsetMs   Int            @map("offset_ms")
+  type       ReplayStepType
+  payload    Json
+  scenario   ReplayScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([scenarioId, offsetMs, type])
+  @@index([scenarioId, offsetMs])
+  @@map("replay_steps")
+}
+
+model IngestionRun {
+  id            String             @id @db.Text
+  adapter       IngestionAdapter
+  status        IngestionRunStatus @default(RUNNING)
+  startedAt     DateTime           @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt    DateTime?          @map("finished_at") @db.Timestamptz(3)
+  fetchedCount  Int                @default(0) @map("fetched_count")
+  acceptedCount Int                @default(0) @map("accepted_count")
+  rejectedCount Int                @default(0) @map("rejected_count")
+  errorCode     String?            @map("error_code") @db.Text
+  errorMessage  String?            @map("error_message") @db.Text
+  metadata      Json               @default("{}")
+
+  @@index([adapter, startedAt(sort: Desc)])
+  @@map("ingestion_runs")
+}
+
+model SourceHealth {
+  sourceId          String             @id @map("source_id") @db.Text
+  displayName       String             @map("display_name") @db.Text
+  status            SourceHealthStatus @default(NEVER_RUN)
+  lastAttemptAt     DateTime?          @map("last_attempt_at") @db.Timestamptz(3)
+  lastSuccessAt     DateTime?          @map("last_success_at") @db.Timestamptz(3)
+  lastHttpStatus    Int?               @map("last_http_status")
+  cacheAvailable    Boolean            @default(false) @map("cache_available")
+  consecutiveErrors Int                @default(0) @map("consecutive_errors")
+  detail            String?            @db.Text
+  metadata          Json               @default("{}")
+  updatedAt         DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("source_health")
+}

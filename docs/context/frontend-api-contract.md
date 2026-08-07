@@ -1,99 +1,166 @@
 # Контракт фронт ↔ бэк одной страницей
 
-Обновлено: 04.08.2026 по `caspian-trace-development-roadmap.md` §7, §9, §19
-и `caspian-trace-role-frontend.md` §4. Формы ответов — в `apps/web/src/api/contracts.ts`.
+Обновлено: 05.08.2026 после сессии 14 (влита ветка `feat/backend-investigation`).
+
+**Источник истины — код, а не этот файл.** Схемы и типы живут в
+`packages/contracts/src/schemas.ts`, эталонные значения — в
+`packages/contracts/fixtures/*.json`. Владелец пакета — Full-stack 1;
+фронт его только читает. Ниже — карта: что где лежит и что означает,
+чтобы не перечитывать 430 строк схем ради одного поля.
 
 ## Эндпоинты и владельцы
 
-| Функция фронта | Эндпоинт | Владелец | Статус |
-|---|---|---|---|
-| `fetchIncidents` | `GET /api/incidents` | Full-stack 1 | заглушка |
-| `fetchIncidentDetail` | `GET /api/incidents/:id` | Full-stack 1 | заглушка |
-| `fetchLiveStatus` | `GET /api/live/status` | Full-stack 1 | заглушка |
-| `startReplay` | `POST /api/replays/:id/start` | Full-stack 2 | заглушка |
-| `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | Full-stack 2 | заглушка |
-| `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | Full-stack 2 | ещё не заведена |
+| Функция фронта | Эндпоинт | Схема ответа | Владелец | Статус |
+|---|---|---|---|---|
+| `fetchIncidents` | `GET /api/incidents` | `IncidentSummaryListSchema` | Full-stack 1 | **эндпоинта нет**, есть фикстура |
+| `fetchIncidentDetail` | `GET /api/incidents/:id` | `IncidentDetailSchema` | Full-stack 1 | **эндпоинта нет**, есть фикстура |
+| `fetchLiveStatus` | `GET /api/live/status` | `LiveStatusSchema` | Full-stack 1 | эндпоинта нет, есть фикстура |
+| `startReplay` | `POST /api/replays/:id/start` | `ReplayScenarioSchema` | Full-stack 2 | ✅ поднят |
+| `fetchInvestigationEvidence` | `GET /api/investigations/:id/evidence` | `EvidenceGraphSchema` | Full-stack 2 | ✅ поднят |
+| `fetchDossierJson` | `GET /api/investigations/:id/export?format=json` | `DossierSchema` | Full-stack 2 | ✅ поднят (+ `format=html`) |
+
+Работают также `GET /api/health/live` и `GET /api/health/ready` (`HealthReadySchema`,
+проверка соединения с БД). Стабильные ответы трёх поднятых эндпоинтов лежат
+в `data/fixtures/investigation/api/` — их и надо сверять при интеграции.
+
+**Узкое место интеграции:** ленты и состава события у бэка ещё нет, поэтому
+`VITE_DATA_MODE=api` без `GET /api/incidents` включать нечем — три поднятых
+эндпоинта покрывают доказательства, реплей и экспорт, но не сами события.
 
 Служебные, которые может понадобиться знать фронту:
-`GET /api/health/ready` (готовность API),
 `GET /api/source-documents/:id/open?page=22` (документ из кэша Storage, когда
 оригинальный URL недоступен),
 `GET /api/investigations/:id/export?format=html` (серверный печатный HTML —
-наш маршрут `/dossier/:id` от него не зависит).
+наш маршрут `/dossier/:id` от него не зависит),
+`GET /api/docs` (Swagger).
 
-## Замороженные решения (менять — только согласием всех троих)
+## Что изменилось для фронта при переезде (сессия 13)
+
+| Было у нас | Стало в пакете |
+|---|---|
+| `IncidentDetail.provenance` | поля `rulesetVersion`/`inputHash` — в `Dossier`, не в detail |
+| `DossierExport { generatedAt, disclaimer, incident }` | плоский `Dossier` из 14 полей |
+| `unit`, `matrix`, `phenomenon` — свободные строки | закрытые enum: `mg/dm3\|mg/kg\|percent`, `water\|sediment`, 6 явлений |
+| `sha256: ''` = «не вычислен» | `sha256: null`, либо ровно 64 hex-символа |
+| `Measurement` без `qualityClass`/`verified` | оба вернулись, добавился обязательный `rawValueText` |
+| `sourceExcerpt: string` | `string \| null`; `verified: true` требует непустой выдержки |
+| `Station.locationSourceDocumentId: string` | `string \| null`, обязателен ровно при наличии `location` |
+| `TypedReplayStep` (наш юнион) | `ReplayStep` — совпал дословно, включая офсеты |
+
+## Что изменилось в сессии 14 (ветка расследований)
+
+| Было | Стало |
+|---|---|
+| `EvidenceStatement { id, kind, text, ... }` | добавлены обязательные `code` (маска `^[A-Z][A-Z0-9_]*$`) и `sortOrder` (int ≥ 0) |
+| — | `HealthReadySchema` (`status`/`service`/`database: 'ready'`) |
+| офсеты реплея `0/5/12/22/32 с`, 5 шагов | сентябрьский сценарий: **6 шагов**, `0/5/10/15/20/25 с`, по шагу `inference` на каждое правило |
+| порядок створов неизвестен | попарные проверенные связи в `data/verified/*-station-relations.json` (sha256, страница, выдержка, основание) |
+| `generatedBy: 'human_verified'` в наших данных | утверждения ядра приходят с `generatedBy: 'rule_engine'` |
+
+`rulesetVersion` расчётного ядра — `1.1.0`. Утверждения `supports` ядро выпускает
+не всегда: у сентября их ноль, а два `contradicts` несут весь вывод. Блок 3
+панели «Что установлено» обязан переживать пустоту как штатное состояние.
+
+## Замороженные решения (менять — только правкой пакета)
 
 - id элемента ленты **равен** id расследования;
 - неизвестная страница — `null`, **не `0`**;
-- неизвестная геометрия и координаты — `null`, не `[0, 0]`;
-- `region`: `atyrau | mangystau`;
-- evidence level: `L0 | L1 | L2 | L3`;
+- неизвестная геометрия и координаты — `null`; `{lat: 0, lon: 0}` схема отвергает явно;
+- `region`: `atyrau | mangystau`; evidence level: `L0 | L1 | L2 | L3`;
 - фронт показывает `conclusion` и evidence statements **дословно**;
-- фронт **не пересчитывает** `delta`, коридор и L0–L3;
-- `payload` шага реплея — discriminated union по `type`;
-- неполная дата не превращается в выдуманный день: месяц едет отдельным полем;
-- любой ответ проверяется Zod на границе сети, `as T` запрещён.
+- фронт **не пересчитывает** `delta`, коридор и L0–L3 — и не «чинит» уровень,
+  если он ниже, чем нам хотелось бы для демо;
+- `payload` шага реплея — discriminated union по `type`; шаги упорядочены по `offsetMs`;
+- неполная дата не превращается в выдуманный день: месяц едет отдельным полем
+  (`sampledPeriod` у измерений, `observedPeriod` у сигналов), и хотя бы одно
+  из двух полей обязано быть заполнено;
+- statement вида `supports`/`contradicts`/`limits` обязан ссылаться хотя бы
+  на один документ; `unknown` может не ссылаться ни на что;
+- `CandidateObject.evidenceDocumentIds` — минимум один документ-основание;
+- любой ответ проверяется схемой на границе, `as T` запрещён.
 
 ## Null-правила (что означает пустое значение)
 
 | Поле | `null` означает |
 |---|---|
 | `sourcePage` | страница не подтверждена — якорь `#page=` не ставим, страницу не подписываем |
-| `sampledAt` | точной даты отбора нет; смотреть `sampledPeriod` |
-| `sampledPeriod` | период не определён |
+| `sampledAt` / `observedAt` | точной даты нет; смотреть `sampledPeriod` / `observedPeriod` |
+| `sampledPeriod` / `observedPeriod` | период не определён |
 | `location`, `corridor` | координаты не подтверждены — рисуем линейную схему |
+| `locationSourceDocumentId` | координат нет, значит и документа местоположения быть не должно |
 | `corridorBounds.upstreamStationId` | коридор открыт вверх по течению |
 | `corridorBounds` целиком | участок не выделен |
-| `publishedAt` | дата публикации источника неизвестна |
-| `sha256: ''` | хэш ещё не вычислен бэком — в досье пишем «не вычислен», не прячем |
+| `publishedAt`, `fetchedAt` | дата публикации / скачивания неизвестна |
+| `sha256` | хэш не вычислен — в досье пишем «не вычислен», не прячем |
+| `qualityClass` | класс качества в источнике не приведён |
+| `sourceExcerpt` | дословной выдержки нет; тогда и `verified` обязан быть `false` |
+| `Dossier.rulesetVersion` / `inputHash` | расчётное ядро не передало — досье пишет «не передана» |
 | `lastSuccessAt` | источник ни разу не обновлялся успешно |
+| `IncidentSummary.period` | период события не определён (кейс Актау) |
+
+## Состояния источников (для этапа F6)
+
+`SourceHealthItem.status`: `never_run | healthy | degraded | rate_limited | failed`,
+плюс `cacheAvailable: boolean` и `lastSuccessAt`. В фикстуре все источники —
+`never_run` с `cacheAvailable: false`: бэк ещё не ходил в сеть и не заявляет кэш,
+пока Storage не реализован.
 
 ## Ошибки
 
 ```ts
-{ code: string, message: string, requestId: string }
+{ code: string, message: string, requestId: string }   // ApiErrorSchema
 ```
 
-`404 { code: 'INVESTIGATION_NOT_FOUND' }` — события нет.
+Коды бэка, которые уже существуют: `ROUTE_NOT_FOUND`, `VALIDATION_ERROR`,
+`MALFORMED_JSON`, `PAYLOAD_TOO_LARGE`. Коды, которые порождает сам фронт
+(`src/api/client.ts`): `NETWORK_UNAVAILABLE`, `TIMEOUT`, `INVALID_RESPONSE`,
+плюс `HTTP_<status>` для ответа без разбираемого тела.
+
 Сбой внешнего источника — это **`200` с `degraded`/`failed`** в `/api/live/status`,
 а не `500`: «источник недоступен» ≠ «событий нет». Отменённый запрос
-(`AbortSignal`) не показывается как ошибка. Retry для 4xx не делаем.
+(`AbortSignal`) не показывается как ошибка — наверх уходит исходный `AbortError`.
+Retry для 4xx не делаем.
 
 ## Режимы данных
 
 ```env
 VITE_API_BASE_URL=/api
-VITE_DATA_MODE=api    # обычный режим; seed — аварийное офлайн-демо
+VITE_DATA_MODE=seed   # по умолчанию; 'api' — после контрольной точки C
 ```
 
 ```ts
-export async function fetchIncidents(params?: IncidentListParams) {
-  if (import.meta.env.VITE_DATA_MODE === "seed") {
-    warnStubOnce("GET /api/incidents")
-    return incidentSummaries
+export async function fetchIncidents(params = {}, signal?: AbortSignal) {
+  if (IS_SEED_MODE) {
+    warnStubOnce("GET /api/incidents — данные из ТЗ §5")
+    return parseSeed(IncidentSummaryListSchema, filtered, "GET /api/incidents")
   }
-  return apiGet("/incidents", IncidentSummaryArraySchema, params)
+  return apiGet("/incidents", IncidentSummaryListSchema, { params, signal })
 }
 ```
 
-Компонент не должен знать, откуда пришли данные. Vite proxy: `/api → http://localhost:3000`.
+Компонент не знает, откуда пришли данные. В dev запросы к `/api` проксируются
+на `http://localhost:3000` (`vite.config.ts`); CORS у бэка открыт на
+`http://localhost:5173`, так что оба пути рабочие.
+
+Таймаут запроса — 8 с (`API_TIMEOUT_MS`), сигнал собирается через
+`AbortSignal.any([callerSignal, AbortSignal.timeout(...)])`.
 
 ## Query keys
 
 ```ts
-incidents(filters)      // staleTime: Infinity
-incident(id)            // staleTime: Infinity
-evidence(id)            // staleTime: Infinity
-replay(id)              // staleTime: Infinity
-liveStatus()            // staleTime: 60 000
+queryKeys.incidents(filters)  // staleTime: Infinity (глобальный)
+queryKeys.incident(id)        // staleTime: Infinity
+queryKeys.evidence(id)        // staleTime: Infinity
+queryKeys.replay(id)          // staleTime: Infinity
+queryKeys.liveStatus()        // staleTime: 60 000
 ```
 
 ## Контрольные точки синхронизации
 
-| Точка | Час | Что должно сойтись |
-|---|---|---|
-| A | 2 | Full-stack 1 публикует sample JSON пяти эндпоинтов; проверяю, что компоненты его отрисуют |
-| B | 8 | Реплей полностью на seed; у бэка — list/detail API и golden-результат core |
-| C | 12 | Три read-эндпоинта переключены на NestJS, видна сентябрьская исключённая версия |
-| D | 30 | Подключены replay/evidence/export; после этого формы ответов не меняются |
-| freeze | 43 | Только исправления, тесты и подготовка демо |
+| Точка | Час | Что должно сойтись | Состояние |
+|---|---|---|---|
+| A | 2 | sample JSON пяти эндпоинтов | ✅ фикстуры в `packages/contracts/fixtures` |
+| B | 8 | реплей на seed; у бэка list/detail и golden-результат core | реплей ✅, golden ✅, list/detail — нет |
+| C | 12 | три read-эндпоинта на NestJS, видна сентябрьская исключённая версия | исключённые версии ✅ (две); эндпоинты ленты и detail — нет |
+| D | 30 | подключены replay/evidence/export; формы ответов замораживаются | эндпоинты есть, подключение ждёт ленты (F3/F5) |
+| freeze | 43 | только исправления, тесты и подготовка демо | не начата |

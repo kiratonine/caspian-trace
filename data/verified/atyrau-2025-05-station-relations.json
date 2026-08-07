@@ -1,0 +1,26 @@
+{
+  "document": {
+    "id": "doc-kazhydromet-2025-05",
+    "url": "https://www.kazhydromet.kz/uploads/files_calendar/8606/file/6850158c0099catyrau-russ-byulleten-za-may-2025g.pdf",
+    "sha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
+    "sourcePage": 24,
+    "verificationStatus": "automated_source_checked_human_review_pending"
+  },
+  "relations": [
+    {
+      "id": "rel-may-asa-pair",
+      "upstreamStationId": "st-asa-0-5km-above",
+      "downstreamStationId": "st-asa-0-5km-below",
+      "basis": "official_paired_above_below_labels",
+      "sourceSha256": "73fb21e06f529160bf8756b3612bc3eab6a9f3615a91530ff19292120c684bce",
+      "sourcePage": 24,
+      "sourceExcerpt": "Официальная парная маркировка: 0,5 км выше и 0,5 км ниже одного сброса КГП «Атырау су арнасы».",
+      "checkedBy": [
+        "codex-automated-source-verification",
+        "aapolezhayev",
+        "denisthe12"
+      ],
+      "checkedAt": "2026-08-06"
+    }
+  ]
+}

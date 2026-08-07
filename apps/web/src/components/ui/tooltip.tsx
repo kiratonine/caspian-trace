@@ -25,7 +25,9 @@ function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
 
 function TooltipContent({
   className,
-  side = "top",
+  // Тултип открывается вниз: сверху он накрывает элемент, на который наведён
+  // курсор, — а в схеме и панели это как раз строка, которую читают.
+  side = "bottom",
   sideOffset = 4,
   align = "center",
   alignOffset = 0,

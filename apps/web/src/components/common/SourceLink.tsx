@@ -1,14 +1,14 @@
 import { ExternalLink } from "lucide-react"
 
-import { formatDate } from "@/lib/format"
+import { useFormat } from "@/i18n/use-format"
 import { hasConfirmedPage, sourceHref } from "@/lib/source"
 import { cn } from "@/lib/utils"
 import type { SourceDocument } from "@/types"
 
 type SourceLinkProps = {
   sourceDocument: SourceDocument
-  /** Страница PDF; 0 — сентинел «не подтверждена» (вопрос 8 плана), не показывается. */
-  page?: number
+  /** Страница PDF; null — страница не подтверждена, в подписи не показывается. */
+  page?: number | null
   className?: string
 }
 
@@ -21,6 +21,7 @@ export function SourceLink({
   page,
   className,
 }: SourceLinkProps) {
+  const { formatDate } = useFormat()
   const meta = [sourceDocument.publisher]
   if (hasConfirmedPage(sourceDocument, page)) {
     meta.push(`стр. ${page}`)

@@ -6,39 +6,15 @@ export type EvidenceTone = "gray" | "blue" | "amber" | "green"
 
 export type EvidenceLevelMeta = {
   code: EvidenceLevel
-  label: string
-  description: string
   tone: EvidenceTone
 }
 
-// Подписи и расшифровки — дословно по ТЗ §6.
+// label и description — в i18n-ресурсе (evidence.<code>.label/.description,
+// дословно по ТЗ §6): здесь остаётся только код и тон палитры — это не текст,
+// а часть визуального контракта (см. комментарий EvidenceLevelBadge).
 export const EVIDENCE_LEVEL_META = {
-  L0: {
-    code: "L0",
-    label: "Непроверенный сигнал",
-    description:
-      "Есть одна публикация или публичное сообщение. Лабораторного подтверждения нет.",
-    tone: "gray",
-  },
-  L1: {
-    code: "L1",
-    label: "Событие подтверждено",
-    description:
-      "Событие описано двумя независимыми источниками, существует официальный источник или опубликованы результаты отбора проб.",
-    tone: "blue",
-  },
-  L2: {
-    code: "L2",
-    label: "Источник локализован до участка",
-    description:
-      "Определён физически допустимый участок; минимум одна географическая версия исключена фактом, а не отсутствием данных.",
-    tone: "amber",
-  },
-  L3: {
-    code: "L3",
-    label: "Коридор поддержан лабораторными данными",
-    description:
-      "На одной дате и в сопоставимых единицах есть парные измерения между соседними створами. Не означает, что виновник установлен.",
-    tone: "green",
-  },
+  L0: { code: "L0", tone: "gray" },
+  L1: { code: "L1", tone: "blue" },
+  L2: { code: "L2", tone: "amber" },
+  L3: { code: "L3", tone: "green" },
 } as const satisfies Record<EvidenceLevel, EvidenceLevelMeta>

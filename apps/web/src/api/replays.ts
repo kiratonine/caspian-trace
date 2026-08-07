@@ -1,13 +1,33 @@
+import { ReplayScenarioSchema } from "@caspian-trace/contracts"
+
+import { apiPost, IS_SEED_MODE, parseSeed, warnStubOnce } from "./client"
 import type { ReplayScenario } from "./contracts"
-import { warnStubOnce } from "./client"
 import { replayScenarios } from "./seed-data"
 
-// STUB: заменить на POST /api/replays/:id/start (apiPost из ./client),
-// сценарий отдаёт full-stack 2. Пока есть только сентябрьский сценарий ТЗ §14.
-export async function startReplay(incidentId: string): Promise<ReplayScenario> {
-  warnStubOnce("POST /api/replays/:id/start — сентябрьский сценарий из ТЗ §14")
-  const scenario = replayScenarios[incidentId]
-  if (!scenario)
-    throw new Error(`Для события «${incidentId}» нет сценария реплея`)
-  return scenario
+// POST /api/replays/:id/start — неизменяемый сценарий реплея, отдаёт full-stack 2.
+// STUB: ветка seed остаётся аварийным офлайн-режимом и после интеграции;
+// в ней есть только сентябрьский сценарий.
+export async function startReplay(
+  incidentId: string,
+  signal?: AbortSignal
+): Promise<ReplayScenario> {
+  if (IS_SEED_MODE) {
+    warnStubOnce(
+      "POST /api/replays/:id/start — сентябрьский сценарий из ТЗ §14"
+    )
+    const scenario = replayScenarios[incidentId]
+    if (!scenario)
+      throw new Error(`Для события «${incidentId}» нет сценария реплея`)
+    return parseSeed(
+      ReplayScenarioSchema,
+      scenario,
+      `POST /api/replays/${incidentId}/start`
+    )
+  }
+
+  return apiPost(
+    `/replays/${encodeURIComponent(incidentId)}/start`,
+    ReplayScenarioSchema,
+    { signal }
+  )
 }

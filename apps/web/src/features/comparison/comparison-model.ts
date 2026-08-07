@@ -1,4 +1,5 @@
 import type { IncidentSummary } from "@/api/contracts"
+import { sameIncidentReference } from "@/lib/incident-reference"
 
 // Сопоставимые события — те, что описывают ОДИН участок наблюдений: одна
 // область и один показатель, период известен. Связь берётся из полей API,
@@ -9,7 +10,9 @@ export function findComparablePeriods(
   summaries: IncidentSummary[],
   selectedId: string | null
 ): IncidentSummary[] {
-  const selected = summaries.find((s) => s.id === selectedId)
+  const selected = summaries.find((summary) =>
+    sameIncidentReference(summary.id, selectedId)
+  )
   if (!selected || selected.period === null) return []
 
   const group = summaries.filter(
@@ -39,4 +42,15 @@ export function areComparable(
     a.region === b.region &&
     a.indicator === b.indicator
   )
+}
+
+/**
+ * Переключатель периодов имеет смысл только при паре и более. Предикат
+ * общий: по нему `PeriodSwitcher` решает, показываться ли, а схема — печатать
+ * ли дату отбора (когда кнопок нет, период иначе исчез бы с экрана).
+ */
+export function hasComparablePeriods(
+  periods: readonly IncidentSummary[]
+): boolean {
+  return periods.length >= 2
 }

@@ -21,6 +21,12 @@ export type SchemeModel = {
   /** riverOrder = null — в порядке, в котором станции отдал бэк, без ранжирования. */
   unordered: StationSchemeEntry[]
   corridor: IncidentDetail["corridorBounds"]
+  /**
+   * Единица, общая для ВСЕХ измерений события — тогда её печатают один раз
+   * подписью столбца, а не у каждого значения. Разные единицы внутри события
+   * так свернуть нельзя: null означает «печатать у каждого значения свою».
+   */
+  commonUnit: string | null
 }
 
 export function buildSchemeModel(detail: IncidentDetail): SchemeModel {
@@ -46,6 +52,13 @@ export function buildSchemeModel(detail: IncidentDetail): SchemeModel {
     }
   })
 
+  const [firstMeasurement, ...restMeasurements] = detail.measurements
+  const commonUnit =
+    firstMeasurement &&
+    restMeasurements.every((m) => m.unit === firstMeasurement.unit)
+      ? firstMeasurement.unit
+      : null
+
   return {
     ordered: entries
       .filter((entry) => entry.station.riverOrder !== null)
@@ -54,5 +67,6 @@ export function buildSchemeModel(detail: IncidentDetail): SchemeModel {
       ),
     unordered: entries.filter((entry) => entry.station.riverOrder === null),
     corridor: detail.corridorBounds,
+    commonUnit,
   }
 }

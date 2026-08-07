@@ -23,8 +23,8 @@ export type StatementEntry = {
 
 export type SourceEntry = {
   document: SourceDocument
-  /** Страница из ссылающегося измерения; 0 — сентинел «не подтверждена». */
-  page: number | undefined
+  /** Страница из ссылающегося измерения; null — не подтверждена или измерений нет. */
+  page: number | null
 }
 
 export type PanelModel = {
@@ -60,8 +60,9 @@ export function buildPanelModel(detail: IncidentDetail): PanelModel {
       detail.investigation.contradictedHypotheses.map(toEntry),
     sources: detail.sourceDocuments.map((document) => ({
       document,
-      page: detail.measurements.find((m) => m.sourceDocumentId === document.id)
-        ?.sourcePage,
+      page:
+        detail.measurements.find((m) => m.sourceDocumentId === document.id)
+          ?.sourcePage ?? null,
     })),
   }
 }

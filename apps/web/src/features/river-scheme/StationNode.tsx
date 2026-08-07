@@ -1,3 +1,6 @@
+import type { TFunction } from "i18next"
+import { useTranslation } from "react-i18next"
+
 import { MeasurementValue } from "@/components/common"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -5,13 +8,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {
-  SCHEME_CORRIDOR_BOUND_LABEL,
-  SCHEME_CORRIDOR_LOWER_BOUND_TOOLTIP,
-  SCHEME_CORRIDOR_OPEN_UP_TOOLTIP,
-  SCHEME_CORRIDOR_UPPER_BOUND_TOOLTIP,
-  SCHEME_NO_VALUE_LABEL,
-} from "@/constants/scheme"
 import type { StationSchemeEntry } from "./scheme-model"
 
 type StationNodeProps = {
@@ -23,23 +19,28 @@ type StationNodeProps = {
   corridorBound?: "upstream" | "downstream" | null
   /** Интервал открыт вверх по течению (upstreamStationId = null). */
   corridorOpenUp?: boolean
+  /** false — единицу печатает подпись столбца, а не каждое значение. */
+  showUnit?: boolean
 }
 
 function boundTooltip(
   bound: "upstream" | "downstream",
-  openUp: boolean
+  openUp: boolean,
+  t: TFunction
 ): string {
-  if (bound === "upstream") return SCHEME_CORRIDOR_UPPER_BOUND_TOOLTIP
+  if (bound === "upstream") return t("scheme.corridorUpperBoundTooltip")
   return openUp
-    ? SCHEME_CORRIDOR_OPEN_UP_TOOLTIP
-    : SCHEME_CORRIDOR_LOWER_BOUND_TOOLTIP
+    ? t("scheme.corridorOpenUpTooltip")
+    : t("scheme.corridorLowerBoundTooltip")
 }
 
 export function StationNode({
   entry,
   corridorBound = null,
   corridorOpenUp = false,
+  showUnit = true,
 }: StationNodeProps) {
+  const { t } = useTranslation()
   const { station, measurement, sourceDocument, valueShare } = entry
 
   return (
@@ -49,19 +50,9 @@ export function StationNode({
         className="size-2.5 shrink-0 rounded-full border-2 border-muted-foreground bg-background"
       />
       <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        {/* Длинные подписи створов усечены, полное имя — в тултипе. */}
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <span className="max-w-full truncate text-sm">
-                {station.name}
-              </span>
-            }
-          />
-          <TooltipContent>
-            <p className="max-w-64 text-pretty">{station.name}</p>
-          </TooltipContent>
-        </Tooltip>
+        {/* Без тултипа: он повторял бы видимую подпись. Длинные названия
+            створов усечены, полностью они читаются в правой панели и в досье. */}
+        <span className="max-w-full truncate text-sm">{station.name}</span>
         {corridorBound && (
           <Tooltip>
             <TooltipTrigger
@@ -70,13 +61,13 @@ export function StationNode({
                   variant="outline"
                   className="h-4 border-dashed px-1.5 text-[10px] text-muted-foreground"
                 >
-                  {SCHEME_CORRIDOR_BOUND_LABEL}
+                  {t("scheme.corridorBoundLabel")}
                 </Badge>
               }
             />
             <TooltipContent>
               <p className="max-w-64 text-pretty">
-                {boundTooltip(corridorBound, corridorOpenUp)}
+                {boundTooltip(corridorBound, corridorOpenUp, t)}
               </p>
             </TooltipContent>
           </Tooltip>
@@ -100,11 +91,12 @@ export function StationNode({
         <MeasurementValue
           measurement={measurement}
           sourceDocument={sourceDocument}
+          showUnit={showUnit}
           className="text-sm"
         />
       ) : (
         <span className="text-sm whitespace-nowrap text-muted-foreground">
-          {SCHEME_NO_VALUE_LABEL}
+          {t("scheme.noValueLabel")}
         </span>
       )}
     </div>

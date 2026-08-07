@@ -1,0 +1,130 @@
+{
+  "id": "replay-atyrau-2025-09",
+  "incidentId": "inv-atyrau-2025-09",
+  "steps": [
+    {
+      "id": "rs-2025-09-signal",
+      "offsetMs": 0,
+      "type": "signal",
+      "payload": {
+        "signal": {
+          "id": "sig-zakon-green-water",
+          "title": "Необычная зелёная окраска воды в Жайыке",
+          "observedAt": null,
+          "observedPeriod": "2025-09",
+          "reportedAt": "2025-09-09T15:16:00+05:00",
+          "location": null,
+          "locationText": "река Жайык, Атырау",
+          "phenomenon": "color_change",
+          "excerpt": "Жителей Атырау встревожила необычная зеленая окраска воды",
+          "sourceDocumentId": "doc-zakon-green-water",
+          "extractionMode": "verified_seed",
+          "verificationStatus": "corroborated"
+        },
+        "evidenceLevel": "L0"
+      }
+    },
+    {
+      "id": "rs-2025-09-corroboration",
+      "offsetMs": 5000,
+      "type": "corroboration",
+      "payload": {
+        "text": "Добавлен официальный бюллетень Казгидромета с лабораторными измерениями нефтепродуктов.",
+        "sourceDocumentId": "doc-kazhydromet-2025-09",
+        "evidenceLevel": "L1"
+      }
+    },
+    {
+      "id": "rs-2025-09-measurement",
+      "offsetMs": 12000,
+      "type": "measurement",
+      "payload": {
+        "measurements": [
+          {
+            "id": "m-2025-09-1km-above-atyrau",
+            "stationId": "st-zhaiyk-1km-above-atyrau",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.234,
+            "rawValueText": "0,234",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": null,
+            "verified": false
+          },
+          {
+            "id": "m-2025-09-asa-above",
+            "stationId": "st-asa-0-5km-above",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.058,
+            "rawValueText": "0,058",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": null,
+            "verified": false
+          },
+          {
+            "id": "m-2025-09-asa-below",
+            "stationId": "st-asa-0-5km-below",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.054,
+            "rawValueText": "0,054",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": null,
+            "verified": false
+          },
+          {
+            "id": "m-2025-09-1km-below-atyrau",
+            "stationId": "st-zhaiyk-1km-below-atyrau",
+            "sampledAt": null,
+            "sampledPeriod": "2025-09",
+            "indicator": "нефтепродукты",
+            "value": 0.167,
+            "rawValueText": "0,167",
+            "unit": "mg/dm3",
+            "matrix": "water",
+            "qualityClass": null,
+            "sourceDocumentId": "doc-kazhydromet-2025-09",
+            "sourcePage": 22,
+            "sourceExcerpt": null,
+            "verified": false
+          }
+        ],
+        "evidenceLevel": "L1"
+      }
+    },
+    {
+      "id": "rs-2025-09-inference",
+      "offsetMs": 22000,
+      "type": "inference",
+      "payload": {
+        "text": "Порядок створов не верифицирован; пространственная интерпретация измерений отложена.",
+        "evidenceLevel": "L1"
+      }
+    },
+    {
+      "id": "rs-2025-09-conclusion",
+      "offsetMs": 32000,
+      "type": "conclusion",
+      "payload": {
+        "text": "Источник не установлен. Подтверждены сентябрьские лабораторные измерения нефтепродуктов, но порядок створов не верифицирован; пространственный вывод отложен.",
+        "evidenceLevel": "L1"
+      }
+    }
+  ]
+}

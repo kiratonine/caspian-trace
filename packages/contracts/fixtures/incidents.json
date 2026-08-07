@@ -1,0 +1,29 @@
+[
+  {
+    "id": "inv-atyrau-2025-09",
+    "title": "Жайык, Атырау: нефтепродукты, сентябрь 2025",
+    "region": "atyrau",
+    "evidenceLevel": "L1",
+    "indicator": "нефтепродукты",
+    "updatedAt": "2026-08-04T00:00:00+05:00",
+    "period": "2025-09"
+  },
+  {
+    "id": "inv-atyrau-2025-05",
+    "title": "Жайык, Атырау: нефтепродукты, май 2025",
+    "region": "atyrau",
+    "evidenceLevel": "L3",
+    "indicator": "нефтепродукты",
+    "updatedAt": "2026-08-04T00:00:00+05:00",
+    "period": "2025-05"
+  },
+  {
+    "id": "inv-aktau-insufficient",
+    "title": "Актау, побережье Каспия: сообщения о загрязнении",
+    "region": "mangystau",
+    "evidenceLevel": "L0",
+    "indicator": "не определён",
+    "updatedAt": "2026-08-04T00:00:00+05:00",
+    "period": null
+  }
+]

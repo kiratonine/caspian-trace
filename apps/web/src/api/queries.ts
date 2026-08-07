@@ -1,20 +1,44 @@
 import { queryOptions } from "@tanstack/react-query"
 
+import { LIVE_STATUS_STALE_TIME_MS } from "@/constants/api"
+import type { IncidentListParams } from "./contracts"
 import { fetchIncidentDetail, fetchIncidents } from "./incidents"
+import { fetchInvestigationEvidence } from "./investigations"
+import { fetchLiveStatus } from "./live-status"
 import { startReplay } from "./replays"
 
 // Ключи и опции запросов в одном месте: все три колонки главного экрана читают
 // одно и то же выбранное событие, TanStack Query дедуплицирует их по ключу.
+//
+// Ключи собираются фабрикой, а не литералами по месту: опечатка в строке ключа
+// не ломает сборку, зато молча заводит второй кэш того же запроса.
+export const queryKeys = {
+  incidents: (filters: IncidentListParams = {}) =>
+    ["incidents", filters] as const,
+  incident: (id: string) => ["incidents", id] as const,
+  evidence: (id: string) => ["evidence", id] as const,
+  replay: (id: string) => ["replays", id] as const,
+  liveStatus: () => ["live-status"] as const,
+}
 
 export const incidentsQueryOptions = queryOptions({
-  queryKey: ["incidents"],
-  queryFn: () => fetchIncidents(),
+  queryKey: queryKeys.incidents(),
+  queryFn: ({ signal }) => fetchIncidents({}, signal),
 })
 
 export function incidentDetailQueryOptions(id: string) {
   return queryOptions({
-    queryKey: ["incidents", id],
-    queryFn: () => fetchIncidentDetail(id),
+    queryKey: queryKeys.incident(id),
+    queryFn: ({ signal }) => fetchIncidentDetail(id, signal),
+  })
+}
+
+// Граф доказательств отдельным запросом (F3/F5): у бэка это первый готовый
+// read-эндпоинт, а `GET /api/incidents` ещё нет.
+export function investigationEvidenceQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: queryKeys.evidence(id),
+    queryFn: ({ signal }) => fetchInvestigationEvidence(id, signal),
   })
 }
 
@@ -23,7 +47,15 @@ export function incidentDetailQueryOptions(id: string) {
 // а ошибка «сценария нет» заранее гасит кнопку play на шкале.
 export function replayScenarioQueryOptions(incidentId: string) {
   return queryOptions({
-    queryKey: ["replays", incidentId],
-    queryFn: () => startReplay(incidentId),
+    queryKey: queryKeys.replay(incidentId),
+    queryFn: ({ signal }) => startReplay(incidentId, signal),
   })
 }
+
+// Единственный запрос со своим `staleTime`: состояние источников — то немногое,
+// что во время показа может измениться (F6).
+export const liveStatusQueryOptions = queryOptions({
+  queryKey: queryKeys.liveStatus(),
+  queryFn: ({ signal }) => fetchLiveStatus(signal),
+  staleTime: LIVE_STATUS_STALE_TIME_MS,
+})

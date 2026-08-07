@@ -7,6 +7,7 @@ import {
 } from "@/api/queries"
 import { areComparable } from "@/features/comparison/comparison-model"
 import type { VerdictSide } from "@/features/comparison/VerdictChange"
+import { sameIncidentReference } from "@/lib/incident-reference"
 
 export type VerdictChangeState = {
   before: VerdictSide
@@ -38,8 +39,12 @@ export function useVerdictChange(
     setRenderedId(selectedIncidentId)
   }
 
-  const before = summaries.find((s) => s.id === previousId)
-  const after = summaries.find((s) => s.id === selectedIncidentId)
+  const before = summaries.find((summary) =>
+    sameIncidentReference(summary.id, previousId)
+  )
+  const after = summaries.find((summary) =>
+    sameIncidentReference(summary.id, selectedIncidentId)
+  )
   const comparable = areComparable(before, after)
 
   // Хуки нельзя звать условно: запрос всегда объявлен, но включается только

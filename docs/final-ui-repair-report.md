@@ -7,9 +7,9 @@ Status: PARTIAL
 Branch: integration/final-demo
 Start SHA (по runbook): 746791ab4780739922713f2da1e34450e34ebf61
 Фактический SHA на входе сессии: 1d68e7224cb8a30c691aae5d8f87dc858de1cd90
-Final local SHA: см. §12 (коммит отчёта)
-Final remote SHA: не обновлён — push не выполнялся в этой сессии
-Push: NOT ATTEMPTED (см. §13)
+Final local SHA: 9f13295
+Final remote SHA: 9f13295
+Push: OK — origin/integration/final-demo 1d68e72..9f13295, без force
 Date: 2026-08-07
 ```
 
@@ -539,11 +539,11 @@ Intentional visual additions only:
 
 ```text
 Safety branch:      backup/pre-final-ui-repair-20260807-073012 (создана в этой сессии)
-Commit:             коммит этого отчёта, см. git log
-Push command:       не выполнялась
-Push result:        NOT ATTEMPTED
+Commit:             9f13295 docs: record final UI repair verification report
+Push command:       git push origin integration/final-demo
+Push result:        OK — 1d68e72..9f13295
 Remote branch:      origin/integration/final-demo
-Remote SHA:         746791ab4780739922713f2da1e34450e34ebf61 (не обновлялся)
+Remote SHA:         9f13295
 Force push:         NO
 Main modified:      NO
 Working tree clean: да (на момент коммита отчёта)
@@ -610,7 +610,7 @@ Non-blocking issues:
   - пустой defaultValue для basis объекта вне i18n
 Recommended demo URL: http://localhost:5173/?incident=inv-atyrau-2025-09
 Final branch URL: git@github.com:kiratonine/caspian-trace.git → integration/final-demo
-Final SHA: см. git log integration/final-demo
+Final SHA: 9f13295
 ```
 
 ## Что закрыто из Definition of Done (§8 файла 00)

@@ -86,22 +86,11 @@ export function MapColumn() {
           onSelect={selectPeriod}
         />
       )}
-      {mapModel.schematicMarkerCount > 0 && (
-        <div
-          role="note"
-          className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border px-3 py-2 text-xs"
-        >
-          <p className="text-pretty text-muted-foreground">
-            {t("map.coordinateMode.schematicDisclaimer")}
-          </p>
-          <p className="shrink-0 tabular-nums text-muted-foreground">
-            {t("map.coordinateMode.markerSummary", {
-              verified: mapModel.verifiedMarkerCount,
-              schematic: mapModel.schematicMarkerCount,
-            })}
-          </p>
-        </div>
-      )}
+      {/* Плашка режима координат убрана по решению владельца продукта
+          07.08.2026: экран демо должен быть чище. Оговорка «схематичное
+          положение / GPS не подтверждён» осталась в тултипах маркеров
+          (MapStationPin, MapObjectPin) — без неё карта утверждала бы
+          точную географию. */}
       <MapLibreMap model={mapModel} />
     </section>
   )

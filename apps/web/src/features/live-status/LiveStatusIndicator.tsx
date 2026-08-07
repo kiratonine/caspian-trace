@@ -86,9 +86,9 @@ export function LiveStatusIndicator() {
           }
         />
         <span className="hidden sm:inline">{t("liveStatus.triggerLabel")}</span>
-        {summaryText !== null && (
-          <span className="hidden truncate md:inline">{summaryText}</span>
-        )}
+        {/* Сводка «недоступны: N из M» убрана из шапки по решению владельца
+            продукта 07.08.2026. Полный список состояний источников остался
+            в поповере (SourceStatusList) и в aria-label триггера. */}
         {IS_SEED_MODE && (
           <Badge variant="outline" className="font-normal">
             {t("stubs.badgeLabel")}
